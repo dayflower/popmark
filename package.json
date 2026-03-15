@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "lint": "biome check --write src/ vite.config.ts",
+    "format": "biome format --write src/ vite.config.ts",
+    "check": "biome check src/ vite.config.ts",
+    "check:ci": "biome check --reporter=github src/ vite.config.ts"
   },
   "dependencies": {
     "@lexical/history": "^0.41.0",
@@ -19,6 +23,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.7",
     "@tailwindcss/vite": "^4.2.1",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
