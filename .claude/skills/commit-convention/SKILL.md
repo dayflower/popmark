@@ -1,3 +1,9 @@
+---
+name: commit-convention
+description: Apply when creating git commits — enforces Conventional Commits format
+user-invocable: false
+---
+
 # Commit Message Convention
 
 All commit message titles must start with a conventional commits type prefix:
