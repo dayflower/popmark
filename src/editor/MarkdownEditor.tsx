@@ -1,8 +1,8 @@
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 
 const initialConfig = {
   namespace: "popmark",
@@ -16,9 +16,7 @@ export function MarkdownEditor() {
     <LexicalComposer initialConfig={initialConfig}>
       <div className="relative h-full">
         <RichTextPlugin
-          contentEditable={
-            <ContentEditable className="h-full p-4 outline-none" />
-          }
+          contentEditable={<ContentEditable className="h-full p-4 outline-none" />}
           placeholder={
             <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
               Start writing...
