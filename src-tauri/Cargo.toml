@@ -1,0 +1,18 @@
+[package]
+name = "popmark"
+version = "0.1.0"
+description = "A macOS menu bar Markdown editor"
+authors = []
+edition = "2021"
+
+[lib]
+name = "popmark_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
