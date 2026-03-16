@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**popmark** is a macOS menu bar application that provides a quick-access Markdown WYSIWYG editor. The primary workflow is:
+**popmark** is a macOS application with a tray icon and standard menu bar that provides a quick-access Markdown WYSIWYG editor. The primary workflow is:
 
 1. Press a global shortcut → editor window appears
 2. Write Markdown content
@@ -26,10 +26,11 @@ popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 ## 3. App Lifecycle
 
-- The app runs as a **macOS menu bar app** (`LSUIElement = true`; no Dock icon, no app switcher entry).
+- The app runs as a standard macOS application: Dock icon is visible, appears in Cmd+Tab, and the standard macOS menu bar is active when the editor window is focused.
+- A tray icon also appears in the macOS status bar for quick access.
 - The process starts at login (user-configurable via Settings).
-- The app never quits unless the user explicitly selects "Quit popmark" from the menu bar menu.
-- The editor window is hidden by default; it appears only when triggered by the global hotkey or menu bar click.
+- The app never quits unless the user explicitly selects "Quit popmark" from the tray menu or presses Cmd+Q.
+- The editor window is hidden by default; it appears only when triggered by the global hotkey or tray menu.
 
 ---
 
@@ -168,18 +169,43 @@ A companion index file (`history/index.json`) maintains the ordered list and met
 
 ---
 
-## 11. Menu Bar
+## 11. Tray Icon
 
-The menu bar icon (a small icon in the macOS status bar) provides a dropdown menu:
+A small icon in the macOS status bar provides a dropdown menu for quick access:
 
 | Item               | Action                                     |
 |--------------------|--------------------------------------------|
 | Show Editor        | Show/focus the editor window               |
 | History…           | Show the editor window with history open   |
-| Export…            | Export current draft (save dialog)         |
 | Settings…          | Open settings panel                        |
 | —                  | Separator                                  |
 | Quit popmark       | Terminate the app                          |
+
+---
+
+## 11a. System Menu Bar
+
+The standard macOS menu bar is active when the editor window is focused. It provides:
+
+**popmark menu**
+
+| Item         | Action                        |
+|--------------|-------------------------------|
+| About popmark | Show the About dialog        |
+| —            | Separator                     |
+| Quit popmark | Terminate the app (Cmd+Q)    |
+
+**Edit menu**
+
+| Item         | Shortcut | Action           |
+|--------------|----------|------------------|
+| Undo         | Cmd+Z    | Undo last edit   |
+| Redo         | Cmd+Shift+Z | Redo last edit |
+| —            |          | Separator        |
+| Cut          | Cmd+X    | Cut selection    |
+| Copy         | Cmd+C    | Copy selection   |
+| Paste        | Cmd+V    | Paste            |
+| Select All   | Cmd+A    | Select all text  |
 
 ---
 
