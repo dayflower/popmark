@@ -3,7 +3,7 @@ mod commands;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
-    Manager,
+    Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -49,15 +49,18 @@ pub fn run() {
                 app.set_menu(menu)?;
             }
 
-            // Tray icon menu: Show Editor + Quit
+            // Tray icon menu: Show Editor + History… + Quit
             let show_item =
                 MenuItem::with_id(app, "show-editor", "Show Editor", true, None::<&str>)?;
+            let history_item =
+                MenuItem::with_id(app, "open-history", "History\u{2026}", true, None::<&str>)?;
             let quit_item =
                 MenuItem::with_id(app, "quit-popmark", "Quit popmark", true, None::<&str>)?;
             let tray_menu = Menu::with_items(
                 app,
                 &[
                     &show_item,
+                    &history_item,
                     &PredefinedMenuItem::separator(app)?,
                     &quit_item,
                 ],
@@ -69,6 +72,13 @@ pub fn run() {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
+                        }
+                    }
+                    "open-history" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("open-history-panel", ());
                         }
                     }
                     "quit-popmark" => {
@@ -103,6 +113,8 @@ pub fn run() {
             commands::save_draft,
             commands::copy_and_close,
             commands::export_file,
+            commands::list_history,
+            commands::get_history_entry,
         ])
         .on_window_event(|window, event| {
             // Intercept close request → hide instead of quitting
