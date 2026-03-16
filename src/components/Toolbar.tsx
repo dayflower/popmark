@@ -2,7 +2,12 @@ import { $convertToMarkdownString, TRANSFORMERS } from "@lexical/markdown";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { invoke } from "@tauri-apps/api/core";
 
-export function Toolbar() {
+interface ToolbarProps {
+  isHistoryOpen: boolean;
+  onToggleHistory: () => void;
+}
+
+export function Toolbar({ isHistoryOpen, onToggleHistory }: ToolbarProps) {
   const [editor] = useLexicalComposerContext();
 
   function handleCopyAndClose() {
@@ -29,6 +34,19 @@ export function Toolbar() {
         popmark
       </span>
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onToggleHistory}
+          className={[
+            "px-3 py-1 text-sm rounded cursor-default",
+            isHistoryOpen
+              ? "bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400"
+              : "text-gray-600 hover:bg-gray-100 active:bg-gray-200",
+          ].join(" ")}
+          title="Toggle history panel"
+        >
+          History
+        </button>
         <button
           type="button"
           onClick={handleExport}

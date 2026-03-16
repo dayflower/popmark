@@ -18,9 +18,12 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import type { EditorState } from "lexical";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { HistoryPanel } from "../components/HistoryPanel";
 import { Toolbar } from "../components/Toolbar";
+import { useHistory } from "../hooks/useHistory";
 
 const initialConfig = {
   namespace: "popmark",
@@ -48,8 +51,18 @@ function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
   });
 }
 
-// Loads draft from backend on mount/focus and sets up ⌘Return keybind
-function EditorPlugins() {
+interface EditorPluginsProps {
+  setIsHistoryOpen: (open: boolean) => void;
+  pendingContent: string | null;
+  onPendingConsumed: () => void;
+}
+
+// Handles draft load/save, keyboard shortcuts, and history entry loading
+function EditorPlugins({
+  setIsHistoryOpen,
+  pendingContent,
+  onPendingConsumed,
+}: EditorPluginsProps) {
   const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,6 +92,37 @@ function EditorPlugins() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editor]);
 
+  // Listen for "open-history-panel" event emitted by the tray menu
+  useEffect(() => {
+    const unlisten = listen("open-history-panel", () => {
+      setIsHistoryOpen(true);
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [setIsHistoryOpen]);
+
+  // Load a pending history entry into the editor
+  useEffect(() => {
+    if (pendingContent === null) return;
+
+    let hasContent = false;
+    editor.getEditorState().read(() => {
+      const text = $convertToMarkdownString(TRANSFORMERS);
+      hasContent = text.trim().length > 0;
+    });
+
+    if (hasContent && !window.confirm("Replace current draft with this history entry?")) {
+      onPendingConsumed();
+      return;
+    }
+
+    editor.update(() => {
+      $convertFromMarkdownString(pendingContent, TRANSFORMERS);
+    });
+    onPendingConsumed();
+  }, [editor, pendingContent, onPendingConsumed]);
+
   function handleChange(editorState: EditorState) {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -93,10 +137,27 @@ function EditorPlugins() {
 }
 
 export function MarkdownEditor() {
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [pendingContent, setPendingContent] = useState<string | null>(null);
+  const { getEntry } = useHistory();
+
+  const handleLoadEntry = useCallback(
+    async (id: string) => {
+      const content = await getEntry(id);
+      setPendingContent(content);
+      setIsHistoryOpen(false);
+    },
+    [getEntry],
+  );
+
+  const handlePendingConsumed = useCallback(() => {
+    setPendingContent(null);
+  }, []);
+
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <Toolbar />
-      <div className="relative h-full">
+      <Toolbar isHistoryOpen={isHistoryOpen} onToggleHistory={() => setIsHistoryOpen((v) => !v)} />
+      <div className="relative flex-1 overflow-hidden">
         <RichTextPlugin
           contentEditable={<ContentEditable className="h-full p-4 outline-none" />}
           placeholder={
@@ -109,7 +170,16 @@ export function MarkdownEditor() {
         <HistoryPlugin />
         <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
         <HorizontalRulePlugin />
-        <EditorPlugins />
+        <EditorPlugins
+          setIsHistoryOpen={setIsHistoryOpen}
+          pendingContent={pendingContent}
+          onPendingConsumed={handlePendingConsumed}
+        />
+        <HistoryPanel
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          onLoadEntry={handleLoadEntry}
+        />
       </div>
     </LexicalComposer>
   );
