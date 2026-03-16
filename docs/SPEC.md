@@ -37,7 +37,7 @@ popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 | Property   | Value                        |
 |------------|------------------------------|
-| Default    | `⌥Space` (Option + Space)   |
+| Default    | `⌥M` (Option + M)           |
 | Behavior   | Toggle: open if hidden, hide if visible |
 | Registered via | Tauri global shortcut API |
 | Configurable | Yes (via Settings)         |
@@ -189,7 +189,7 @@ Accessible via menu bar > Settings… or toolbar ⚙ button.
 
 | Setting              | Default            | Description                           |
 |----------------------|--------------------|---------------------------------------|
-| Global hotkey        | `⌥Space`          | Key combination to toggle the editor  |
+| Global hotkey        | `⌥M`              | Key combination to toggle the editor  |
 | Launch at login      | Off                | Register as a login item              |
 
 ---
