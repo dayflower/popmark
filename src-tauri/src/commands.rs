@@ -2,9 +2,42 @@ use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use std::sync::Mutex;
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::{DialogExt, FilePath};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
+
+// ---------------------------------------------------------------------------
+// App state: tracks the currently registered global shortcut
+// ---------------------------------------------------------------------------
+
+pub struct AppState {
+    pub current_shortcut: Mutex<Option<Shortcut>>,
+}
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Settings {
+    pub hotkey: String,
+    pub launch_at_login: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings {
+            hotkey: "alt+m".to_string(),
+            launch_at_login: false,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// History entry
+// ---------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HistoryEntry {
@@ -12,6 +45,10 @@ pub struct HistoryEntry {
     pub timestamp: String,
     pub title_preview: String,
 }
+
+// ---------------------------------------------------------------------------
+// Path helpers
+// ---------------------------------------------------------------------------
 
 fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
@@ -32,6 +69,10 @@ fn history_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
+fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app_data_dir(app)?.join("settings.json"))
+}
+
 fn extract_title_preview(content: &str) -> String {
     let first_line = content
         .lines()
@@ -48,6 +89,83 @@ fn extract_title_preview(content: &str) -> String {
         stripped.to_string()
     }
 }
+
+// ---------------------------------------------------------------------------
+// Shortcut registration helper
+// ---------------------------------------------------------------------------
+
+/// Unregister the previous global shortcut (if any) and register a new one
+/// that toggles window visibility. Persists the active shortcut in AppState.
+pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String> {
+    let shortcut: Shortcut = hotkey
+        .parse()
+        .map_err(|e| format!("Invalid hotkey '{hotkey}': {e}"))?;
+
+    let state = app.state::<AppState>();
+    let mut current = state.current_shortcut.lock().unwrap();
+    if let Some(old) = current.take() {
+        let _ = app.global_shortcut().unregister(old);
+    }
+
+    app.global_shortcut()
+        .on_shortcut(shortcut.clone(), move |app, _shortcut, event| {
+            if event.state == ShortcutState::Pressed {
+                if let Some(window) = app.get_webview_window("main") {
+                    if window.is_visible().unwrap_or(false) {
+                        let _ = window.hide();
+                    } else {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                        let _ = window.emit("window-shown", ());
+                    }
+                }
+            }
+        })
+        .map_err(|e| e.to_string())?;
+
+    *current = Some(shortcut);
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// IPC commands: settings
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub fn get_settings(app: AppHandle) -> Result<Settings, String> {
+    let path = settings_path(&app)?;
+    if path.exists() {
+        let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&data).map_err(|e| e.to_string())
+    } else {
+        Ok(Settings::default())
+    }
+}
+
+#[tauri::command]
+pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
+    // Persist to disk
+    let path = settings_path(&app)?;
+    let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+    fs::write(&path, json).map_err(|e| e.to_string())?;
+
+    // Re-register global shortcut with new hotkey
+    re_register_shortcut(&app, &settings.hotkey)?;
+
+    // Toggle launch-at-login
+    use tauri_plugin_autostart::ManagerExt;
+    if settings.launch_at_login {
+        app.autolaunch().enable().map_err(|e| e.to_string())?;
+    } else {
+        app.autolaunch().disable().map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// IPC commands: draft
+// ---------------------------------------------------------------------------
 
 #[tauri::command]
 pub fn get_draft(app: AppHandle) -> Result<String, String> {
@@ -113,6 +231,10 @@ pub fn copy_and_close(app: AppHandle, content: String) -> Result<(), String> {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// IPC commands: history
+// ---------------------------------------------------------------------------
+
 #[tauri::command]
 pub fn list_history(app: AppHandle) -> Result<Vec<HistoryEntry>, String> {
     let history = history_dir(&app)?;
@@ -133,6 +255,10 @@ pub fn get_history_entry(app: AppHandle, id: String) -> Result<String, String> {
     }
     fs::read_to_string(&file_path).map_err(|e| e.to_string())
 }
+
+// ---------------------------------------------------------------------------
+// IPC commands: export
+// ---------------------------------------------------------------------------
 
 #[tauri::command]
 pub async fn export_file(

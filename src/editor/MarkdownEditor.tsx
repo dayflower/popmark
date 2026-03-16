@@ -22,6 +22,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { EditorState } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
+import { SettingsPanel } from "../components/SettingsPanel";
 import { Toolbar } from "../components/Toolbar";
 import { useHistory } from "../hooks/useHistory";
 
@@ -53,13 +54,15 @@ function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
 
 interface EditorPluginsProps {
   setIsHistoryOpen: (open: boolean) => void;
+  setIsSettingsOpen: (open: boolean) => void;
   pendingContent: string | null;
   onPendingConsumed: () => void;
 }
 
-// Handles draft load/save, keyboard shortcuts, and history entry loading
+// Handles draft load/save, keyboard shortcuts, and panel event listening
 function EditorPlugins({
   setIsHistoryOpen,
+  setIsSettingsOpen,
   pendingContent,
   onPendingConsumed,
 }: EditorPluginsProps) {
@@ -68,6 +71,16 @@ function EditorPlugins({
 
   useEffect(() => {
     loadDraft(editor);
+  }, [editor]);
+
+  // Auto-focus editor when the window is shown via global shortcut or tray
+  useEffect(() => {
+    const unlisten = listen("window-shown", () => {
+      editor.focus();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
   }, [editor]);
 
   useEffect(() => {
@@ -101,6 +114,16 @@ function EditorPlugins({
       unlisten.then((fn) => fn());
     };
   }, [setIsHistoryOpen]);
+
+  // Listen for "open-settings-panel" event emitted by the tray menu
+  useEffect(() => {
+    const unlisten = listen("open-settings-panel", () => {
+      setIsSettingsOpen(true);
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [setIsSettingsOpen]);
 
   // Load a pending history entry into the editor
   useEffect(() => {
@@ -138,6 +161,7 @@ function EditorPlugins({
 
 export function MarkdownEditor() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [pendingContent, setPendingContent] = useState<string | null>(null);
   const { getEntry } = useHistory();
 
@@ -156,13 +180,19 @@ export function MarkdownEditor() {
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <Toolbar isHistoryOpen={isHistoryOpen} onToggleHistory={() => setIsHistoryOpen((v) => !v)} />
-      <div className="relative flex-1 overflow-hidden">
+      <Toolbar
+        isHistoryOpen={isHistoryOpen}
+        onToggleHistory={() => setIsHistoryOpen((v) => !v)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
+      <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         <RichTextPlugin
-          contentEditable={<ContentEditable className="h-full p-4 outline-none" />}
+          contentEditable={
+            <ContentEditable className="h-full p-4 outline-none text-gray-900 dark:text-gray-100" />
+          }
           placeholder={
-            <div className="absolute top-4 left-4 text-gray-400 pointer-events-none">
-              Start writing...
+            <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
+              Start writing…
             </div>
           }
           ErrorBoundary={LexicalErrorBoundary}
@@ -172,6 +202,7 @@ export function MarkdownEditor() {
         <HorizontalRulePlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
           pendingContent={pendingContent}
           onPendingConsumed={handlePendingConsumed}
         />
@@ -180,6 +211,7 @@ export function MarkdownEditor() {
           onClose={() => setIsHistoryOpen(false)}
           onLoadEntry={handleLoadEntry}
         />
+        <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       </div>
     </LexicalComposer>
   );

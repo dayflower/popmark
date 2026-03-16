@@ -1,11 +1,13 @@
 mod commands;
 
+use commands::AppState;
+use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
     Emitter, Manager,
 };
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tauri_plugin_autostart::MacosLauncher;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,6 +15,13 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .manage(AppState {
+            current_shortcut: Mutex::new(None),
+        })
         .setup(|app| {
             // macOS system menu bar: App menu + Edit menu
             #[cfg(target_os = "macos")]
@@ -49,11 +58,13 @@ pub fn run() {
                 app.set_menu(menu)?;
             }
 
-            // Tray icon menu: Show Editor + History… + Quit
+            // Tray icon menu: Show Editor + History… + Settings… + Quit
             let show_item =
                 MenuItem::with_id(app, "show-editor", "Show Editor", true, None::<&str>)?;
             let history_item =
                 MenuItem::with_id(app, "open-history", "History\u{2026}", true, None::<&str>)?;
+            let settings_item =
+                MenuItem::with_id(app, "open-settings", "Settings\u{2026}", true, None::<&str>)?;
             let quit_item =
                 MenuItem::with_id(app, "quit-popmark", "Quit popmark", true, None::<&str>)?;
             let tray_menu = Menu::with_items(
@@ -61,6 +72,7 @@ pub fn run() {
                 &[
                     &show_item,
                     &history_item,
+                    &settings_item,
                     &PredefinedMenuItem::separator(app)?,
                     &quit_item,
                 ],
@@ -72,13 +84,23 @@ pub fn run() {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
+                            let _ = window.emit("window-shown", ());
                         }
                     }
                     "open-history" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
+                            let _ = window.emit("window-shown", ());
                             let _ = window.emit("open-history-panel", ());
+                        }
+                    }
+                    "open-settings" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("window-shown", ());
+                            let _ = window.emit("open-settings-panel", ());
                         }
                     }
                     "quit-popmark" => {
@@ -91,20 +113,11 @@ pub fn run() {
             }
             builder.build(app)?;
 
-            // Register ⌥M global shortcut to show/hide the window
-            let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyM);
-            app.global_shortcut().on_shortcut(shortcut, move |app, _shortcut, event| {
-                if event.state == ShortcutState::Pressed {
-                    if let Some(window) = app.get_webview_window("main") {
-                        if window.is_visible().unwrap_or(false) {
-                            let _ = window.hide();
-                        } else {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                }
-            })?;
+            // Read saved hotkey from settings and register global shortcut
+            let hotkey = commands::get_settings(app.handle().clone())
+                .unwrap_or_default()
+                .hotkey;
+            commands::re_register_shortcut(app.handle(), &hotkey)?;
 
             Ok(())
         })
@@ -115,6 +128,8 @@ pub fn run() {
             commands::export_file,
             commands::list_history,
             commands::get_history_entry,
+            commands::get_settings,
+            commands::save_settings,
         ])
         .on_window_event(|window, event| {
             // Intercept close request → hide instead of quitting
