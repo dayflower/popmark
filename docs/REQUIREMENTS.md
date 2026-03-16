@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-popmark is a macOS menu bar application providing a quick-access Markdown scratch pad. The primary goal is to let users draft Markdown text rapidly and push it to the clipboard — not to manage files or organize documents.
+popmark is a macOS application with a tray icon and standard menu bar, providing a quick-access Markdown scratch pad. The primary goal is to let users draft Markdown text rapidly and push it to the clipboard — not to manage files or organize documents.
 
 ---
 
@@ -67,10 +67,10 @@ The next time the editor is opened it shows a blank document.
 
 ## 8. App Lifecycle & Menu Bar
 
-- The app runs as a **macOS menu bar app**: an icon appears in the macOS status bar; the app does not appear in the Dock or the app switcher.
+- The app runs as a standard macOS application: a Dock icon is visible, and the standard macOS menu bar (including an Edit menu) is available when the editor window is focused. A tray icon also appears in the macOS status bar for quick access.
 - The app starts at login (user-configurable).
-- The app **never quits** unless the user explicitly selects "Quit" from the menu bar menu. Closing the editor window hides it; it does not terminate the process.
-- The editor window is hidden by default and appears only when triggered by the global hotkey or via the menu bar menu.
+- The app **never quits** unless the user explicitly selects "Quit" from the tray menu or presses Cmd+Q. Closing the editor window hides it; it does not terminate the process.
+- The editor window is hidden by default and appears only when triggered by the global hotkey or via the tray menu.
 
 ---
 
