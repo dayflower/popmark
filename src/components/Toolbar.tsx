@@ -5,9 +5,10 @@ import { invoke } from "@tauri-apps/api/core";
 interface ToolbarProps {
   isHistoryOpen: boolean;
   onToggleHistory: () => void;
+  onOpenSettings: () => void;
 }
 
-export function Toolbar({ isHistoryOpen, onToggleHistory }: ToolbarProps) {
+export function Toolbar({ isHistoryOpen, onToggleHistory, onOpenSettings }: ToolbarProps) {
   const [editor] = useLexicalComposerContext();
 
   function handleCopyAndClose() {
@@ -27,10 +28,10 @@ export function Toolbar({ isHistoryOpen, onToggleHistory }: ToolbarProps) {
   return (
     // data-tauri-drag-region makes the toolbar area draggable (no native title bar)
     <div
-      className="flex items-center justify-between px-3 py-2 border-b border-gray-200 select-none"
+      className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 select-none bg-white dark:bg-gray-900"
       data-tauri-drag-region
     >
-      <span className="text-sm font-medium text-gray-600" data-tauri-drag-region>
+      <span className="text-sm font-medium text-gray-600 dark:text-gray-400" data-tauri-drag-region>
         popmark
       </span>
       <div className="flex items-center gap-2">
@@ -40,8 +41,8 @@ export function Toolbar({ isHistoryOpen, onToggleHistory }: ToolbarProps) {
           className={[
             "px-3 py-1 text-sm rounded cursor-default",
             isHistoryOpen
-              ? "bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400"
-              : "text-gray-600 hover:bg-gray-100 active:bg-gray-200",
+              ? "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700",
           ].join(" ")}
           title="Toggle history panel"
         >
@@ -50,10 +51,18 @@ export function Toolbar({ isHistoryOpen, onToggleHistory }: ToolbarProps) {
         <button
           type="button"
           onClick={handleExport}
-          className="px-3 py-1 text-sm text-gray-600 rounded hover:bg-gray-100 active:bg-gray-200 cursor-default"
+          className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 cursor-default"
           title="Export as Markdown file"
         >
           Export…
+        </button>
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 cursor-default"
+          title="Settings"
+        >
+          Settings
         </button>
         <button
           type="button"
