@@ -40,19 +40,29 @@ const initialConfig = {
   },
 };
 
-// Loads draft from backend on mount and sets up ⌘Return keybind
+function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
+  invoke<string>("get_draft").then((content) => {
+    editor.update(() => {
+      $convertFromMarkdownString(content ?? "", TRANSFORMERS);
+    });
+  });
+}
+
+// Loads draft from backend on mount/focus and sets up ⌘Return keybind
 function EditorPlugins() {
   const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    invoke<string>("get_draft").then((content) => {
-      if (content) {
-        editor.update(() => {
-          $convertFromMarkdownString(content, TRANSFORMERS);
-        });
-      }
-    });
+    loadDraft(editor);
+  }, [editor]);
+
+  useEffect(() => {
+    function handleFocus() {
+      loadDraft(editor);
+    }
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [editor]);
 
   useEffect(() => {
