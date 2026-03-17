@@ -21,8 +21,10 @@ popmark is a macOS application with a tray icon and standard menu bar, providing
   - Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible.
   - Visual styling (font size, weight, color, etc.) is applied at the same time.
   - Users can edit the raw markers directly; styling updates live.
-- Supported Markdown elements: headings H1–H6, bold, italic, bold+italic, strikethrough, inline code, fenced code blocks (with optional language tag), blockquotes, unordered and ordered lists, horizontal rules, and links.
+- Supported Markdown elements: headings H1–H6, bold, italic, bold+italic, strikethrough, inline code, fenced code blocks (with optional language tag), blockquotes, unordered and ordered lists, checkbox (task) lists, horizontal rules, and links.
+- Checkbox lists use `- [ ]` (unchecked) and `- [x]` (checked) syntax.
 - Standard Markdown syntax is used (`#` for H1, `##` for H2, etc.).
+- Pressing Enter on a blank list item exits list mode and returns to normal paragraph mode.
 
 ---
 
@@ -47,6 +49,14 @@ The next time the editor is opened it shows a blank document.
 
 ---
 
+## 5a. New Document
+
+- Users can create a new document (clear the editor) at any time via the toolbar or system menu bar (⌘N).
+- If the current draft is non-empty, it is **automatically saved to history** before clearing (no confirmation required).
+- After clearing, the editor opens a blank document.
+
+---
+
 ## 6. History
 
 - Every document saved via Copy & Close is retained in history (documents are never automatically deleted).
@@ -67,10 +77,11 @@ The next time the editor is opened it shows a blank document.
 
 ## 8. App Lifecycle & Menu Bar
 
-- The app runs as a standard macOS application: a Dock icon is visible, and the standard macOS menu bar (including an Edit menu) is available when the editor window is focused. A tray icon also appears in the macOS status bar for quick access.
+- The app runs as a standard macOS application: a Dock icon is visible, and the standard macOS menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Copy & Close), an Edit menu, and access to History and Settings from the app menu. A tray icon also appears in the macOS status bar for quick access.
 - The app starts at login (user-configurable).
 - The app **never quits** unless the user explicitly selects "Quit" from the tray menu or presses Cmd+Q. Closing the editor window hides it; it does not terminate the process.
 - The editor window is hidden by default and appears only when triggered by the global hotkey or via the tray menu.
+- Pressing Esc hides the editor window.
 
 ---
 
@@ -97,6 +108,15 @@ The following are explicitly **not** required:
 
 ---
 
+## 10a. Future / Nice-to-Have
+
+The following are deferred to a future version:
+
+- Drag-and-drop reordering of list items in the editor
+- Shift+Arrow keys to move selected nodes (list items, paragraphs) up or down
+
+---
+
 ## 11. Technical Constraints
 
 These technology choices are fixed:
@@ -104,5 +124,5 @@ These technology choices are fixed:
 | Layer | Technology |
 |-------|-----------|
 | Native shell | Tauri 2.x (Rust) |
-| Frontend | React 18 + Vite |
+| Frontend | React 19 + Vite |
 | Rich text engine | Lexical |

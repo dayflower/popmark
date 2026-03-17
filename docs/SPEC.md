@@ -18,7 +18,7 @@ popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 | Layer    | Technology      | Responsibility                                         |
 |----------|-----------------|--------------------------------------------------------|
 | Shell    | Tauri 2.x (Rust)| Menu bar agent, global hotkey, clipboard, file I/O     |
-| UI       | React 18 + Vite | Editor window, toolbar, history panel                  |
+| UI       | React 19 + Vite | Editor window, toolbar, history panel                  |
 | Editor   | Lexical         | WYSIWYG Markdown rendering                             |
 | Styling  | Tailwind CSS    | UI layout and theming (dark mode support)              |
 
@@ -49,8 +49,9 @@ popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 - **Position:** Centered on the active screen at open time.
 - **Default size:** 700 × 500 px (resizable).
-- **Window style:** Minimal chrome (no standard title bar); custom toolbar at the top.
+- **Window style:** Standard macOS window with native title bar. The window can be moved by dragging the title bar in the standard macOS manner. A custom toolbar with action buttons appears below the title bar.
 - **Always on top:** The window appears above other windows but does not forcibly stay on top after losing focus (standard window behavior).
+- **Keyboard shortcut:** `Esc` hides the editor window (regardless of whether a panel is open).
 
 ---
 
@@ -78,10 +79,13 @@ The editor uses **source-visible WYSIWYG** (Obsidian style):
 | Blockquote          | `>`                           |
 | Unordered list      | `-` or `*`                    |
 | Ordered list        | `1.`                          |
+| Checkbox list       | `- [ ] task` / `- [x] done`  |
 | Horizontal rule     | `---`                         |
 | Link                | `[label](url)`                |
 
 Inter-document links (wiki-links, `[[…]]`) are **not supported**.
+
+**List exit behavior:** Pressing Enter on a blank list item exits the list and inserts a regular paragraph.
 
 ### 6.3 Toolbar
 
@@ -89,6 +93,7 @@ A minimal toolbar appears at the top of the editor window:
 
 | Button / Control | Action                        |
 |------------------|-------------------------------|
+| New              | Auto-save draft to history (if non-empty), clear draft, start new document |
 | Copy & Close     | Copy Markdown, save to history, clear draft, hide window |
 | History          | Open/close the history panel  |
 | Export…          | Save current content as `.md` via save dialog |
@@ -189,23 +194,36 @@ The standard macOS menu bar is active when the editor window is focused. It prov
 
 **popmark menu**
 
-| Item         | Action                        |
-|--------------|-------------------------------|
-| About popmark | Show the About dialog        |
-| —            | Separator                     |
-| Quit popmark | Terminate the app (Cmd+Q)    |
+| Item          | Shortcut | Action                        |
+|---------------|----------|-------------------------------|
+| About popmark |          | Show the About dialog         |
+| —             |          | Separator                     |
+| History…      | ⌘H       | Show editor with history panel open |
+| Settings…     | ⌘,       | Open settings panel           |
+| —             |          | Separator                     |
+| Quit popmark  | ⌘Q       | Terminate the app             |
+
+**File menu**
+
+| Item          | Shortcut | Action                        |
+|---------------|----------|-------------------------------|
+| New Document  | ⌘N       | Auto-save draft to history (if non-empty), clear draft, start new |
+| —             |          | Separator                     |
+| Export…       | ⌘S       | Save current content as `.md` via save dialog |
+| —             |          | Separator                     |
+| Copy & Close  | ⌘Return  | Copy to clipboard, save to history, clear draft, hide window |
 
 **Edit menu**
 
-| Item         | Shortcut | Action           |
-|--------------|----------|------------------|
-| Undo         | Cmd+Z    | Undo last edit   |
-| Redo         | Cmd+Shift+Z | Redo last edit |
-| —            |          | Separator        |
-| Cut          | Cmd+X    | Cut selection    |
-| Copy         | Cmd+C    | Copy selection   |
-| Paste        | Cmd+V    | Paste            |
-| Select All   | Cmd+A    | Select all text  |
+| Item         | Shortcut    | Action           |
+|--------------|-------------|------------------|
+| Undo         | ⌘Z          | Undo last edit   |
+| Redo         | ⌘⇧Z         | Redo last edit   |
+| —            |             | Separator        |
+| Cut          | ⌘X          | Cut selection    |
+| Copy         | ⌘C          | Copy selection   |
+| Paste        | ⌘V          | Paste            |
+| Select All   | ⌘A          | Select all text  |
 
 ---
 
@@ -251,6 +269,7 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 | `export_file`            | React → Rust    | Open save dialog and write file              |
 | `get_settings`           | Rust → React    | Return current settings                      |
 | `save_settings`          | React → Rust    | Persist settings changes                     |
+| `new_document`           | React → Rust    | Auto-save current draft to history (if non-empty), then clear draft |
 
 ### Lexical Markdown Serialization
 
@@ -275,3 +294,8 @@ The following features are explicitly **not** included in this version:
 - Tags or categories for history entries
 - Sync / cloud backup
 - Windows or Linux support
+
+The following are deferred to a future version:
+
+- Drag-and-drop reordering of list items in the editor
+- Shift+Arrow keys to move selected nodes (list items, paragraphs) up or down
