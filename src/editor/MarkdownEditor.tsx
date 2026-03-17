@@ -4,8 +4,10 @@ import { ListItemNode, ListNode } from "@lexical/list";
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
+  CHECK_LIST,
   TRANSFORMERS,
 } from "@lexical/markdown";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -25,6 +27,8 @@ import { HistoryPanel } from "../components/HistoryPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { Toolbar } from "../components/Toolbar";
 import { useHistory } from "../hooks/useHistory";
+
+const CUSTOM_TRANSFORMERS = [CHECK_LIST, ...TRANSFORMERS];
 
 const initialConfig = {
   namespace: "popmark",
@@ -47,7 +51,7 @@ const initialConfig = {
 function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
   invoke<string>("get_draft").then((content) => {
     editor.update(() => {
-      $convertFromMarkdownString(content ?? "", TRANSFORMERS);
+      $convertFromMarkdownString(content ?? "", CUSTOM_TRANSFORMERS);
     });
   });
 }
@@ -96,7 +100,7 @@ function EditorPlugins({
       if (e.key === "Enter" && e.metaKey) {
         e.preventDefault();
         editor.getEditorState().read(() => {
-          const content = $convertToMarkdownString(TRANSFORMERS);
+          const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
           invoke("copy_and_close", { content });
         });
       }
@@ -131,7 +135,7 @@ function EditorPlugins({
 
     let hasContent = false;
     editor.getEditorState().read(() => {
-      const text = $convertToMarkdownString(TRANSFORMERS);
+      const text = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
       hasContent = text.trim().length > 0;
     });
 
@@ -141,7 +145,7 @@ function EditorPlugins({
     }
 
     editor.update(() => {
-      $convertFromMarkdownString(pendingContent, TRANSFORMERS);
+      $convertFromMarkdownString(pendingContent, CUSTOM_TRANSFORMERS);
     });
     onPendingConsumed();
   }, [editor, pendingContent, onPendingConsumed]);
@@ -150,7 +154,7 @@ function EditorPlugins({
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       editorState.read(() => {
-        const content = $convertToMarkdownString(TRANSFORMERS);
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
         invoke("save_draft", { content });
       });
     }, 500);
@@ -198,8 +202,9 @@ export function MarkdownEditor() {
           ErrorBoundary={LexicalErrorBoundary}
         />
         <HistoryPlugin />
-        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+        <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
         <HorizontalRulePlugin />
+        <CheckListPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
           setIsSettingsOpen={setIsSettingsOpen}
