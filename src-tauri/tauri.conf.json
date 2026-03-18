@@ -15,7 +15,7 @@
         "title": "popmark",
         "width": 700,
         "height": 500,
-        "decorations": false,
+        "decorations": true,
         "visible": false
       }
     ],

@@ -232,6 +232,50 @@ pub fn copy_and_close(app: AppHandle, content: String) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------------------
+// IPC commands: new document
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub fn new_document(app: AppHandle) -> Result<(), String> {
+    // Save current draft to history if non-empty
+    let content = get_draft(app.clone())?;
+    if !content.trim().is_empty() {
+        let now = Local::now();
+        let id = now.format("%Y-%m-%dT%H-%M-%S").to_string();
+        let timestamp = now.format("%Y-%m-%dT%H:%M:%S").to_string();
+        let title_preview = extract_title_preview(&content);
+
+        let history = history_dir(&app)?;
+        let file_path = history.join(format!("{}.md", id));
+        fs::write(&file_path, &content).map_err(|e| e.to_string())?;
+
+        let index_path = history.join("index.json");
+        let mut entries: Vec<HistoryEntry> = if index_path.exists() {
+            let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
+            serde_json::from_str(&data).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        entries.insert(
+            0,
+            HistoryEntry {
+                id,
+                timestamp,
+                title_preview,
+            },
+        );
+        let json = serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())?;
+        fs::write(&index_path, json).map_err(|e| e.to_string())?;
+    }
+
+    // Clear draft
+    let draft = draft_path(&app)?;
+    fs::write(&draft, "").map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // IPC commands: history
 // ---------------------------------------------------------------------------
 

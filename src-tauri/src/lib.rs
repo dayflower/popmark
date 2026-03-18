@@ -125,6 +125,7 @@ pub fn run() {
             commands::get_draft,
             commands::save_draft,
             commands::copy_and_close,
+            commands::new_document,
             commands::export_file,
             commands::list_history,
             commands::get_history_entry,
