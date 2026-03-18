@@ -89,12 +89,6 @@ pub fn run() {
                         )?,
                         &Submenu::with_items(
                             app,
-                            "View",
-                            true,
-                            &[&menu_toggle_history_item],
-                        )?,
-                        &Submenu::with_items(
-                            app,
                             "Edit",
                             true,
                             &[
@@ -106,6 +100,12 @@ pub fn run() {
                                 &PredefinedMenuItem::paste(app, None)?,
                                 &PredefinedMenuItem::select_all(app, None)?,
                             ],
+                        )?,
+                        &Submenu::with_items(
+                            app,
+                            "View",
+                            true,
+                            &[&menu_toggle_history_item],
                         )?,
                     ],
                 )?;
