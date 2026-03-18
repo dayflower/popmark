@@ -159,6 +159,7 @@ function CodeExitPlugin() {
 
 interface EditorPluginsProps {
   setIsHistoryOpen: (open: boolean) => void;
+  onToggleHistory: () => void;
   setIsSettingsOpen: (open: boolean) => void;
   pendingContent: string | null;
   onPendingConsumed: () => void;
@@ -169,6 +170,7 @@ interface EditorPluginsProps {
 // Handles draft load/save, keyboard shortcuts, and panel event listening
 function EditorPlugins({
   setIsHistoryOpen,
+  onToggleHistory,
   setIsSettingsOpen,
   pendingContent,
   onPendingConsumed,
@@ -200,19 +202,6 @@ function EditorPlugins({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Enter" && e.metaKey) {
-        e.preventDefault();
-        editor.getEditorState().read(() => {
-          const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-          invoke("copy_and_close", { content });
-        });
-        return;
-      }
-      if (e.key === "n" && e.metaKey) {
-        e.preventDefault();
-        onNew();
-        return;
-      }
       if (e.key === "Escape") {
         e.preventDefault();
         getCurrentWindow().hide();
@@ -220,9 +209,45 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, onNew]);
+  }, []);
 
-  // Listen for "open-history-panel" event emitted by the tray menu
+  // Listen for menu bar "New Document" event
+  useEffect(() => {
+    const unlisten = listen("menu-new-document", () => {
+      onNew();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [onNew]);
+
+  // Listen for menu bar "Export…" event
+  useEffect(() => {
+    const unlisten = listen("menu-export", () => {
+      editor.getEditorState().read(() => {
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        invoke("export_file", { content });
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [editor]);
+
+  // Listen for menu bar "Copy & Close" event
+  useEffect(() => {
+    const unlisten = listen("menu-copy-and-close", () => {
+      editor.getEditorState().read(() => {
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        invoke("copy_and_close", { content });
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [editor]);
+
+  // Listen for "open-history-panel" event emitted by the tray menu (open-only)
   useEffect(() => {
     const unlisten = listen("open-history-panel", () => {
       setIsHistoryOpen(true);
@@ -231,6 +256,16 @@ function EditorPlugins({
       unlisten.then((fn) => fn());
     };
   }, [setIsHistoryOpen]);
+
+  // Listen for menu bar View > History toggle event
+  useEffect(() => {
+    const unlisten = listen("menu-toggle-history", () => {
+      onToggleHistory();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [onToggleHistory]);
 
   // Listen for "open-settings-panel" event emitted by the tray menu
   useEffect(() => {
@@ -302,6 +337,11 @@ export function MarkdownEditor() {
     setPendingContent(null);
   }, []);
 
+  // Sync history panel open state to the View > History menu item checkmark
+  useEffect(() => {
+    invoke("set_history_panel_open", { open: isHistoryOpen });
+  }, [isHistoryOpen]);
+
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <Toolbar
@@ -333,6 +373,7 @@ export function MarkdownEditor() {
         <CodeExitPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
+          onToggleHistory={() => setIsHistoryOpen((v) => !v)}
           setIsSettingsOpen={setIsSettingsOpen}
           pendingContent={pendingContent}
           onPendingConsumed={handlePendingConsumed}

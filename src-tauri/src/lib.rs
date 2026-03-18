@@ -3,7 +3,7 @@ mod commands;
 use commands::AppState;
 use std::sync::Mutex;
 use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
+    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
     Emitter, Manager,
 };
@@ -21,11 +21,48 @@ pub fn run() {
         ))
         .manage(AppState {
             current_shortcut: Mutex::new(None),
+            history_menu_item: Mutex::new(None),
         })
         .setup(|app| {
-            // macOS system menu bar: App menu + Edit menu
+            // macOS system menu bar: popmark menu + File menu + View menu + Edit menu
             #[cfg(target_os = "macos")]
             {
+                let menu_toggle_history_item = CheckMenuItem::with_id(
+                    app,
+                    "menu-toggle-history",
+                    "History",
+                    true,
+                    false,
+                    Some("cmd+h"),
+                )?;
+                let menu_settings_item = MenuItem::with_id(
+                    app,
+                    "menu-settings",
+                    "Settings\u{2026}",
+                    true,
+                    Some("cmd+,"),
+                )?;
+                let menu_new_item = MenuItem::with_id(
+                    app,
+                    "menu-new-document",
+                    "New Document",
+                    true,
+                    Some("cmd+n"),
+                )?;
+                let menu_export_item = MenuItem::with_id(
+                    app,
+                    "menu-export",
+                    "Export\u{2026}",
+                    true,
+                    Some("cmd+s"),
+                )?;
+                let menu_copy_close_item = MenuItem::with_id(
+                    app,
+                    "menu-copy-and-close",
+                    "Copy & Close",
+                    true,
+                    Some("cmd+return"),
+                )?;
                 let menu = Menu::with_items(
                     app,
                     &[
@@ -36,7 +73,20 @@ pub fn run() {
                             &[
                                 &PredefinedMenuItem::about(app, None, None)?,
                                 &PredefinedMenuItem::separator(app)?,
+                                &menu_settings_item,
+                                &PredefinedMenuItem::separator(app)?,
                                 &PredefinedMenuItem::quit(app, None)?,
+                            ],
+                        )?,
+                        &Submenu::with_items(
+                            app,
+                            "File",
+                            true,
+                            &[
+                                &menu_new_item,
+                                &PredefinedMenuItem::separator(app)?,
+                                &menu_export_item,
+                                &menu_copy_close_item,
                             ],
                         )?,
                         &Submenu::with_items(
@@ -53,9 +103,48 @@ pub fn run() {
                                 &PredefinedMenuItem::select_all(app, None)?,
                             ],
                         )?,
+                        &Submenu::with_items(
+                            app,
+                            "View",
+                            true,
+                            &[&menu_toggle_history_item],
+                        )?,
                     ],
                 )?;
                 app.set_menu(menu)?;
+                *app.state::<AppState>().history_menu_item.lock().unwrap() =
+                    Some(menu_toggle_history_item);
+                app.on_menu_event(|app, event| match event.id().as_ref() {
+                    "menu-toggle-history" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-toggle-history", ());
+                        }
+                    }
+                    "menu-settings" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("window-shown", ());
+                            let _ = window.emit("open-settings-panel", ());
+                        }
+                    }
+                    "menu-new-document" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-new-document", ());
+                        }
+                    }
+                    "menu-export" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-export", ());
+                        }
+                    }
+                    "menu-copy-and-close" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-copy-and-close", ());
+                        }
+                    }
+                    _ => {}
+                });
             }
 
             // Tray icon menu: Show Editor + History… + Settings… + Quit
@@ -131,6 +220,7 @@ pub fn run() {
             commands::get_history_entry,
             commands::get_settings,
             commands::save_settings,
+            commands::set_history_panel_open,
         ])
         .on_window_event(|window, event| {
             // Intercept close request → hide instead of quitting

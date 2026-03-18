@@ -4,16 +4,18 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri::menu::CheckMenuItem;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 // ---------------------------------------------------------------------------
-// App state: tracks the currently registered global shortcut
+// App state: tracks the currently registered global shortcut and menu items
 // ---------------------------------------------------------------------------
 
 pub struct AppState {
     pub current_shortcut: Mutex<Option<Shortcut>>,
+    pub history_menu_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -321,5 +323,16 @@ pub async fn export_file(
         Some(FilePath::Path(p)) => fs::write(&p, content).map_err(|e| e.to_string()),
         Some(_) => Err("Unsupported file path type".to_string()),
         None => Ok(()), // user cancelled
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Menu state sync
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
+    if let Some(item) = state.history_menu_item.lock().unwrap().as_ref() {
+        let _ = item.set_checked(open);
     }
 }
