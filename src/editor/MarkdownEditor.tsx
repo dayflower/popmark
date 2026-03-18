@@ -159,6 +159,7 @@ function CodeExitPlugin() {
 
 interface EditorPluginsProps {
   setIsHistoryOpen: (open: boolean) => void;
+  onToggleHistory: () => void;
   setIsSettingsOpen: (open: boolean) => void;
   pendingContent: string | null;
   onPendingConsumed: () => void;
@@ -169,6 +170,7 @@ interface EditorPluginsProps {
 // Handles draft load/save, keyboard shortcuts, and panel event listening
 function EditorPlugins({
   setIsHistoryOpen,
+  onToggleHistory,
   setIsSettingsOpen,
   pendingContent,
   onPendingConsumed,
@@ -245,7 +247,7 @@ function EditorPlugins({
     };
   }, [editor]);
 
-  // Listen for "open-history-panel" event emitted by the tray menu
+  // Listen for "open-history-panel" event emitted by the tray menu (open-only)
   useEffect(() => {
     const unlisten = listen("open-history-panel", () => {
       setIsHistoryOpen(true);
@@ -254,6 +256,16 @@ function EditorPlugins({
       unlisten.then((fn) => fn());
     };
   }, [setIsHistoryOpen]);
+
+  // Listen for menu bar View > History toggle event
+  useEffect(() => {
+    const unlisten = listen("menu-toggle-history", () => {
+      onToggleHistory();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [onToggleHistory]);
 
   // Listen for "open-settings-panel" event emitted by the tray menu
   useEffect(() => {
@@ -356,6 +368,7 @@ export function MarkdownEditor() {
         <CodeExitPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
+          onToggleHistory={() => setIsHistoryOpen((v) => !v)}
           setIsSettingsOpen={setIsSettingsOpen}
           pendingContent={pendingContent}
           onPendingConsumed={handlePendingConsumed}

@@ -23,13 +23,13 @@ pub fn run() {
             current_shortcut: Mutex::new(None),
         })
         .setup(|app| {
-            // macOS system menu bar: popmark menu + File menu + Edit menu
+            // macOS system menu bar: popmark menu + File menu + View menu + Edit menu
             #[cfg(target_os = "macos")]
             {
-                let menu_history_item = MenuItem::with_id(
+                let menu_toggle_history_item = MenuItem::with_id(
                     app,
-                    "menu-history",
-                    "History\u{2026}",
+                    "menu-toggle-history",
+                    "History",
                     true,
                     Some("cmd+h"),
                 )?;
@@ -71,7 +71,6 @@ pub fn run() {
                             &[
                                 &PredefinedMenuItem::about(app, None, None)?,
                                 &PredefinedMenuItem::separator(app)?,
-                                &menu_history_item,
                                 &menu_settings_item,
                                 &PredefinedMenuItem::separator(app)?,
                                 &PredefinedMenuItem::quit(app, None)?,
@@ -87,6 +86,12 @@ pub fn run() {
                                 &menu_export_item,
                                 &menu_copy_close_item,
                             ],
+                        )?,
+                        &Submenu::with_items(
+                            app,
+                            "View",
+                            true,
+                            &[&menu_toggle_history_item],
                         )?,
                         &Submenu::with_items(
                             app,
@@ -106,12 +111,9 @@ pub fn run() {
                 )?;
                 app.set_menu(menu)?;
                 app.on_menu_event(|app, event| match event.id().as_ref() {
-                    "menu-history" => {
+                    "menu-toggle-history" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.emit("window-shown", ());
-                            let _ = window.emit("open-history-panel", ());
+                            let _ = window.emit("menu-toggle-history", ());
                         }
                     }
                     "menu-settings" => {
