@@ -1,11 +1,11 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* Checklist (task list) styles for Lexical CheckListPlugin */
 li[role="checkbox"] {
   list-style: none;
   position: relative;
   padding-left: 1.75em;
-  margin-left: -1.75em;
   outline: none;
   cursor: text;
 }

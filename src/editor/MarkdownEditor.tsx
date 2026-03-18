@@ -15,6 +15,7 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
@@ -192,7 +193,7 @@ export function MarkdownEditor() {
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         <RichTextPlugin
           contentEditable={
-            <ContentEditable className="h-full p-4 outline-none text-gray-900 dark:text-gray-100" />
+            <ContentEditable className="h-full p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
           }
           placeholder={
             <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
@@ -204,6 +205,7 @@ export function MarkdownEditor() {
         <HistoryPlugin />
         <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
         <HorizontalRulePlugin />
+        <ListPlugin />
         <CheckListPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
