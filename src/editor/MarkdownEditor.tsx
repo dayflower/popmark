@@ -199,14 +199,6 @@ function EditorPlugins({
   }, [editor]);
 
   useEffect(() => {
-    function handleFocus() {
-      loadDraft(editor);
-    }
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [editor]);
-
-  useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Enter" && e.metaKey) {
         e.preventDefault();
@@ -321,7 +313,7 @@ export function MarkdownEditor() {
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         <RichTextPlugin
           contentEditable={
-            <ContentEditable className="h-full p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
+            <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
           }
           placeholder={
             <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
