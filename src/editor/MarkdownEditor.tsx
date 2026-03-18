@@ -1,4 +1,4 @@
-import { CodeHighlightNode, CodeNode } from "@lexical/code";
+import { $isCodeNode, CodeHighlightNode, CodeNode, registerCodeHighlighting } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import {
@@ -8,6 +8,7 @@ import {
   TRANSFORMERS,
 } from "@lexical/markdown";
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -19,17 +20,30 @@ import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { EditorState } from "lexical";
+import {
+  $createParagraphNode,
+  $getSelection,
+  $isRangeSelection,
+  COMMAND_PRIORITY_LOW,
+  type EditorState,
+  KEY_ARROW_DOWN_COMMAND,
+} from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { Toolbar } from "../components/Toolbar";
 import { useHistory } from "../hooks/useHistory";
 
-const CUSTOM_TRANSFORMERS = [CHECK_LIST, ...TRANSFORMERS];
+// Support both "- [ ] " and "-[ ] " (with or without space between dash and bracket)
+const CUSTOM_CHECK_LIST = {
+  ...CHECK_LIST,
+  regExp: /^(\s*)[-*+]\s?(\[(\s|x)?\])\s/i,
+};
+const CUSTOM_TRANSFORMERS = [CUSTOM_CHECK_LIST, ...TRANSFORMERS];
 
 const initialConfig = {
   namespace: "popmark",
@@ -55,6 +69,42 @@ function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
       $convertFromMarkdownString(content ?? "", CUSTOM_TRANSFORMERS);
     });
   });
+}
+
+function CodeHighlightPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return registerCodeHighlighting(editor);
+  }, [editor]);
+  return null;
+}
+
+// Allows exiting a code block by pressing ArrowDown at the last line
+function CodeExitPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerCommand(
+      KEY_ARROW_DOWN_COMMAND,
+      (e) => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        const anchorNode = selection.anchor.getNode();
+        const parent = anchorNode.getParent();
+        if (!$isCodeNode(parent)) return false;
+        if (anchorNode !== parent.getLastChild()) return false;
+        if (selection.anchor.offset < anchorNode.getTextContentSize()) return false;
+        e?.preventDefault();
+        editor.update(() => {
+          const para = $createParagraphNode();
+          parent.insertAfter(para);
+          para.select();
+        });
+        return true;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+  }, [editor]);
+  return null;
 }
 
 interface EditorPluginsProps {
@@ -205,8 +255,12 @@ export function MarkdownEditor() {
         <HistoryPlugin />
         <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
         <HorizontalRulePlugin />
+        <CodeHighlightPlugin />
         <ListPlugin />
         <CheckListPlugin />
+        <TabIndentationPlugin />
+        <ClickableLinkPlugin newTab={false} />
+        <CodeExitPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
           setIsSettingsOpen={setIsSettingsOpen}

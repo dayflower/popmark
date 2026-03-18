@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Reduce prose paragraph spacing for scratchpad use */
+.prose :where(p):not(:where([class~="not-prose"] *)) {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
 /* Checklist (task list) styles for Lexical CheckListPlugin */
 li[role="checkbox"] {
   list-style: none;
