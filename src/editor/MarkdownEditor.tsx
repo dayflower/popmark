@@ -1,11 +1,14 @@
-import { CodeHighlightNode, CodeNode } from "@lexical/code";
+import { $isCodeNode, CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
+  CHECK_LIST,
   TRANSFORMERS,
 } from "@lexical/markdown";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -13,18 +16,38 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { EditorState } from "lexical";
+import {
+  $createLineBreakNode,
+  $createParagraphNode,
+  $getSelection,
+  $isRangeSelection,
+  $isTextNode,
+  COMMAND_PRIORITY_HIGH,
+  COMMAND_PRIORITY_LOW,
+  type EditorState,
+  KEY_ARROW_DOWN_COMMAND,
+  KEY_ENTER_COMMAND,
+} from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { Toolbar } from "../components/Toolbar";
 import { useHistory } from "../hooks/useHistory";
+
+// Support both "- [ ] " and "-[ ] " (with or without space between dash and bracket)
+const CUSTOM_CHECK_LIST = {
+  ...CHECK_LIST,
+  regExp: /^(\s*)[-*+]\s?(\[(\s|x)?\])\s/i,
+};
+const CUSTOM_TRANSFORMERS = [CUSTOM_CHECK_LIST, ...TRANSFORMERS];
 
 const initialConfig = {
   namespace: "popmark",
@@ -47,9 +70,90 @@ const initialConfig = {
 function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
   invoke<string>("get_draft").then((content) => {
     editor.update(() => {
-      $convertFromMarkdownString(content ?? "", TRANSFORMERS);
+      $convertFromMarkdownString(content ?? "", CUSTOM_TRANSFORMERS);
     });
   });
+}
+
+// Handles Enter key inside code blocks:
+// - Typing "```" then Enter exits the code block
+// - Prevents double-Enter from exiting (built-in CodeNode behavior)
+function CodeEnterPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerCommand(
+      KEY_ENTER_COMMAND,
+      (e) => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        const anchorNode = selection.anchor.getNode();
+
+        // Case 1: cursor is on CodeNode element itself (double-Enter exit would fire)
+        if ($isCodeNode(anchorNode)) {
+          e?.preventDefault();
+          editor.update(() => {
+            // Move cursor back inside the code block to prevent exit
+            const lastDescendant = anchorNode.getLastDescendant();
+            if (lastDescendant && $isTextNode(lastDescendant)) {
+              lastDescendant.select(lastDescendant.getTextContentSize());
+            } else {
+              const lineBreak = $createLineBreakNode();
+              anchorNode.append(lineBreak);
+            }
+          });
+          return true;
+        }
+
+        // Case 2: cursor is inside a code block text node
+        const parent = anchorNode.getParent();
+        if (!$isCodeNode(parent)) return false;
+
+        // "```" on the current line → exit the code block
+        if (anchorNode.getTextContent() === "```") {
+          e?.preventDefault();
+          editor.update(() => {
+            anchorNode.remove();
+            const para = $createParagraphNode();
+            parent.insertAfter(para);
+            para.select();
+          });
+          return true;
+        }
+
+        return false;
+      },
+      COMMAND_PRIORITY_HIGH,
+    );
+  }, [editor]);
+  return null;
+}
+
+// Allows exiting a code block by pressing ArrowDown at the last line
+function CodeExitPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerCommand(
+      KEY_ARROW_DOWN_COMMAND,
+      (e) => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        const anchorNode = selection.anchor.getNode();
+        const parent = anchorNode.getParent();
+        if (!$isCodeNode(parent)) return false;
+        if (anchorNode !== parent.getLastChild()) return false;
+        if (selection.anchor.offset < anchorNode.getTextContentSize()) return false;
+        e?.preventDefault();
+        editor.update(() => {
+          const para = $createParagraphNode();
+          parent.insertAfter(para);
+          para.select();
+        });
+        return true;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+  }, [editor]);
+  return null;
 }
 
 interface EditorPluginsProps {
@@ -96,7 +200,7 @@ function EditorPlugins({
       if (e.key === "Enter" && e.metaKey) {
         e.preventDefault();
         editor.getEditorState().read(() => {
-          const content = $convertToMarkdownString(TRANSFORMERS);
+          const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
           invoke("copy_and_close", { content });
         });
       }
@@ -131,7 +235,7 @@ function EditorPlugins({
 
     let hasContent = false;
     editor.getEditorState().read(() => {
-      const text = $convertToMarkdownString(TRANSFORMERS);
+      const text = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
       hasContent = text.trim().length > 0;
     });
 
@@ -141,7 +245,7 @@ function EditorPlugins({
     }
 
     editor.update(() => {
-      $convertFromMarkdownString(pendingContent, TRANSFORMERS);
+      $convertFromMarkdownString(pendingContent, CUSTOM_TRANSFORMERS);
     });
     onPendingConsumed();
   }, [editor, pendingContent, onPendingConsumed]);
@@ -150,7 +254,7 @@ function EditorPlugins({
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       editorState.read(() => {
-        const content = $convertToMarkdownString(TRANSFORMERS);
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
         invoke("save_draft", { content });
       });
     }, 500);
@@ -188,7 +292,7 @@ export function MarkdownEditor() {
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         <RichTextPlugin
           contentEditable={
-            <ContentEditable className="h-full p-4 outline-none text-gray-900 dark:text-gray-100" />
+            <ContentEditable className="h-full p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
           }
           placeholder={
             <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
@@ -198,8 +302,14 @@ export function MarkdownEditor() {
           ErrorBoundary={LexicalErrorBoundary}
         />
         <HistoryPlugin />
-        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+        <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
         <HorizontalRulePlugin />
+        <ListPlugin />
+        <CheckListPlugin />
+        <TabIndentationPlugin />
+        <ClickableLinkPlugin newTab={false} />
+        <CodeEnterPlugin />
+        <CodeExitPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
           setIsSettingsOpen={setIsSettingsOpen}
