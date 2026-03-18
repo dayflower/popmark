@@ -24,6 +24,7 @@ import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   $createLineBreakNode,
   $createParagraphNode,
@@ -161,6 +162,8 @@ interface EditorPluginsProps {
   setIsSettingsOpen: (open: boolean) => void;
   pendingContent: string | null;
   onPendingConsumed: () => void;
+  newDocTrigger: number;
+  onNew: () => void;
 }
 
 // Handles draft load/save, keyboard shortcuts, and panel event listening
@@ -169,6 +172,8 @@ function EditorPlugins({
   setIsSettingsOpen,
   pendingContent,
   onPendingConsumed,
+  newDocTrigger,
+  onNew,
 }: EditorPluginsProps) {
   const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -176,6 +181,12 @@ function EditorPlugins({
   useEffect(() => {
     loadDraft(editor);
   }, [editor]);
+
+  // Reload editor after new_document IPC clears the draft
+  useEffect(() => {
+    if (newDocTrigger === 0) return;
+    loadDraft(editor);
+  }, [newDocTrigger, editor]);
 
   // Auto-focus editor when the window is shown via global shortcut or tray
   useEffect(() => {
@@ -188,14 +199,6 @@ function EditorPlugins({
   }, [editor]);
 
   useEffect(() => {
-    function handleFocus() {
-      loadDraft(editor);
-    }
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [editor]);
-
-  useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Enter" && e.metaKey) {
         e.preventDefault();
@@ -203,11 +206,21 @@ function EditorPlugins({
           const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
           invoke("copy_and_close", { content });
         });
+        return;
+      }
+      if (e.key === "n" && e.metaKey) {
+        e.preventDefault();
+        onNew();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        getCurrentWindow().hide();
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor]);
+  }, [editor, onNew]);
 
   // Listen for "open-history-panel" event emitted by the tray menu
   useEffect(() => {
@@ -267,7 +280,14 @@ export function MarkdownEditor() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [pendingContent, setPendingContent] = useState<string | null>(null);
+  const [newDocTrigger, setNewDocTrigger] = useState(0);
   const { getEntry } = useHistory();
+
+  const handleNew = useCallback(() => {
+    invoke("new_document").then(() => {
+      setNewDocTrigger((n) => n + 1);
+    });
+  }, []);
 
   const handleLoadEntry = useCallback(
     async (id: string) => {
@@ -286,13 +306,14 @@ export function MarkdownEditor() {
     <LexicalComposer initialConfig={initialConfig}>
       <Toolbar
         isHistoryOpen={isHistoryOpen}
+        onNew={handleNew}
         onToggleHistory={() => setIsHistoryOpen((v) => !v)}
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         <RichTextPlugin
           contentEditable={
-            <ContentEditable className="h-full p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
+            <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
           }
           placeholder={
             <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
@@ -315,6 +336,8 @@ export function MarkdownEditor() {
           setIsSettingsOpen={setIsSettingsOpen}
           pendingContent={pendingContent}
           onPendingConsumed={handlePendingConsumed}
+          newDocTrigger={newDocTrigger}
+          onNew={handleNew}
         />
         <HistoryPanel
           isOpen={isHistoryOpen}
