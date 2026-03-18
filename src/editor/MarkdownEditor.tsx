@@ -200,19 +200,6 @@ function EditorPlugins({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Enter" && e.metaKey) {
-        e.preventDefault();
-        editor.getEditorState().read(() => {
-          const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-          invoke("copy_and_close", { content });
-        });
-        return;
-      }
-      if (e.key === "n" && e.metaKey) {
-        e.preventDefault();
-        onNew();
-        return;
-      }
       if (e.key === "Escape") {
         e.preventDefault();
         getCurrentWindow().hide();
@@ -220,7 +207,43 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, onNew]);
+  }, []);
+
+  // Listen for menu bar "New Document" event
+  useEffect(() => {
+    const unlisten = listen("menu-new-document", () => {
+      onNew();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [onNew]);
+
+  // Listen for menu bar "Export…" event
+  useEffect(() => {
+    const unlisten = listen("menu-export", () => {
+      editor.getEditorState().read(() => {
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        invoke("export_file", { content });
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [editor]);
+
+  // Listen for menu bar "Copy & Close" event
+  useEffect(() => {
+    const unlisten = listen("menu-copy-and-close", () => {
+      editor.getEditorState().read(() => {
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        invoke("copy_and_close", { content });
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [editor]);
 
   // Listen for "open-history-panel" event emitted by the tray menu
   useEffect(() => {

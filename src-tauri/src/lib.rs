@@ -23,9 +23,44 @@ pub fn run() {
             current_shortcut: Mutex::new(None),
         })
         .setup(|app| {
-            // macOS system menu bar: App menu + Edit menu
+            // macOS system menu bar: popmark menu + File menu + Edit menu
             #[cfg(target_os = "macos")]
             {
+                let menu_history_item = MenuItem::with_id(
+                    app,
+                    "menu-history",
+                    "History\u{2026}",
+                    true,
+                    Some("cmd+h"),
+                )?;
+                let menu_settings_item = MenuItem::with_id(
+                    app,
+                    "menu-settings",
+                    "Settings\u{2026}",
+                    true,
+                    Some("cmd+,"),
+                )?;
+                let menu_new_item = MenuItem::with_id(
+                    app,
+                    "menu-new-document",
+                    "New Document",
+                    true,
+                    Some("cmd+n"),
+                )?;
+                let menu_export_item = MenuItem::with_id(
+                    app,
+                    "menu-export",
+                    "Export\u{2026}",
+                    true,
+                    Some("cmd+s"),
+                )?;
+                let menu_copy_close_item = MenuItem::with_id(
+                    app,
+                    "menu-copy-and-close",
+                    "Copy & Close",
+                    true,
+                    Some("cmd+return"),
+                )?;
                 let menu = Menu::with_items(
                     app,
                     &[
@@ -36,7 +71,21 @@ pub fn run() {
                             &[
                                 &PredefinedMenuItem::about(app, None, None)?,
                                 &PredefinedMenuItem::separator(app)?,
+                                &menu_history_item,
+                                &menu_settings_item,
+                                &PredefinedMenuItem::separator(app)?,
                                 &PredefinedMenuItem::quit(app, None)?,
+                            ],
+                        )?,
+                        &Submenu::with_items(
+                            app,
+                            "File",
+                            true,
+                            &[
+                                &menu_new_item,
+                                &PredefinedMenuItem::separator(app)?,
+                                &menu_export_item,
+                                &menu_copy_close_item,
                             ],
                         )?,
                         &Submenu::with_items(
@@ -56,6 +105,40 @@ pub fn run() {
                     ],
                 )?;
                 app.set_menu(menu)?;
+                app.on_menu_event(|app, event| match event.id().as_ref() {
+                    "menu-history" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("window-shown", ());
+                            let _ = window.emit("open-history-panel", ());
+                        }
+                    }
+                    "menu-settings" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("window-shown", ());
+                            let _ = window.emit("open-settings-panel", ());
+                        }
+                    }
+                    "menu-new-document" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-new-document", ());
+                        }
+                    }
+                    "menu-export" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-export", ());
+                        }
+                    }
+                    "menu-copy-and-close" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-copy-and-close", ());
+                        }
+                    }
+                    _ => {}
+                });
             }
 
             // Tray icon menu: Show Editor + History… + Settings… + Quit
