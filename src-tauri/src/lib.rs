@@ -3,7 +3,7 @@ mod commands;
 use commands::AppState;
 use std::sync::Mutex;
 use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
+    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
     Emitter, Manager,
 };
@@ -21,16 +21,18 @@ pub fn run() {
         ))
         .manage(AppState {
             current_shortcut: Mutex::new(None),
+            history_menu_item: Mutex::new(None),
         })
         .setup(|app| {
             // macOS system menu bar: popmark menu + File menu + View menu + Edit menu
             #[cfg(target_os = "macos")]
             {
-                let menu_toggle_history_item = MenuItem::with_id(
+                let menu_toggle_history_item = CheckMenuItem::with_id(
                     app,
                     "menu-toggle-history",
                     "History",
                     true,
+                    false,
                     Some("cmd+h"),
                 )?;
                 let menu_settings_item = MenuItem::with_id(
@@ -110,6 +112,8 @@ pub fn run() {
                     ],
                 )?;
                 app.set_menu(menu)?;
+                *app.state::<AppState>().history_menu_item.lock().unwrap() =
+                    Some(menu_toggle_history_item);
                 app.on_menu_event(|app, event| match event.id().as_ref() {
                     "menu-toggle-history" => {
                         if let Some(window) = app.get_webview_window("main") {
@@ -216,6 +220,7 @@ pub fn run() {
             commands::get_history_entry,
             commands::get_settings,
             commands::save_settings,
+            commands::set_history_panel_open,
         ])
         .on_window_event(|window, event| {
             // Intercept close request → hide instead of quitting

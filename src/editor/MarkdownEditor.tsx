@@ -337,6 +337,11 @@ export function MarkdownEditor() {
     setPendingContent(null);
   }, []);
 
+  // Sync history panel open state to the View > History menu item checkmark
+  useEffect(() => {
+    invoke("set_history_panel_open", { open: isHistoryOpen });
+  }, [isHistoryOpen]);
+
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <Toolbar
