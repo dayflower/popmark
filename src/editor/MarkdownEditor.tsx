@@ -1,4 +1,4 @@
-import { $isCodeNode, CodeHighlightNode, CodeNode, registerCodeHighlighting } from "@lexical/code";
+import { $isCodeNode, CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import {
@@ -25,12 +25,16 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
+  $createLineBreakNode,
   $createParagraphNode,
   $getSelection,
   $isRangeSelection,
+  $isTextNode,
+  COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   type EditorState,
   KEY_ARROW_DOWN_COMMAND,
+  KEY_ENTER_COMMAND,
 } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
@@ -71,10 +75,55 @@ function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
   });
 }
 
-function CodeHighlightPlugin() {
+// Handles Enter key inside code blocks:
+// - Typing "```" then Enter exits the code block
+// - Prevents double-Enter from exiting (built-in CodeNode behavior)
+function CodeEnterPlugin() {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
-    return registerCodeHighlighting(editor);
+    return editor.registerCommand(
+      KEY_ENTER_COMMAND,
+      (e) => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        const anchorNode = selection.anchor.getNode();
+
+        // Case 1: cursor is on CodeNode element itself (double-Enter exit would fire)
+        if ($isCodeNode(anchorNode)) {
+          e?.preventDefault();
+          editor.update(() => {
+            // Move cursor back inside the code block to prevent exit
+            const lastDescendant = anchorNode.getLastDescendant();
+            if (lastDescendant && $isTextNode(lastDescendant)) {
+              lastDescendant.select(lastDescendant.getTextContentSize());
+            } else {
+              const lineBreak = $createLineBreakNode();
+              anchorNode.append(lineBreak);
+            }
+          });
+          return true;
+        }
+
+        // Case 2: cursor is inside a code block text node
+        const parent = anchorNode.getParent();
+        if (!$isCodeNode(parent)) return false;
+
+        // "```" on the current line → exit the code block
+        if (anchorNode.getTextContent() === "```") {
+          e?.preventDefault();
+          editor.update(() => {
+            anchorNode.remove();
+            const para = $createParagraphNode();
+            parent.insertAfter(para);
+            para.select();
+          });
+          return true;
+        }
+
+        return false;
+      },
+      COMMAND_PRIORITY_HIGH,
+    );
   }, [editor]);
   return null;
 }
@@ -255,11 +304,11 @@ export function MarkdownEditor() {
         <HistoryPlugin />
         <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
         <HorizontalRulePlugin />
-        <CodeHighlightPlugin />
         <ListPlugin />
         <CheckListPlugin />
         <TabIndentationPlugin />
         <ClickableLinkPlugin newTab={false} />
+        <CodeEnterPlugin />
         <CodeExitPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}

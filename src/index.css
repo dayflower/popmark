@@ -7,6 +7,14 @@
   margin-bottom: 0.25em;
 }
 
+/* Reduce list bullet/marker-to-text spacing */
+.prose :where(ul, ol):not(:where([class~="not-prose"] *)) {
+  padding-inline-start: 1.25em;
+}
+.prose :where(li):not(:where([class~="not-prose"] *)) {
+  padding-inline-start: 0.25em;
+}
+
 /* Checklist (task list) styles for Lexical CheckListPlugin */
 li[role="checkbox"] {
   list-style: none;
