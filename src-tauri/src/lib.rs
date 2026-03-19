@@ -82,7 +82,7 @@ pub fn run() {
                     &[
                         &Submenu::with_items(
                             app,
-                            "popmark",
+                            "Popmark",
                             true,
                             &[
                                 &PredefinedMenuItem::about(app, None, None)?,
@@ -209,7 +209,7 @@ pub fn run() {
             let settings_item =
                 MenuItem::with_id(app, "open-settings", "Settings\u{2026}", true, None::<&str>)?;
             let quit_item =
-                MenuItem::with_id(app, "quit-popmark", "Quit popmark", true, None::<&str>)?;
+                MenuItem::with_id(app, "quit-popmark", "Quit Popmark", true, None::<&str>)?;
             let tray_menu = Menu::with_items(
                 app,
                 &[
