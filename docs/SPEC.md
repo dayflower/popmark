@@ -1,15 +1,15 @@
-# popmark — Application Specification
+# Popmark — Application Specification
 
 ## 1. Overview
 
-**popmark** is a macOS application with a tray icon and standard menu bar that provides a quick-access Markdown WYSIWYG editor. The primary workflow is:
+**Popmark** is a macOS application with a tray icon and standard menu bar that provides a quick-access Markdown WYSIWYG editor. The primary workflow is:
 
 1. Press a global shortcut → editor window appears
 2. Write Markdown content
-3. Press "Copy & Close" → content is copied to clipboard as Markdown, window disappears
+3. Press "Send to Clipboard" → content is copied to clipboard as Markdown, window disappears
 4. Past documents remain accessible via a history list
 
-popmark is not a file manager or a notes app. It is a fast scratch pad optimized for drafting Markdown and pushing it to the clipboard.
+Popmark is not a file manager or a notes app. It is a fast scratch pad optimized for drafting Markdown and pushing it to the clipboard.
 
 ---
 
@@ -29,7 +29,8 @@ popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 - The app runs as a standard macOS application: Dock icon is visible, appears in Cmd+Tab, and the standard macOS menu bar is active when the editor window is focused.
 - A tray icon also appears in the macOS status bar for quick access.
 - The process starts at login (user-configurable via Settings).
-- The app never quits unless the user explicitly selects "Quit popmark" from the tray menu or presses Cmd+Q.
+- The app never quits unless the user explicitly selects "Quit Popmark" from the tray menu or presses Cmd+Q.
+- Clicking the Dock icon when the editor window is hidden shows and focuses the editor window.
 - The editor window is hidden by default; it appears only when triggered by the global hotkey or tray menu.
 
 ---
@@ -91,13 +92,12 @@ Inter-document links (wiki-links, `[[…]]`) are **not supported**.
 
 A minimal toolbar appears at the top of the editor window:
 
-| Button / Control | Action                        |
-|------------------|-------------------------------|
-| New              | Auto-save draft to history (if non-empty), clear draft, start new document |
-| Copy & Close     | Copy Markdown, save to history, clear draft, hide window |
-| History          | Open/close the history panel  |
-| Export…          | Save current content as `.md` via save dialog |
-| ⚙ Settings       | Open settings panel (hotkey, startup, etc.) |
+| Button / Control  | Action                        |
+|-------------------|-------------------------------|
+| New               | Auto-save draft to history (if non-empty), clear draft, start new document |
+| Send to Clipboard | Copy Markdown, save to history, clear draft, hide window |
+| History           | Open/close the history panel  |
+| Export…           | Save current content as `.md` via save dialog |
 
 ---
 
@@ -110,13 +110,13 @@ A minimal toolbar appears at the top of the editor window:
   ```
 - When the editor window is opened, the saved draft is restored automatically.
 - The user is never asked to "save" manually; the draft is always up to date.
-- If the draft is empty (just after Copy & Close or on first launch), the editor opens blank.
+- If the draft is empty (just after Send to Clipboard or on first launch), the editor opens blank.
 
 ---
 
-## 8. Copy & Close
+## 8. Send to Clipboard
 
-Triggered by the "Copy & Close" toolbar button (keyboard shortcut: `⌘Return`).
+Triggered by the "Send to Clipboard" toolbar button (keyboard shortcut: `⌘Return`).
 
 **Steps executed in order:**
 
@@ -151,6 +151,7 @@ The history panel is accessible via the "History" toolbar button. It opens as a 
 | Load with non-empty draft | Show a confirmation dialog before replacing |
 | (Future) Delete entry | Remove from history permanently |
 
+
 ### 9.4 Storage
 
 Each history entry is stored as an individual Markdown file:
@@ -184,7 +185,7 @@ A small icon in the macOS status bar provides a dropdown menu for quick access:
 | History…           | Show the editor window with history open   |
 | Settings…          | Open settings panel                        |
 | —                  | Separator                                  |
-| Quit popmark       | Terminate the app                          |
+| Quit Popmark       | Terminate the app                          |
 
 ---
 
@@ -192,26 +193,26 @@ A small icon in the macOS status bar provides a dropdown menu for quick access:
 
 The standard macOS menu bar is active when the editor window is focused. It provides:
 
-**popmark menu**
+**Popmark menu**
 
-| Item          | Shortcut | Action                        |
-|---------------|----------|-------------------------------|
-| About popmark |          | Show the About dialog         |
-| —             |          | Separator                     |
-| History…      | ⌘H       | Show editor with history panel open |
-| Settings…     | ⌘,       | Open settings panel           |
-| —             |          | Separator                     |
-| Quit popmark  | ⌘Q       | Terminate the app             |
+| Item           | Shortcut | Action                        |
+|----------------|----------|-------------------------------|
+| About Popmark  |          | Show the About dialog         |
+| —              |          | Separator                     |
+| History…       | ⌘H       | Show editor with history panel open |
+| Settings…      | ⌘,       | Open settings panel           |
+| —              |          | Separator                     |
+| Quit Popmark   | ⌘Q       | Terminate the app             |
 
 **File menu**
 
-| Item          | Shortcut | Action                        |
-|---------------|----------|-------------------------------|
-| New Document  | ⌘N       | Auto-save draft to history (if non-empty), clear draft, start new |
-| —             |          | Separator                     |
-| Export…       | ⌘S       | Save current content as `.md` via save dialog |
-| —             |          | Separator                     |
-| Copy & Close  | ⌘Return  | Copy to clipboard, save to history, clear draft, hide window |
+| Item               | Shortcut | Action                        |
+|--------------------|----------|-------------------------------|
+| New Document       | ⌘N       | Auto-save draft to history (if non-empty), clear draft, start new |
+| —                  |          | Separator                     |
+| Export…            | ⌘S       | Save current content as `.md` via save dialog |
+| —                  |          | Separator                     |
+| Send to Clipboard  | ⌘Return  | Copy to clipboard, save to history, clear draft, hide window |
 
 **Edit menu**
 
@@ -225,11 +226,29 @@ The standard macOS menu bar is active when the editor window is focused. It prov
 | Paste        | ⌘V          | Paste            |
 | Select All   | ⌘A          | Select all text  |
 
+**Window menu**
+
+| Item              | Shortcut | Action                                          |
+|-------------------|----------|-------------------------------------------------|
+| Minimize          | ⌘M       | Minimize the editor window                      |
+| Zoom              |          | Toggle window zoom                              |
+| Enter Full Screen | ⌃⌘F      | Expand the editor window to fill the screen     |
+| —                 |          | Separator                                       |
+| Move to Center    |          | Center the editor window on the active screen   |
+| —                 |          | Separator                                       |
+| Bring All to Front|          | Bring all Popmark windows to the front          |
+
+**Help menu**
+
+| Item          | Shortcut | Action                        |
+|---------------|----------|-------------------------------|
+| Popmark Help  | ⌘?       | Open help documentation       |
+
 ---
 
 ## 12. Settings
 
-Accessible via menu bar > Settings… or toolbar ⚙ button.
+Accessible via menu bar > Settings….
 
 | Setting              | Default            | Description                           |
 |----------------------|--------------------|---------------------------------------|
@@ -242,7 +261,7 @@ Accessible via menu bar > Settings… or toolbar ⚙ button.
 
 ```
 ~/Library/Application Support/popmark/
-├── draft.md               ← Current unsaved draft (empty after Copy & Close)
+├── draft.md               ← Current unsaved draft (empty after Send to Clipboard)
 ├── settings.json          ← User preferences (hotkey, launch-at-login, etc.)
 └── history/
     ├── index.json         ← Ordered metadata list (timestamp, title preview)
