@@ -1,8 +1,8 @@
-# popmark — Requirements
+# Popmark — Requirements
 
 ## 1. Purpose
 
-popmark is a macOS application with a tray icon and standard menu bar, providing a quick-access Markdown scratch pad. The primary goal is to let users draft Markdown text rapidly and push it to the clipboard — not to manage files or organize documents.
+Popmark is a macOS application with a tray icon and standard menu bar, providing a quick-access Markdown scratch pad. The primary goal is to let users draft Markdown text rapidly and push it to the clipboard — not to manage files or organize documents.
 
 ---
 
@@ -10,7 +10,7 @@ popmark is a macOS application with a tray icon and standard menu bar, providing
 
 1. Press a global shortcut → editor window appears, centered on the active screen.
 2. Write Markdown content.
-3. Press "Copy & Close" → content is copied to the clipboard as plain Markdown text; window disappears.
+3. Press "Send to Clipboard" → content is copied to the clipboard as plain Markdown text; window disappears.
 4. Past documents remain accessible via a history list.
 
 ---
@@ -36,9 +36,9 @@ popmark is a macOS application with a tray icon and standard menu bar, providing
 
 ---
 
-## 5. Copy & Close
+## 5. Send to Clipboard
 
-Triggered by the "Copy & Close" button (also available via keyboard shortcut):
+Triggered by the "Send to Clipboard" button (also available via keyboard shortcut):
 
 1. Current editor content is serialized to plain Markdown and written to the system clipboard.
 2. The document is saved to history with a timestamp.
@@ -59,7 +59,7 @@ The next time the editor is opened it shows a blank document.
 
 ## 6. History
 
-- Every document saved via Copy & Close is retained in history (documents are never automatically deleted).
+- Every document saved via Send to Clipboard is retained in history (documents are never automatically deleted).
 - The history panel lists entries in reverse-chronological order (most recent first).
 - Each entry shows a timestamp and a preview of the first line.
 - Clicking an entry loads its content into the editor as the new draft.
@@ -77,10 +77,11 @@ The next time the editor is opened it shows a blank document.
 
 ## 8. App Lifecycle & Menu Bar
 
-- The app runs as a standard macOS application: a Dock icon is visible, and the standard macOS menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Copy & Close), an Edit menu, and access to History and Settings from the app menu. A tray icon also appears in the macOS status bar for quick access.
+- The app runs as a standard macOS application: a Dock icon is visible, and the standard macOS menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Send to Clipboard), an Edit menu, a Window menu, a Help menu, and access to History and Settings from the app menu. A tray icon also appears in the macOS status bar for quick access.
 - The app starts at login (user-configurable).
 - The app **never quits** unless the user explicitly selects "Quit" from the tray menu or presses Cmd+Q. Closing the editor window hides it; it does not terminate the process.
 - The editor window is hidden by default and appears only when triggered by the global hotkey or via the tray menu.
+- Clicking the Dock icon when the editor window is hidden shows the editor window.
 - Pressing Esc hides the editor window.
 
 ---
