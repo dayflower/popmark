@@ -282,7 +282,7 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 |--------------------------|-----------------|----------------------------------------------|
 | `get_draft`              | Rust → React    | Load current draft content on window open    |
 | `save_draft`             | React → Rust    | Persist draft (debounced auto-save)          |
-| `copy_and_close`         | React → Rust    | Copy to clipboard, save history, clear draft |
+| `copy_to_clipboard`      | React → Rust    | Copy to clipboard, save history, clear draft |
 | `list_history`           | Rust → React    | Return history index entries                 |
 | `get_history_entry`      | Rust → React    | Return content of a specific history file    |
 | `export_file`            | React → Rust    | Open save dialog and write file              |

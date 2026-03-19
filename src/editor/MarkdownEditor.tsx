@@ -22,10 +22,10 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { $getNearestNodeOfType } from "@lexical/utils";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { $getNearestNodeOfType } from "@lexical/utils";
 import {
   $createLineBreakNode,
   $createParagraphNode,
@@ -293,12 +293,12 @@ function EditorPlugins({
     };
   }, [editor]);
 
-  // Listen for menu bar "Copy & Close" event
+  // Listen for menu bar "Send to Clipboard" event
   useEffect(() => {
-    const unlisten = listen("menu-copy-and-close", () => {
+    const unlisten = listen("menu-send-to-clipboard", () => {
       editor.getEditorState().read(() => {
         const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-        invoke("copy_and_close", { content });
+        invoke("copy_to_clipboard", { content });
       });
     });
     return () => {
@@ -407,7 +407,6 @@ export function MarkdownEditor() {
         isHistoryOpen={isHistoryOpen}
         onNew={handleNew}
         onToggleHistory={() => setIsHistoryOpen((v) => !v)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
       />
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         <RichTextPlugin

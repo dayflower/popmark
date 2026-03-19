@@ -186,7 +186,7 @@ pub fn save_draft(app: AppHandle, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn copy_and_close(app: AppHandle, content: String) -> Result<(), String> {
+pub fn copy_to_clipboard(app: AppHandle, content: String) -> Result<(), String> {
     // 1. Copy to clipboard
     app.clipboard()
         .write_text(content.clone())
