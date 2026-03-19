@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Popmark is a macOS application with a tray icon and standard menu bar, providing a quick-access Markdown scratch pad. The primary goal is to let users draft Markdown text rapidly and push it to the clipboard — not to manage files or organize documents.
+Popmark is an application with a tray icon and standard menu bar, providing a quick-access Markdown scratch pad. The primary goal is to let users draft Markdown text rapidly and push it to the clipboard — not to manage files or organize documents.
 
 ---
 
@@ -69,7 +69,7 @@ The next time the editor is opened it shows a blank document.
 
 ## 7. Export
 
-- Users can save the current editor content as a `.md` file via a native macOS save dialog.
+- Users can save the current editor content as a `.md` file via a native save dialog.
 - Export does not clear the draft and does not add an entry to history.
 - Export is an optional convenience; it is not the primary workflow.
 
@@ -77,7 +77,7 @@ The next time the editor is opened it shows a blank document.
 
 ## 8. App Lifecycle & Menu Bar
 
-- The app runs as a standard macOS application: a Dock icon is visible, and the standard macOS menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Send to Clipboard), an Edit menu, a Window menu, a Help menu, and access to History and Settings from the app menu. A tray icon also appears in the macOS status bar for quick access.
+- The app runs as a standard application: a Dock icon is visible, and the standard menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Send to Clipboard), an Edit menu, a Window menu, a Help menu, and access to History and Settings from the app menu. A tray icon also appears in the status bar for quick access.
 - The app starts at login (user-configurable).
 - The app **never quits** unless the user explicitly selects "Quit" from the tray menu or presses Cmd+Q. Closing the editor window hides it; it does not terminate the process.
 - The editor window is hidden by default and appears only when triggered by the global hotkey or via the tray menu.
@@ -105,7 +105,7 @@ The following are explicitly **not** required:
 - Tags or categories for history entries
 - Multiple simultaneous editor windows
 - Sync or cloud backup
-- Windows or Linux support
+
 
 ---
 
