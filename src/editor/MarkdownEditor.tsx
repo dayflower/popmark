@@ -261,6 +261,14 @@ function EditorPlugins({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        editor.getEditorState().read(() => {
+          const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+          invoke("copy_to_clipboard", { content });
+        });
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         getCurrentWindow().hide();
@@ -268,7 +276,7 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [editor]);
 
   // Listen for menu bar "New Document" event
   useEffect(() => {
