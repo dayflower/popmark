@@ -1,6 +1,6 @@
 # Project Overview
 
-**popmark** is a macOS menu-bar Markdown scratch-pad built with Tauri 2.x (Rust) + React 19 + Lexical + Tailwind CSS 4. The intended workflow: open with a global hotkey → write Markdown → "Copy & Close" to copy to clipboard. See `docs/REQUIREMENTS.md` for feature scope and `docs/SPEC.md` for technical architecture decisions and planned Tauri IPC API.
+**popmark** is a Markdown scratch-pad built with Tauri 2.x (Rust) + React 19 + Lexical + Tailwind CSS 4. The intended workflow: open with a global hotkey → write Markdown → "Copy & Close" to copy to clipboard. See `docs/REQUIREMENTS.md` for feature scope and `docs/SPEC.md` for technical architecture decisions and planned Tauri IPC API.
 
 # Commands
 

@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**Popmark** is a macOS application with a tray icon and standard menu bar that provides a quick-access Markdown WYSIWYG editor. The primary workflow is:
+**Popmark** is an application with a tray icon and standard menu bar that provides a quick-access Markdown WYSIWYG editor. The primary workflow is:
 
 1. Press a global shortcut → editor window appears
 2. Write Markdown content
@@ -26,8 +26,8 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 ## 3. App Lifecycle
 
-- The app runs as a standard macOS application: Dock icon is visible, appears in Cmd+Tab, and the standard macOS menu bar is active when the editor window is focused.
-- A tray icon also appears in the macOS status bar for quick access.
+- The app runs as a standard application: Dock icon is visible, appears in Cmd+Tab, and the standard menu bar is active when the editor window is focused.
+- A tray icon also appears in the status bar for quick access.
 - The process starts at login (user-configurable via Settings).
 - The app never quits unless the user explicitly selects "Quit Popmark" from the tray menu or presses Cmd+Q.
 - Clicking the Dock icon when the editor window is hidden shows and focuses the editor window.
@@ -50,7 +50,7 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 - **Position:** Centered on the active screen at open time.
 - **Default size:** 700 × 500 px (resizable).
-- **Window style:** Standard macOS window with native title bar. The window can be moved by dragging the title bar in the standard macOS manner. A custom toolbar with action buttons appears below the title bar.
+- **Window style:** Standard window with native title bar. The window can be moved by dragging the title bar. A custom toolbar with action buttons appears below the title bar.
 - **Always on top:** The window appears above other windows but does not forcibly stay on top after losing focus (standard window behavior).
 - **Keyboard shortcut:** `Esc` hides the editor window (regardless of whether a panel is open).
 
@@ -168,7 +168,7 @@ A companion index file (`history/index.json`) maintains the ordered list and met
 
 ## 10. Export
 
-- Opens a native macOS save dialog (via Tauri dialog API).
+- Opens a native save dialog (via Tauri dialog API).
 - Default filename: first line of the document (sanitized) + `.md`.
 - Saves the current editor content as a plain Markdown file.
 - Does **not** clear the draft or add to history.
@@ -177,7 +177,7 @@ A companion index file (`history/index.json`) maintains the ordered list and met
 
 ## 11. Tray Icon
 
-A small icon in the macOS status bar provides a dropdown menu for quick access:
+A small icon in the status bar provides a dropdown menu for quick access:
 
 | Item               | Action                                     |
 |--------------------|--------------------------------------------|
@@ -191,7 +191,7 @@ A small icon in the macOS status bar provides a dropdown menu for quick access:
 
 ## 11a. System Menu Bar
 
-The standard macOS menu bar is active when the editor window is focused. It provides:
+The standard menu bar is active when the editor window is focused. It provides:
 
 **Popmark menu**
 
@@ -312,7 +312,7 @@ The following features are explicitly **not** included in this version:
 - Full-text search across history
 - Tags or categories for history entries
 - Sync / cloud backup
-- Windows or Linux support
+
 
 The following are deferred to a future version:
 
