@@ -1,6 +1,6 @@
 import { $isCodeNode, CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
-import { ListItemNode, ListNode } from "@lexical/list";
+import { $createListNode, $isListItemNode, ListItemNode, ListNode } from "@lexical/list";
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
@@ -25,6 +25,7 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { $getNearestNodeOfType } from "@lexical/utils";
 import {
   $createLineBreakNode,
   $createParagraphNode,
@@ -36,6 +37,7 @@ import {
   type EditorState,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ENTER_COMMAND,
+  KEY_TAB_COMMAND,
 } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
@@ -152,6 +154,63 @@ function CodeExitPlugin() {
         return true;
       },
       COMMAND_PRIORITY_LOW,
+    );
+  }, [editor]);
+  return null;
+}
+
+// Allows exiting list mode by pressing Shift+Tab on a level-1 list item
+function ListShiftTabExitPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerCommand(
+      KEY_TAB_COMMAND,
+      (e) => {
+        if (!e?.shiftKey) return false;
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        const anchorNode = selection.anchor.getNode();
+        const listItem = $getNearestNodeOfType(anchorNode, ListItemNode);
+        if (!listItem) return false;
+        const list = listItem.getParent();
+        if (!(list instanceof ListNode)) return false;
+        // If parent of the list is a ListItemNode, we're nested — let default Shift+Tab handle it
+        if ($isListItemNode(list.getParent())) return false;
+
+        e.preventDefault();
+        editor.update(() => {
+          const para = $createParagraphNode();
+          for (const child of listItem.getChildren()) {
+            para.append(child);
+          }
+          const listChildren = list.getChildren();
+          const itemIndex = listItem.getIndexWithinParent();
+          const afterItems = listChildren.slice(itemIndex + 1);
+
+          if (listChildren.length === 1) {
+            list.replace(para);
+          } else if (itemIndex === 0) {
+            list.insertBefore(para);
+            listItem.remove();
+          } else if (afterItems.length === 0) {
+            list.insertAfter(para);
+            listItem.remove();
+          } else {
+            // Middle: split list — items after go to a new list
+            const newList = $createListNode(list.getListType());
+            for (const item of afterItems) {
+              item.remove();
+              newList.append(item);
+            }
+            list.insertAfter(newList);
+            list.insertAfter(para);
+            listItem.remove();
+          }
+          para.select();
+        });
+        return true;
+      },
+      COMMAND_PRIORITY_HIGH,
     );
   }, [editor]);
   return null;
@@ -371,6 +430,7 @@ export function MarkdownEditor() {
         <ClickableLinkPlugin newTab={false} />
         <CodeEnterPlugin />
         <CodeExitPlugin />
+        <ListShiftTabExitPlugin />
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
           onToggleHistory={() => setIsHistoryOpen((v) => !v)}

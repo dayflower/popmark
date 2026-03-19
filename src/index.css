@@ -1,18 +1,71 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* Reduce prose paragraph spacing for scratchpad use */
+/* Compact spacing: paragraphs */
 .prose :where(p):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+  line-height: 1.45;
 }
 
-/* Reduce list bullet/marker-to-text spacing */
+/* Compact spacing: headings */
+.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *)) {
+  margin-top: 0.3em;
+  margin-bottom: 0.2em;
+}
+
+/* Compact spacing: blockquotes */
+.prose :where(blockquote):not(:where([class~="not-prose"] *)) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+/* Compact spacing: code blocks */
+.prose :where(pre):not(:where([class~="not-prose"] *)) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+/* Compact spacing: top-level lists (keeps existing indent override) */
 .prose :where(ul, ol):not(:where([class~="not-prose"] *)) {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
   padding-inline-start: 1.25em;
 }
+
+/* Compact spacing: nested lists */
+.prose :where(ul ul, ul ol, ol ul, ol ol):not(:where([class~="not-prose"] *)) {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+/* Compact spacing: horizontal rules */
+.prose :where(hr):not(:where([class~="not-prose"] *)) {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+/* Fix: Remove gap between bullet/marker and text; tighten list item margins.
+   prose-sm sets padding-inline-start on both li and ul>li/ol>li separately;
+   zero both to eliminate the gap while keeping list indentation from ul/ol. */
 .prose :where(li):not(:where([class~="not-prose"] *)) {
-  padding-inline-start: 0.25em;
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+  padding-inline-start: 0;
+  line-height: 1.4;
+}
+.prose :where(ul > li, ol > li):not(:where([class~="not-prose"] *)) {
+  padding-inline-start: 0;
+}
+
+/* Fix: Suppress double bullet on Lexical nested list wrapper <li>.
+   Lexical renders indented items as <li><ul><li>text</li></ul></li>;
+   the outer empty li shows an unwanted extra marker.
+   :has() is supported in macOS WKWebView (Safari 16.4+).
+   Checklist li[role="checkbox"] never contains child ul/ol, so unaffected. */
+.prose li:has(> ul):not(:where([class~="not-prose"] *)),
+.prose li:has(> ol):not(:where([class~="not-prose"] *)) {
+  list-style: none;
 }
 
 /* Checklist (task list) styles for Lexical CheckListPlugin */
