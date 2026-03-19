@@ -249,9 +249,10 @@ function EditorPlugins({
     loadDraft(editor);
   }, [newDocTrigger, editor]);
 
-  // Auto-focus editor when the window is shown via global shortcut or tray
+  // Reload draft and auto-focus editor when the window is shown via global shortcut or tray
   useEffect(() => {
     const unlisten = listen("window-shown", () => {
+      loadDraft(editor);
       editor.focus();
     });
     return () => {
