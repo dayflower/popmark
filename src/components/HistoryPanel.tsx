@@ -85,7 +85,7 @@ export function HistoryPanel({ isOpen, onClose, onLoadEntry }: HistoryPanelProps
         {!loading && entries.length === 0 && (
           <div className="px-3 py-8 text-sm text-gray-400 dark:text-gray-500 text-center">
             <div className="mb-1">No history yet</div>
-            <div className="text-xs">Use Copy &amp; Close to save entries here</div>
+            <div className="text-xs">Use Send to Clipboard to save entries here</div>
           </div>
         )}
         {!loading &&

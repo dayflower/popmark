@@ -56,10 +56,10 @@ pub fn run() {
                     true,
                     Some("cmd+s"),
                 )?;
-                let menu_copy_close_item = MenuItem::with_id(
+                let menu_send_to_clipboard_item = MenuItem::with_id(
                     app,
-                    "menu-copy-and-close",
-                    "Copy & Close",
+                    "menu-send-to-clipboard",
+                    "Send to Clipboard",
                     true,
                     Some("cmd+return"),
                 )?;
@@ -86,7 +86,7 @@ pub fn run() {
                                 &menu_new_item,
                                 &PredefinedMenuItem::separator(app)?,
                                 &menu_export_item,
-                                &menu_copy_close_item,
+                                &menu_send_to_clipboard_item,
                             ],
                         )?,
                         &Submenu::with_items(
@@ -138,9 +138,9 @@ pub fn run() {
                             let _ = window.emit("menu-export", ());
                         }
                     }
-                    "menu-copy-and-close" => {
+                    "menu-send-to-clipboard" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-copy-and-close", ());
+                            let _ = window.emit("menu-send-to-clipboard", ());
                         }
                     }
                     _ => {}
@@ -213,7 +213,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_draft,
             commands::save_draft,
-            commands::copy_and_close,
+            commands::copy_to_clipboard,
             commands::new_document,
             commands::export_file,
             commands::list_history,

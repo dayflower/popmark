@@ -6,16 +6,15 @@ interface ToolbarProps {
   isHistoryOpen: boolean;
   onNew: () => void;
   onToggleHistory: () => void;
-  onOpenSettings: () => void;
 }
 
-export function Toolbar({ isHistoryOpen, onNew, onToggleHistory, onOpenSettings }: ToolbarProps) {
+export function Toolbar({ isHistoryOpen, onNew, onToggleHistory }: ToolbarProps) {
   const [editor] = useLexicalComposerContext();
 
-  function handleCopyAndClose() {
+  function handleSendToClipboard() {
     editor.getEditorState().read(() => {
       const content = $convertToMarkdownString(TRANSFORMERS);
-      invoke("copy_and_close", { content });
+      invoke("copy_to_clipboard", { content });
     });
   }
 
@@ -38,11 +37,11 @@ export function Toolbar({ isHistoryOpen, onNew, onToggleHistory, onOpenSettings 
       </button>
       <button
         type="button"
-        onClick={handleCopyAndClose}
+        onClick={handleSendToClipboard}
         className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 cursor-default"
-        title="Copy & Close (⌘Return)"
+        title="Send to Clipboard (⌘Return)"
       >
-        Copy &amp; Close
+        Send to Clipboard
       </button>
       <button
         type="button"
@@ -64,14 +63,6 @@ export function Toolbar({ isHistoryOpen, onNew, onToggleHistory, onOpenSettings 
         title="Export as Markdown file"
       >
         Export…
-      </button>
-      <button
-        type="button"
-        onClick={onOpenSettings}
-        className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 cursor-default"
-        title="Settings"
-      >
-        ⚙ Settings
       </button>
     </div>
   );
