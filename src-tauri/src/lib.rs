@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
-    Emitter, Manager,
+    Emitter, Manager, PhysicalPosition,
 };
 use tauri_plugin_autostart::MacosLauncher;
 
@@ -63,6 +63,20 @@ pub fn run() {
                     true,
                     Some("cmd+return"),
                 )?;
+                let menu_move_to_center_item = MenuItem::with_id(
+                    app,
+                    "menu-move-to-center",
+                    "Move to Center",
+                    true,
+                    None::<&str>,
+                )?;
+                let menu_help_item = MenuItem::with_id(
+                    app,
+                    "menu-help",
+                    "Popmark Help",
+                    true,
+                    Some("cmd+?"),
+                )?;
                 let menu = Menu::with_items(
                     app,
                     &[
@@ -109,6 +123,24 @@ pub fn run() {
                             true,
                             &[&menu_toggle_history_item],
                         )?,
+                        &Submenu::with_items(
+                            app,
+                            "Window",
+                            true,
+                            &[
+                                &PredefinedMenuItem::minimize(app, None)?,
+                                &PredefinedMenuItem::maximize(app, None)?,
+                                &PredefinedMenuItem::fullscreen(app, None)?,
+                                &PredefinedMenuItem::separator(app)?,
+                                &menu_move_to_center_item,
+                            ],
+                        )?,
+                        &Submenu::with_items(
+                            app,
+                            "Help",
+                            true,
+                            &[&menu_help_item],
+                        )?,
                     ],
                 )?;
                 app.set_menu(menu)?;
@@ -142,6 +174,28 @@ pub fn run() {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.emit("menu-send-to-clipboard", ());
                         }
+                    }
+                    "menu-move-to-center" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            // Do NOT use window.center() here. It delegates to NSWindow.center(),
+                            // which per Apple HIG places the window at an "alert position" in the
+                            // upper half of the screen — not the geometric center. Instead,
+                            // manually compute the center of the work area (menu bar + Dock excluded).
+                            if let (Ok(Some(monitor)), Ok(window_size)) =
+                                (window.current_monitor(), window.outer_size())
+                            {
+                                let work_area = monitor.work_area();
+                                let x = work_area.position.x
+                                    + (work_area.size.width as i32 - window_size.width as i32) / 2;
+                                let y = work_area.position.y
+                                    + (work_area.size.height as i32 - window_size.height as i32)
+                                        / 2;
+                                let _ = window.set_position(PhysicalPosition::new(x, y));
+                            }
+                        }
+                    }
+                    "menu-help" => {
+                        // stub: no help documentation yet
                     }
                     _ => {}
                 });
@@ -229,6 +283,22 @@ pub fn run() {
                 let _ = window.hide();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen {
+                has_visible_windows,
+                ..
+            } = event
+            {
+                if !has_visible_windows {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                        let _ = window.emit("window-shown", ());
+                    }
+                }
+            }
+        });
 }
