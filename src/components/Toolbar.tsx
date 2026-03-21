@@ -6,12 +6,28 @@ interface ToolbarProps {
   isHistoryOpen: boolean;
   onNew: () => void;
   onToggleHistory: () => void;
+  editorMode: "rich" | "plain";
+  onModeToggle: () => void;
+  onSendToClipboard?: () => void;
+  onExport?: () => void;
 }
 
-export function Toolbar({ isHistoryOpen, onNew, onToggleHistory }: ToolbarProps) {
+export function Toolbar({
+  isHistoryOpen,
+  onNew,
+  onToggleHistory,
+  editorMode,
+  onModeToggle,
+  onSendToClipboard,
+  onExport,
+}: ToolbarProps) {
   const [editor] = useLexicalComposerContext();
 
   function handleSendToClipboard() {
+    if (onSendToClipboard) {
+      onSendToClipboard();
+      return;
+    }
     editor.getEditorState().read(() => {
       const content = $convertToMarkdownString(TRANSFORMERS);
       invoke("copy_to_clipboard", { content });
@@ -19,6 +35,10 @@ export function Toolbar({ isHistoryOpen, onNew, onToggleHistory }: ToolbarProps)
   }
 
   function handleExport() {
+    if (onExport) {
+      onExport();
+      return;
+    }
     editor.getEditorState().read(() => {
       const content = $convertToMarkdownString(TRANSFORMERS);
       invoke("export_file", { content, defaultName: "note.md" });
@@ -63,6 +83,19 @@ export function Toolbar({ isHistoryOpen, onNew, onToggleHistory }: ToolbarProps)
         title="Export as Markdown file"
       >
         Export…
+      </button>
+      <button
+        type="button"
+        onClick={onModeToggle}
+        className={[
+          "px-3 py-1 text-sm rounded cursor-default ml-auto",
+          editorMode === "plain"
+            ? "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500"
+            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700",
+        ].join(" ")}
+        title="Toggle plain text mode (⌘⇧M)"
+      >
+        {editorMode === "plain" ? "Rich" : "Plain"}
       </button>
     </div>
   );

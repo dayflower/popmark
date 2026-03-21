@@ -274,6 +274,7 @@ pub fn run() {
             commands::get_history_entry,
             commands::get_settings,
             commands::save_settings,
+            commands::save_editor_mode,
             commands::set_history_panel_open,
         ])
         .on_window_event(|window, event| {

@@ -70,14 +70,6 @@ const initialConfig = {
   },
 };
 
-function loadDraft(editor: ReturnType<typeof useLexicalComposerContext>[0]) {
-  invoke<string>("get_draft").then((content) => {
-    editor.update(() => {
-      $convertFromMarkdownString(content ?? "", CUSTOM_TRANSFORMERS);
-    });
-  });
-}
-
 // Handles Enter key inside code blocks:
 // - Typing "```" then Enter exits the code block
 // - Prevents double-Enter from exiting (built-in CodeNode behavior)
@@ -224,6 +216,12 @@ interface EditorPluginsProps {
   onPendingConsumed: () => void;
   newDocTrigger: number;
   onNew: () => void;
+  editorMode: "rich" | "plain";
+  onModeChange: (mode: "rich" | "plain") => void;
+  plainContent: string;
+  setPlainContent: (c: string) => void;
+  modeToggleFnRef: React.MutableRefObject<(() => void) | null>;
+  onFocusPlain: () => void;
 }
 
 // Handles draft load/save, keyboard shortcuts, and panel event listening
@@ -235,34 +233,95 @@ function EditorPlugins({
   onPendingConsumed,
   newDocTrigger,
   onNew,
+  editorMode,
+  onModeChange,
+  plainContent,
+  setPlainContent,
+  modeToggleFnRef,
+  onFocusPlain,
 }: EditorPluginsProps) {
   const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevEditorModeRef = useRef(editorMode);
 
+  const loadDraftForMode = useCallback(
+    (mode: "rich" | "plain") => {
+      invoke<string>("get_draft").then((content) => {
+        if (mode === "plain") {
+          setPlainContent(content ?? "");
+        } else {
+          editor.update(() => {
+            $convertFromMarkdownString(content ?? "", CUSTOM_TRANSFORMERS);
+          });
+        }
+      });
+    },
+    [editor, setPlainContent],
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs only on mount
   useEffect(() => {
-    loadDraft(editor);
-  }, [editor]);
+    loadDraftForMode(editorMode);
+  }, []);
 
   // Reload editor after new_document IPC clears the draft
   useEffect(() => {
     if (newDocTrigger === 0) return;
-    loadDraft(editor);
-  }, [newDocTrigger, editor]);
+    loadDraftForMode(editorMode);
+  }, [newDocTrigger, loadDraftForMode, editorMode]);
 
   // Reload draft and auto-focus editor when the window is shown via global shortcut or tray
   useEffect(() => {
     const unlisten = listen("window-shown", () => {
-      loadDraft(editor);
-      editor.focus();
+      loadDraftForMode(editorMode);
+      if (editorMode === "rich") {
+        editor.focus();
+      } else {
+        onFocusPlain();
+      }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [editor]);
+  }, [editor, editorMode, loadDraftForMode, onFocusPlain]);
+
+  // Load plainContent into editor when switching plain → rich
+  useEffect(() => {
+    if (prevEditorModeRef.current === "plain" && editorMode === "rich") {
+      editor.update(() => {
+        $convertFromMarkdownString(plainContent, CUSTOM_TRANSFORMERS);
+      });
+    }
+    prevEditorModeRef.current = editorMode;
+  }, [editorMode, editor, plainContent]);
+
+  const handleModeToggle = useCallback(() => {
+    if (editorMode === "rich") {
+      editor.getEditorState().read(() => {
+        const md = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        setPlainContent(md);
+        onModeChange("plain");
+      });
+    } else {
+      onModeChange("rich");
+    }
+  }, [editor, editorMode, onModeChange, setPlainContent]);
+
+  // Keep the ref in sync so Toolbar and textarea keydown can call it
+  useEffect(() => {
+    modeToggleFnRef.current = handleModeToggle;
+  }, [handleModeToggle, modeToggleFnRef]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "M") {
+        e.preventDefault();
+        handleModeToggle();
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        // Plain mode handles Cmd+Enter in the textarea's onKeyDown
+        if (editorMode === "plain") return;
         e.preventDefault();
         editor.getEditorState().read(() => {
           const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
@@ -277,7 +336,7 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor]);
+  }, [editor, editorMode, handleModeToggle]);
 
   // Listen for menu bar "New Document" event
   useEffect(() => {
@@ -292,28 +351,36 @@ function EditorPlugins({
   // Listen for menu bar "Export…" event
   useEffect(() => {
     const unlisten = listen("menu-export", () => {
-      editor.getEditorState().read(() => {
-        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-        invoke("export_file", { content });
-      });
+      if (editorMode === "plain") {
+        invoke("export_file", { content: plainContent, defaultName: "note.md" });
+      } else {
+        editor.getEditorState().read(() => {
+          const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+          invoke("export_file", { content, defaultName: "note.md" });
+        });
+      }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [editor]);
+  }, [editor, editorMode, plainContent]);
 
   // Listen for menu bar "Send to Clipboard" event
   useEffect(() => {
     const unlisten = listen("menu-send-to-clipboard", () => {
-      editor.getEditorState().read(() => {
-        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-        invoke("copy_to_clipboard", { content });
-      });
+      if (editorMode === "plain") {
+        invoke("copy_to_clipboard", { content: plainContent });
+      } else {
+        editor.getEditorState().read(() => {
+          const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+          invoke("copy_to_clipboard", { content });
+        });
+      }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [editor]);
+  }, [editor, editorMode, plainContent]);
 
   // Listen for "open-history-panel" event emitted by the tray menu (open-only)
   useEffect(() => {
@@ -345,9 +412,23 @@ function EditorPlugins({
     };
   }, [setIsSettingsOpen]);
 
-  // Load a pending history entry into the editor
+  // Load a pending history entry into the editor or textarea
   useEffect(() => {
     if (pendingContent === null) return;
+
+    if (editorMode === "plain") {
+      if (
+        plainContent.trim().length > 0 &&
+        !window.confirm("Replace current draft with this history entry?")
+      ) {
+        onPendingConsumed();
+        return;
+      }
+      setPlainContent(pendingContent);
+      invoke("save_draft", { content: pendingContent });
+      onPendingConsumed();
+      return;
+    }
 
     let hasContent = false;
     editor.getEditorState().read(() => {
@@ -364,9 +445,10 @@ function EditorPlugins({
       $convertFromMarkdownString(pendingContent, CUSTOM_TRANSFORMERS);
     });
     onPendingConsumed();
-  }, [editor, pendingContent, onPendingConsumed]);
+  }, [editor, pendingContent, onPendingConsumed, editorMode, plainContent, setPlainContent]);
 
   function handleChange(editorState: EditorState) {
+    if (editorMode === "plain") return;
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
       editorState.read(() => {
@@ -379,18 +461,33 @@ function EditorPlugins({
   return <OnChangePlugin onChange={handleChange} />;
 }
 
-export function MarkdownEditor() {
+interface MarkdownEditorProps {
+  editorMode: "rich" | "plain";
+  onModeChange: (mode: "rich" | "plain") => void;
+}
+
+export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [pendingContent, setPendingContent] = useState<string | null>(null);
   const [newDocTrigger, setNewDocTrigger] = useState(0);
+  const [plainContent, setPlainContent] = useState("");
   const { getEntry } = useHistory();
+  const modeToggleFnRef = useRef<(() => void) | null>(null);
+  const plainDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleNew = useCallback(() => {
-    invoke("new_document").then(() => {
-      setNewDocTrigger((n) => n + 1);
-    });
-  }, []);
+    const doNew = () =>
+      invoke("new_document").then(() => {
+        setNewDocTrigger((n) => n + 1);
+      });
+    if (editorMode === "plain") {
+      invoke("save_draft", { content: plainContent }).then(() => doNew());
+    } else {
+      doNew();
+    }
+  }, [editorMode, plainContent]);
 
   const handleLoadEntry = useCallback(
     async (id: string) => {
@@ -405,10 +502,32 @@ export function MarkdownEditor() {
     setPendingContent(null);
   }, []);
 
+  const handleFocusPlain = useCallback(() => {
+    textareaRef.current?.focus();
+  }, []);
+
   // Sync history panel open state to the View > History menu item checkmark
   useEffect(() => {
     invoke("set_history_panel_open", { open: isHistoryOpen });
   }, [isHistoryOpen]);
+
+  function handlePlainChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const value = e.target.value;
+    setPlainContent(value);
+    if (plainDebounceTimerRef.current) clearTimeout(plainDebounceTimerRef.current);
+    plainDebounceTimerRef.current = setTimeout(() => {
+      invoke("save_draft", { content: value });
+    }, 500);
+  }
+
+  function handlePlainKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      invoke("copy_to_clipboard", { content: plainContent });
+      return;
+    }
+    // Escape and Ctrl+Shift+M are handled by window-level listener in EditorPlugins
+  }
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
@@ -416,29 +535,57 @@ export function MarkdownEditor() {
         isHistoryOpen={isHistoryOpen}
         onNew={handleNew}
         onToggleHistory={() => setIsHistoryOpen((v) => !v)}
+        editorMode={editorMode}
+        onModeToggle={() => modeToggleFnRef.current?.()}
+        onSendToClipboard={
+          editorMode === "plain"
+            ? () => invoke("copy_to_clipboard", { content: plainContent })
+            : undefined
+        }
+        onExport={
+          editorMode === "plain"
+            ? () => invoke("export_file", { content: plainContent, defaultName: "note.md" })
+            : undefined
+        }
       />
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
-        <RichTextPlugin
-          contentEditable={
-            <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
-          }
-          placeholder={
-            <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
-              Start writing…
-            </div>
-          }
-          ErrorBoundary={LexicalErrorBoundary}
-        />
-        <HistoryPlugin />
-        <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
-        <HorizontalRulePlugin />
-        <ListPlugin />
-        <CheckListPlugin />
-        <TabIndentationPlugin />
-        <ClickableLinkPlugin newTab={false} />
-        <CodeEnterPlugin />
-        <CodeExitPlugin />
-        <ListShiftTabExitPlugin />
+        {editorMode === "plain" ? (
+          <textarea
+            ref={textareaRef}
+            value={plainContent}
+            onChange={handlePlainChange}
+            onKeyDown={handlePlainKeyDown}
+            className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
+            placeholder="Start writing…"
+            // biome-ignore lint/a11y/noAutofocus: intentional — mirrors rich mode focus behavior
+            autoFocus
+            spellCheck={false}
+          />
+        ) : (
+          <>
+            <RichTextPlugin
+              contentEditable={
+                <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
+              }
+              placeholder={
+                <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
+                  Start writing…
+                </div>
+              }
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            <HistoryPlugin />
+            <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
+            <HorizontalRulePlugin />
+            <ListPlugin />
+            <CheckListPlugin />
+            <TabIndentationPlugin />
+            <ClickableLinkPlugin newTab={false} />
+            <CodeEnterPlugin />
+            <CodeExitPlugin />
+            <ListShiftTabExitPlugin />
+          </>
+        )}
         <EditorPlugins
           setIsHistoryOpen={setIsHistoryOpen}
           onToggleHistory={() => setIsHistoryOpen((v) => !v)}
@@ -447,6 +594,12 @@ export function MarkdownEditor() {
           onPendingConsumed={handlePendingConsumed}
           newDocTrigger={newDocTrigger}
           onNew={handleNew}
+          editorMode={editorMode}
+          onModeChange={onModeChange}
+          plainContent={plainContent}
+          setPlainContent={setPlainContent}
+          modeToggleFnRef={modeToggleFnRef}
+          onFocusPlain={handleFocusPlain}
         />
         <HistoryPanel
           isOpen={isHistoryOpen}
