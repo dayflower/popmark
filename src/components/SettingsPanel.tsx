@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 interface Settings {
   hotkey: string;
   launch_at_login: boolean;
+  editor_mode: string;
 }
 
 interface SettingsPanelProps {
@@ -50,6 +51,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [capturedHotkey, setCapturedHotkey] = useState("alt+m");
   const [isCapturing, setIsCapturing] = useState(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
+  const [editorModeLocal, setEditorModeLocal] = useState("rich");
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Load current settings when panel opens
@@ -59,6 +61,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       setSavedHotkey(s.hotkey);
       setCapturedHotkey(s.hotkey);
       setLaunchAtLogin(s.launch_at_login);
+      setEditorModeLocal(s.editor_mode);
     });
     // Focus the dialog so ESC works immediately
     dialogRef.current?.focus();
@@ -107,7 +110,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   async function handleSave() {
     await invoke("save_settings", {
-      settings: { hotkey: capturedHotkey, launch_at_login: launchAtLogin },
+      settings: {
+        hotkey: capturedHotkey,
+        launch_at_login: launchAtLogin,
+        editor_mode: editorModeLocal,
+      },
     });
     setSavedHotkey(capturedHotkey);
     onClose();

@@ -26,6 +26,12 @@ pub struct AppState {
 pub struct Settings {
     pub hotkey: String,
     pub launch_at_login: bool,
+    #[serde(default = "default_editor_mode")]
+    pub editor_mode: String,
+}
+
+fn default_editor_mode() -> String {
+    "rich".to_string()
 }
 
 impl Default for Settings {
@@ -33,6 +39,7 @@ impl Default for Settings {
         Settings {
             hotkey: "alt+m".to_string(),
             launch_at_login: false,
+            editor_mode: "rich".to_string(),
         }
     }
 }
@@ -163,6 +170,20 @@ pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn save_editor_mode(app: AppHandle, mode: String) -> Result<(), String> {
+    let path = settings_path(&app)?;
+    let mut settings: Settings = if path.exists() {
+        let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&data).unwrap_or_default()
+    } else {
+        Settings::default()
+    };
+    settings.editor_mode = mode;
+    let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+    fs::write(&path, json).map_err(|e| e.to_string())
 }
 
 // ---------------------------------------------------------------------------
