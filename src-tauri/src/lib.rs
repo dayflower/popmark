@@ -21,6 +21,7 @@ pub fn run() {
         ))
         .manage(AppState {
             current_shortcut: Mutex::new(None),
+            current_hotkey_str: Mutex::new(String::new()),
             history_menu_item: Mutex::new(None),
         })
         .setup(|app| {
@@ -276,6 +277,7 @@ pub fn run() {
             commands::save_settings,
             commands::save_editor_mode,
             commands::set_history_panel_open,
+            commands::set_settings_panel_open,
         ])
         .on_window_event(|window, event| {
             // Intercept close request → hide instead of quitting

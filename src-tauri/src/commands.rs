@@ -15,6 +15,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 pub struct AppState {
     pub current_shortcut: Mutex<Option<Shortcut>>,
+    pub current_hotkey_str: Mutex<String>,
     pub history_menu_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
 }
 
@@ -104,7 +105,8 @@ fn extract_title_preview(content: &str) -> String {
 // ---------------------------------------------------------------------------
 
 /// Unregister the previous global shortcut (if any) and register a new one
-/// that toggles window visibility. Persists the active shortcut in AppState.
+/// that shows the window (show-only; ignores the hotkey when already visible).
+/// Persists the active shortcut and hotkey string in AppState.
 pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String> {
     let shortcut: Shortcut = hotkey
         .parse()
@@ -120,9 +122,8 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
         .on_shortcut(shortcut.clone(), move |app, _shortcut, event| {
             if event.state == ShortcutState::Pressed {
                 if let Some(window) = app.get_webview_window("main") {
-                    if window.is_visible().unwrap_or(false) {
-                        let _ = window.hide();
-                    } else {
+                    // R-HK-1: show-only — ignore if already visible
+                    if !window.is_visible().unwrap_or(false) {
                         let _ = window.show();
                         let _ = window.set_focus();
                         let _ = window.emit("window-shown", ());
@@ -133,6 +134,8 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
         .map_err(|e| e.to_string())?;
 
     *current = Some(shortcut);
+    // Save hotkey string for re-registration after Settings panel closes
+    *app.state::<AppState>().current_hotkey_str.lock().unwrap() = hotkey.to_string();
     Ok(())
 }
 
@@ -356,4 +359,23 @@ pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
     if let Some(item) = state.history_menu_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(open);
     }
+}
+
+#[tauri::command]
+pub fn set_settings_panel_open(app: AppHandle, open: bool) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    if open {
+        // R-HK-2: unregister from OS while Settings panel is open
+        let mut current = state.current_shortcut.lock().unwrap();
+        if let Some(old) = current.take() {
+            let _ = app.global_shortcut().unregister(old);
+        }
+    } else {
+        // Re-register using the stored hotkey string
+        let hotkey = state.current_hotkey_str.lock().unwrap().clone();
+        if !hotkey.is_empty() {
+            re_register_shortcut(&app, &hotkey)?;
+        }
+    }
+    Ok(())
 }
