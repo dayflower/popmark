@@ -60,11 +60,12 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 ### 6.1 Rendering Style
 
-The editor uses **source-visible WYSIWYG** (Obsidian style):
+The editor supports two modes, toggled via the toolbar button or **⌘⇧M**:
 
-- Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible in the editor.
-- Visual styling is applied at the same time (font size, weight, color, etc.).
-- The user can edit the raw markers directly, and the styling updates live.
+- **Rich mode** (default): **source-visible WYSIWYG** (Obsidian style) — Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible in the editor while visual styling is applied at the same time (font size, weight, color, etc.). The user can edit the raw markers directly, and the styling updates live.
+- **Plain text mode**: a plain `<textarea>` displays the raw Markdown source. `spellCheck` is disabled and all Lexical formatting plugins are inactive.
+
+Switching **rich → plain** converts the Lexical state to Markdown via `$convertToMarkdownString(CUSTOM_TRANSFORMERS)` and loads it into the textarea. Switching **plain → rich** parses the textarea content back via `$convertFromMarkdownString`. The selected mode is persisted in `settings.json` as `editor_mode` and restored on next launch.
 
 ### 6.2 Supported Markdown Elements
 
@@ -98,6 +99,7 @@ A minimal toolbar appears at the top of the editor window:
 | Send to Clipboard | Copy Markdown, save to history, clear draft, hide window |
 | History           | Open/close the history panel  |
 | Export…           | Save current content as `.md` via save dialog |
+| Plain / Rich      | Toggle between plain text (raw Markdown textarea) and rich WYSIWYG mode (also **⌘⇧M**) |
 
 ---
 
@@ -254,6 +256,7 @@ Accessible via menu bar > Settings….
 |----------------------|--------------------|---------------------------------------|
 | Global hotkey        | `⌥M`              | Key combination to toggle the editor  |
 | Launch at login      | Off                | Register as a login item              |
+| Editor mode          | `rich`             | `rich` = source-visible WYSIWYG; `plain` = raw Markdown textarea |
 
 ---
 
@@ -289,6 +292,7 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 | `get_settings`           | Rust → React    | Return current settings                      |
 | `save_settings`          | React → Rust    | Persist settings changes                     |
 | `new_document`           | React → Rust    | Auto-save current draft to history (if non-empty), then clear draft |
+| `save_editor_mode`       | React → Rust    | Persist the selected editor mode (`rich` or `plain`) to settings.json |
 
 ### Lexical Markdown Serialization
 
