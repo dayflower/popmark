@@ -40,7 +40,7 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 | Property   | Value                        |
 |------------|------------------------------|
 | Default    | `⌥M` (Option + M)           |
-| Behavior   | Toggle: open if hidden, hide if visible |
+| Behavior   | Show/raise: open if hidden, bring to front if visible but not focused |
 | Registered via | Tauri global shortcut API |
 | Configurable | Yes (via Settings)         |
 

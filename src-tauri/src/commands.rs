@@ -122,12 +122,19 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
         .on_shortcut(shortcut.clone(), move |app, _shortcut, event| {
             if event.state == ShortcutState::Pressed {
                 if let Some(window) = app.get_webview_window("main") {
-                    // R-HK-1: show-only — ignore if already visible
-                    if !window.is_visible().unwrap_or(false) {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                        let _ = window.emit("window-shown", ());
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                    #[cfg(target_os = "macos")]
+                    {
+                        use objc2_app_kit::NSApplication;
+                        use objc2_foundation::MainThreadMarker;
+                        unsafe {
+                            let mtm = MainThreadMarker::new_unchecked();
+                            let ns_app = NSApplication::sharedApplication(mtm);
+                            ns_app.activate();
+                        }
                     }
+                    let _ = window.emit("window-shown", ());
                 }
             }
         })

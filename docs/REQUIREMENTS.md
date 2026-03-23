@@ -83,7 +83,7 @@ The next time the editor is opened it shows a blank document.
 - The editor window is hidden by default and appears only when triggered by the global hotkey or via the tray menu.
 - Clicking the Dock icon when the editor window is hidden shows the editor window.
 - Pressing Esc hides the editor window.
-- Global hotkey is **show-only**: pressing the hotkey while the window is already visible has no effect. Esc is the sole keyboard method to hide the window.
+- Global hotkey is **show/raise**: pressing the hotkey shows the window if hidden, or brings it to the front if visible but not focused. Esc is the sole keyboard method to hide the window.
 
 ---
 
@@ -91,7 +91,7 @@ The next time the editor is opened it shows a blank document.
 
 | Setting | Description |
 |---------|-------------|
-| Global hotkey | Key combination to **show** the editor window when hidden (configurable by the user). When the window is already visible, the hotkey is ignored. |
+| Global hotkey | Key combination to **show or raise** the editor window (configurable by the user). Shows the window if hidden; brings it to the front if visible but not focused. |
 | Launch at login | Whether the app starts automatically when the user logs in |
 | Editor mode | Whether the editor opens in **Rich** (source-visible WYSIWYG) or **Plain** (raw Markdown textarea) mode |
 
