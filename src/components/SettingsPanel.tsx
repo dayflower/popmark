@@ -54,17 +54,24 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [editorModeLocal, setEditorModeLocal] = useState("rich");
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Load current settings when panel opens
+  // Notify backend and load settings when panel opens/closes
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      invoke("set_settings_panel_open", { open: false });
+      return;
+    }
+
+    invoke("set_settings_panel_open", { open: true });
+
     invoke<Settings>("get_settings").then((s) => {
       setSavedHotkey(s.hotkey);
       setCapturedHotkey(s.hotkey);
       setLaunchAtLogin(s.launch_at_login);
       setEditorModeLocal(s.editor_mode);
     });
-    // Focus the dialog so ESC works immediately
-    dialogRef.current?.focus();
+
+    // R-HK-3: defer focus so Lexical handlers cannot reclaim it
+    setTimeout(() => dialogRef.current?.focus(), 0);
   }, [isOpen]);
 
   // ESC to close (when not capturing)
