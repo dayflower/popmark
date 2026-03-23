@@ -54,6 +54,12 @@ const CUSTOM_TRANSFORMERS = [CUSTOM_CHECK_LIST, ...TRANSFORMERS];
 
 const initialConfig = {
   namespace: "popmark",
+  theme: {
+    text: {
+      strikethrough: "editor-strikethrough",
+      italic: "editor-italic",
+    },
+  },
   nodes: [
     HeadingNode,
     QuoteNode,

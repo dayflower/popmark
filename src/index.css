@@ -107,6 +107,14 @@ li[role="checkbox"][aria-checked="true"] > span {
   color: #9ca3af;
 }
 
+/* Lexical text format: strikethrough (~~text~~) and italic when combined with bold (***text***) */
+.editor-strikethrough {
+  text-decoration: line-through;
+}
+.editor-italic {
+  font-style: italic;
+}
+
 @media (prefers-color-scheme: dark) {
   li[role="checkbox"]::before {
     border-color: #6b7280;
