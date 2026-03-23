@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "gen-icons": "bash scripts/gen-icons.sh",
     "lint": "biome check --write src/ vite.config.ts",
     "format": "biome format --write src/ vite.config.ts",
     "check": "biome check src/ vite.config.ts",
