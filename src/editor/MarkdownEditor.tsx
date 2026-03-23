@@ -314,11 +314,6 @@ function EditorPlugins({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "M") {
-        e.preventDefault();
-        handleModeToggle();
-        return;
-      }
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         // Plain mode handles Cmd+Enter in the textarea's onKeyDown
         if (editorMode === "plain") return;
@@ -336,7 +331,7 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, editorMode, handleModeToggle]);
+  }, [editor, editorMode]);
 
   // Listen for menu bar "New Document" event
   useEffect(() => {
@@ -401,6 +396,16 @@ function EditorPlugins({
       unlisten.then((fn) => fn());
     };
   }, [onToggleHistory]);
+
+  // Listen for menu bar View > Toggle Editor Mode event (⌘⇧M via native menu)
+  useEffect(() => {
+    const unlisten = listen("menu-toggle-editor-mode", () => {
+      handleModeToggle();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [handleModeToggle]);
 
   // Listen for "open-settings-panel" event emitted by the tray menu
   useEffect(() => {
