@@ -36,6 +36,13 @@ pub fn run() {
                     false,
                     Some("cmd+h"),
                 )?;
+                let menu_toggle_editor_mode_item = MenuItem::with_id(
+                    app,
+                    "menu-toggle-editor-mode",
+                    "Toggle Editor Mode",
+                    true,
+                    Some("cmd+shift+m"),
+                )?;
                 let menu_settings_item = MenuItem::with_id(
                     app,
                     "menu-settings",
@@ -122,7 +129,7 @@ pub fn run() {
                             app,
                             "View",
                             true,
-                            &[&menu_toggle_history_item],
+                            &[&menu_toggle_history_item, &menu_toggle_editor_mode_item],
                         )?,
                         &Submenu::with_items(
                             app,
@@ -193,6 +200,11 @@ pub fn run() {
                                         / 2;
                                 let _ = window.set_position(PhysicalPosition::new(x, y));
                             }
+                        }
+                    }
+                    "menu-toggle-editor-mode" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-toggle-editor-mode", ());
                         }
                     }
                     "menu-help" => {

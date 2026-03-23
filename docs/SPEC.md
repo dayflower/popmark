@@ -201,7 +201,6 @@ The standard menu bar is active when the editor window is focused. It provides:
 |----------------|----------|-------------------------------|
 | About Popmark  |          | Show the About dialog         |
 | —              |          | Separator                     |
-| History…       | ⌘H       | Show editor with history panel open |
 | Settings…      | ⌘,       | Open settings panel           |
 | —              |          | Separator                     |
 | Quit Popmark   | ⌘Q       | Terminate the app             |
@@ -215,6 +214,13 @@ The standard menu bar is active when the editor window is focused. It provides:
 | Export…            | ⌘S       | Save current content as `.md` via save dialog |
 | —                  |          | Separator                     |
 | Send to Clipboard  | ⌘Return  | Copy to clipboard, save to history, clear draft, hide window |
+
+**View menu**
+
+| Item                | Shortcut | Action                                              |
+|---------------------|----------|-----------------------------------------------------|
+| History             | ⌘H       | Toggle the history panel (checkmark reflects state) |
+| Toggle Editor Mode  | ⌘⇧M      | Switch between Rich WYSIWYG and Plain text mode     |
 
 **Edit menu**
 
