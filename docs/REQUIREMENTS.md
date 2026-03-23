@@ -17,10 +17,10 @@ Popmark is an application with a tray icon and standard menu bar, providing a qu
 
 ## 3. Editor
 
-- The editor uses **source-visible WYSIWYG** (Obsidian-style):
-  - Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible.
-  - Visual styling (font size, weight, color, etc.) is applied at the same time.
-  - Users can edit the raw markers directly; styling updates live.
+- The editor supports two modes, toggled via the toolbar or **⌘⇧M**:
+  - **Rich mode** (default): **source-visible WYSIWYG** (Obsidian-style) — Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible while visual styling (font size, weight, color, etc.) is applied at the same time. Users can edit the raw markers directly; styling updates live.
+  - **Plain text mode**: displays the raw Markdown source in a monospaced textarea; no visual formatting is applied.
+- The selected mode is persisted and restored on next launch.
 - Supported Markdown elements: headings H1–H6, bold, italic, bold+italic, strikethrough, inline code, fenced code blocks (with optional language tag), blockquotes, unordered and ordered lists, checkbox (task) lists, horizontal rules, and links.
 - Checkbox lists use `- [ ]` (unchecked) and `- [x]` (checked) syntax.
 - Standard Markdown syntax is used (`#` for H1, `##` for H2, etc.).
@@ -93,6 +93,7 @@ The next time the editor is opened it shows a blank document.
 |---------|-------------|
 | Global hotkey | Key combination to **show** the editor window when hidden (configurable by the user). When the window is already visible, the hotkey is ignored. |
 | Launch at login | Whether the app starts automatically when the user logs in |
+| Editor mode | Whether the editor opens in **Rich** (source-visible WYSIWYG) or **Plain** (raw Markdown textarea) mode |
 
 ---
 
