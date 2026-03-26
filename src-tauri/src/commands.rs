@@ -29,6 +29,8 @@ pub struct Settings {
     pub launch_at_login: bool,
     #[serde(default = "default_editor_mode")]
     pub editor_mode: String,
+    #[serde(default)]
+    pub copy_as_rich_text: bool,
 }
 
 fn default_editor_mode() -> String {
@@ -41,6 +43,7 @@ impl Default for Settings {
             hotkey: "alt+m".to_string(),
             launch_at_login: false,
             editor_mode: "rich".to_string(),
+            copy_as_rich_text: false,
         }
     }
 }
@@ -217,11 +220,26 @@ pub fn save_draft(app: AppHandle, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn copy_to_clipboard(app: AppHandle, content: String) -> Result<(), String> {
+pub fn read_clipboard_text(app: AppHandle) -> Result<String, String> {
+    app.clipboard().read_text().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn copy_to_clipboard(
+    app: AppHandle,
+    content: String,
+    html_content: Option<String>,
+) -> Result<(), String> {
     // 1. Copy to clipboard
-    app.clipboard()
-        .write_text(content.clone())
-        .map_err(|e| e.to_string())?;
+    if let Some(html) = html_content {
+        app.clipboard()
+            .write_html(html, Some(content.clone()))
+            .map_err(|e| e.to_string())?;
+    } else {
+        app.clipboard()
+            .write_text(content.clone())
+            .map_err(|e| e.to_string())?;
+    }
 
     // 2. Save to history
     let now = Local::now();

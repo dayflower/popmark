@@ -1,3 +1,4 @@
+import { $generateHtmlFromNodes } from "@lexical/html";
 import { $convertToMarkdownString, TRANSFORMERS } from "@lexical/markdown";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { invoke } from "@tauri-apps/api/core";
@@ -10,6 +11,7 @@ interface ToolbarProps {
   onModeToggle: () => void;
   onSendToClipboard?: () => void;
   onExport?: () => void;
+  copyAsRichText?: boolean;
 }
 
 export function Toolbar({
@@ -20,6 +22,7 @@ export function Toolbar({
   onModeToggle,
   onSendToClipboard,
   onExport,
+  copyAsRichText,
 }: ToolbarProps) {
   const [editor] = useLexicalComposerContext();
 
@@ -30,7 +33,8 @@ export function Toolbar({
     }
     editor.getEditorState().read(() => {
       const content = $convertToMarkdownString(TRANSFORMERS);
-      invoke("copy_to_clipboard", { content });
+      const htmlContent = copyAsRichText ? $generateHtmlFromNodes(editor) : undefined;
+      invoke("copy_to_clipboard", { content, htmlContent });
     });
   }
 

@@ -111,20 +111,38 @@ pub fn run() {
                                 &menu_send_to_clipboard_item,
                             ],
                         )?,
-                        &Submenu::with_items(
-                            app,
-                            "Edit",
-                            true,
-                            &[
-                                &PredefinedMenuItem::undo(app, None)?,
-                                &PredefinedMenuItem::redo(app, None)?,
-                                &PredefinedMenuItem::separator(app)?,
-                                &PredefinedMenuItem::cut(app, None)?,
-                                &PredefinedMenuItem::copy(app, None)?,
-                                &PredefinedMenuItem::paste(app, None)?,
-                                &PredefinedMenuItem::select_all(app, None)?,
-                            ],
-                        )?,
+                        {
+                            let menu_paste_and_match_style_item = MenuItem::with_id(
+                                app,
+                                "menu-paste-and-match-style",
+                                "Paste and Match Style",
+                                true,
+                                Some("alt+shift+cmd+v"),
+                            )?;
+                            let menu_paste_from_markdown_item = MenuItem::with_id(
+                                app,
+                                "menu-paste-from-markdown",
+                                "Paste from Markdown",
+                                true,
+                                None::<&str>,
+                            )?;
+                            &Submenu::with_items(
+                                app,
+                                "Edit",
+                                true,
+                                &[
+                                    &PredefinedMenuItem::undo(app, None)?,
+                                    &PredefinedMenuItem::redo(app, None)?,
+                                    &PredefinedMenuItem::separator(app)?,
+                                    &PredefinedMenuItem::cut(app, None)?,
+                                    &PredefinedMenuItem::copy(app, None)?,
+                                    &PredefinedMenuItem::paste(app, None)?,
+                                    &menu_paste_and_match_style_item,
+                                    &menu_paste_from_markdown_item,
+                                    &PredefinedMenuItem::select_all(app, None)?,
+                                ],
+                            )?
+                        },
                         &Submenu::with_items(
                             app,
                             "View",
@@ -207,6 +225,16 @@ pub fn run() {
                             let _ = window.emit("menu-toggle-editor-mode", ());
                         }
                     }
+                    "menu-paste-and-match-style" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-paste-and-match-style", ());
+                        }
+                    }
+                    "menu-paste-from-markdown" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-paste-from-markdown", ());
+                        }
+                    }
                     "menu-help" => {
                         // stub: no help documentation yet
                     }
@@ -281,6 +309,7 @@ pub fn run() {
             commands::get_draft,
             commands::save_draft,
             commands::copy_to_clipboard,
+            commands::read_clipboard_text,
             commands::new_document,
             commands::export_file,
             commands::list_history,
