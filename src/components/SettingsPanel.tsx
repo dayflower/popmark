@@ -5,6 +5,7 @@ interface Settings {
   hotkey: string;
   launch_at_login: boolean;
   editor_mode: string;
+  copy_as_rich_text: boolean;
 }
 
 interface SettingsPanelProps {
@@ -52,6 +53,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [editorModeLocal, setEditorModeLocal] = useState("rich");
+  const [copyAsRichText, setCopyAsRichText] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Notify backend and load settings when panel opens/closes
@@ -68,6 +70,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       setCapturedHotkey(s.hotkey);
       setLaunchAtLogin(s.launch_at_login);
       setEditorModeLocal(s.editor_mode);
+      setCopyAsRichText(s.copy_as_rich_text);
     });
 
     // R-HK-3: defer focus so Lexical handlers cannot reclaim it
@@ -121,6 +124,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         hotkey: capturedHotkey,
         launch_at_login: launchAtLogin,
         editor_mode: editorModeLocal,
+        copy_as_rich_text: copyAsRichText,
       },
     });
     setSavedHotkey(capturedHotkey);
@@ -177,7 +181,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         </div>
 
         {/* Launch at login */}
-        <div className="mb-6">
+        <div className="mb-3">
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -186,6 +190,22 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               className="w-4 h-4 accent-blue-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">Launch at login</span>
+          </label>
+        </div>
+
+        {/* Copy as Rich Text */}
+        <div className="mb-6">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={copyAsRichText}
+              onChange={(e) => setCopyAsRichText(e.target.checked)}
+              className="w-4 h-4 accent-blue-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Copy as Rich Text{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
+            </span>
           </label>
         </div>
 

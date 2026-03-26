@@ -1,4 +1,5 @@
 import { $isCodeNode, CodeHighlightNode, CodeNode } from "@lexical/code";
+import { $generateHtmlFromNodes } from "@lexical/html";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { $createListNode, $isListItemNode, ListItemNode, ListNode } from "@lexical/list";
 import {
@@ -29,15 +30,19 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   $createLineBreakNode,
   $createParagraphNode,
+  $getRoot,
   $getSelection,
+  $insertNodes,
   $isRangeSelection,
   $isTextNode,
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
+  createEditor,
   type EditorState,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_TAB_COMMAND,
+  type LexicalNode,
 } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
@@ -228,6 +233,8 @@ interface EditorPluginsProps {
   setPlainContent: (c: string) => void;
   modeToggleFnRef: React.MutableRefObject<(() => void) | null>;
   onFocusPlain: () => void;
+  copyAsRichText: boolean;
+  onPastePlainText: (text: string) => void;
 }
 
 // Handles draft load/save, keyboard shortcuts, and panel event listening
@@ -245,6 +252,8 @@ function EditorPlugins({
   setPlainContent,
   modeToggleFnRef,
   onFocusPlain,
+  copyAsRichText,
+  onPastePlainText,
 }: EditorPluginsProps) {
   const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -326,7 +335,8 @@ function EditorPlugins({
         e.preventDefault();
         editor.getEditorState().read(() => {
           const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-          invoke("copy_to_clipboard", { content });
+          const htmlContent = copyAsRichText ? $generateHtmlFromNodes(editor) : undefined;
+          invoke("copy_to_clipboard", { content, htmlContent });
         });
         return;
       }
@@ -337,7 +347,7 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, editorMode]);
+  }, [editor, editorMode, copyAsRichText]);
 
   // Listen for menu bar "New Document" event
   useEffect(() => {
@@ -374,14 +384,77 @@ function EditorPlugins({
       } else {
         editor.getEditorState().read(() => {
           const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-          invoke("copy_to_clipboard", { content });
+          const htmlContent = copyAsRichText ? $generateHtmlFromNodes(editor) : undefined;
+          invoke("copy_to_clipboard", { content, htmlContent });
         });
       }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [editor, editorMode, plainContent]);
+  }, [editor, editorMode, plainContent, copyAsRichText]);
+
+  // Listen for "Paste and Match Style" menu event
+  useEffect(() => {
+    const unlisten = listen("menu-paste-and-match-style", async () => {
+      const text = await invoke<string>("read_clipboard_text").catch(() => null);
+      if (text == null) return;
+      if (editorMode === "plain") {
+        onPastePlainText(text);
+      } else {
+        editor.update(() => {
+          const selection = $getSelection();
+          if ($isRangeSelection(selection)) {
+            selection.insertText(text);
+          }
+        });
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [editor, editorMode, onPastePlainText]);
+
+  // Listen for "Paste from Markdown" menu event
+  useEffect(() => {
+    const unlisten = listen("menu-paste-from-markdown", async () => {
+      const text = await invoke<string>("read_clipboard_text").catch(() => null);
+      if (!text) return;
+      if (editorMode === "plain") {
+        onPastePlainText(text);
+      } else {
+        const tempEditor = createEditor({
+          nodes: [
+            HeadingNode,
+            QuoteNode,
+            CodeNode,
+            CodeHighlightNode,
+            ListNode,
+            ListItemNode,
+            LinkNode,
+            AutoLinkNode,
+            HorizontalRuleNode,
+          ],
+        });
+        let nodesToInsert: LexicalNode[] = [];
+        await new Promise<void>((resolve) => {
+          tempEditor.update(
+            () => {
+              $convertFromMarkdownString(text, CUSTOM_TRANSFORMERS);
+              nodesToInsert = $getRoot().getChildren();
+            },
+            { onUpdate: resolve },
+          );
+        });
+        editor.update(() => {
+          $insertNodes(nodesToInsert);
+        });
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [editor, editorMode, onPastePlainText]);
 
   // Listen for "open-history-panel" event emitted by the tray menu (open-only)
   useEffect(() => {
@@ -483,10 +556,23 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
   const [pendingContent, setPendingContent] = useState<string | null>(null);
   const [newDocTrigger, setNewDocTrigger] = useState(0);
   const [plainContent, setPlainContent] = useState("");
+  const [copyAsRichText, setCopyAsRichText] = useState(false);
   const { getEntry } = useHistory();
   const modeToggleFnRef = useRef<(() => void) | null>(null);
   const plainDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load copyAsRichText from settings; re-run after settings panel closes
+  const loadCopyAsRichText = useCallback(() => {
+    invoke<{ copy_as_rich_text: boolean }>("get_settings").then((s) => {
+      setCopyAsRichText(s.copy_as_rich_text ?? false);
+    });
+  }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs only on mount
+  useEffect(() => {
+    loadCopyAsRichText();
+  }, []);
 
   const handleNew = useCallback(() => {
     const doNew = () =>
@@ -516,6 +602,24 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
   const handleFocusPlain = useCallback(() => {
     textareaRef.current?.focus();
   }, []);
+
+  const handlePastePlainText = useCallback(
+    (text: string) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const newValue = plainContent.slice(0, start) + text + plainContent.slice(end);
+      setPlainContent(newValue);
+      invoke("save_draft", { content: newValue });
+      // Restore cursor after inserted text
+      requestAnimationFrame(() => {
+        ta.selectionStart = start + text.length;
+        ta.selectionEnd = start + text.length;
+      });
+    },
+    [plainContent],
+  );
 
   // Sync history panel open state to the View > History menu item checkmark
   useEffect(() => {
@@ -558,6 +662,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             ? () => invoke("export_file", { content: plainContent, defaultName: "note.md" })
             : undefined
         }
+        copyAsRichText={copyAsRichText}
       />
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         {editorMode === "plain" ? (
@@ -611,13 +716,21 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
           setPlainContent={setPlainContent}
           modeToggleFnRef={modeToggleFnRef}
           onFocusPlain={handleFocusPlain}
+          copyAsRichText={copyAsRichText}
+          onPastePlainText={handlePastePlainText}
         />
         <HistoryPanel
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
           onLoadEntry={handleLoadEntry}
         />
-        <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+        <SettingsPanel
+          isOpen={isSettingsOpen}
+          onClose={() => {
+            setIsSettingsOpen(false);
+            loadCopyAsRichText();
+          }}
+        />
       </div>
     </LexicalComposer>
   );
