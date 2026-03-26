@@ -40,7 +40,7 @@ Popmark is an application with a tray icon and standard menu bar, providing a qu
 
 Triggered by the "Send to Clipboard" button (also available via keyboard shortcut):
 
-1. Current editor content is serialized to plain Markdown and written to the system clipboard.
+1. Current editor content is serialized to plain Markdown and written to the system clipboard. If "Copy as Rich Text" is enabled in Settings (Rich mode only), the content is also written as HTML so that rich formatting is preserved when pasting into applications that support it.
 2. The document is saved to history with a timestamp.
 3. The draft is cleared.
 4. The editor window is hidden.
@@ -94,6 +94,7 @@ The next time the editor is opened it shows a blank document.
 | Global hotkey | Key combination to **show or raise** the editor window (configurable by the user). Shows the window if hidden; brings it to the front if visible but not focused. |
 | Launch at login | Whether the app starts automatically when the user logs in |
 | Editor mode | Whether the editor opens in **Rich** (source-visible WYSIWYG) or **Plain** (raw Markdown textarea) mode |
+| Copy as Rich Text | When enabled (Rich mode only), "Send to Clipboard" copies the content as both HTML (rich text) and plain Markdown, preserving formatting in apps that support rich paste |
 
 ---
 
