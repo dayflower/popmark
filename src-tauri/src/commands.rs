@@ -31,6 +31,8 @@ pub struct Settings {
     pub editor_mode: String,
     #[serde(default)]
     pub copy_as_rich_text: bool,
+    #[serde(default)]
+    pub max_history_entries: Option<u32>,
 }
 
 fn default_editor_mode() -> String {
@@ -44,6 +46,7 @@ impl Default for Settings {
             launch_at_login: false,
             editor_mode: "rich".to_string(),
             copy_as_rich_text: false,
+            max_history_entries: None,
         }
     }
 }
@@ -200,6 +203,55 @@ pub fn save_editor_mode(app: AppHandle, mode: String) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------------------
+// History save helper
+// ---------------------------------------------------------------------------
+
+fn save_history_entry(app: &AppHandle, content: &str) -> Result<(), String> {
+    let now = Local::now();
+    let id = now.format("%Y-%m-%dT%H-%M-%S").to_string();
+    let timestamp = now.format("%Y-%m-%dT%H:%M:%S").to_string();
+    let title_preview = extract_title_preview(content);
+
+    let history = history_dir(app)?;
+    let file_path = history.join(format!("{}.md", id));
+    fs::write(&file_path, content).map_err(|e| e.to_string())?;
+
+    let index_path = history.join("index.json");
+    let mut entries: Vec<HistoryEntry> = if index_path.exists() {
+        let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&data).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    entries.insert(
+        0,
+        HistoryEntry {
+            id,
+            timestamp,
+            title_preview,
+        },
+    );
+
+    // Apply retention limit
+    let settings = get_settings(app.clone())?;
+    if let Some(limit) = settings.max_history_entries {
+        if limit > 0 {
+            let limit = limit as usize;
+            while entries.len() > limit {
+                if let Some(removed) = entries.pop() {
+                    let _ = fs::remove_file(history.join(format!("{}.md", removed.id)));
+                }
+            }
+        }
+    }
+
+    let json = serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())?;
+    fs::write(&index_path, json).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // IPC commands: draft
 // ---------------------------------------------------------------------------
 
@@ -242,35 +294,9 @@ pub fn copy_to_clipboard(
     }
 
     // 2. Save to history
-    let now = Local::now();
-    let id = now.format("%Y-%m-%dT%H-%M-%S").to_string();
-    let timestamp = now.format("%Y-%m-%dT%H:%M:%S").to_string();
-    let title_preview = extract_title_preview(&content);
+    save_history_entry(&app, &content)?;
 
-    let history = history_dir(&app)?;
-    let file_path = history.join(format!("{}.md", id));
-    fs::write(&file_path, &content).map_err(|e| e.to_string())?;
-
-    // 3. Update index.json (prepend new entry to maintain reverse-chronological order)
-    let index_path = history.join("index.json");
-    let mut entries: Vec<HistoryEntry> = if index_path.exists() {
-        let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&data).unwrap_or_default()
-    } else {
-        Vec::new()
-    };
-    entries.insert(
-        0,
-        HistoryEntry {
-            id,
-            timestamp,
-            title_preview,
-        },
-    );
-    let json = serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())?;
-    fs::write(&index_path, json).map_err(|e| e.to_string())?;
-
-    // 4. Clear draft
+    // 3. Clear draft
     let draft = draft_path(&app)?;
     fs::write(&draft, "").map_err(|e| e.to_string())?;
 
@@ -291,32 +317,7 @@ pub fn new_document(app: AppHandle) -> Result<(), String> {
     // Save current draft to history if non-empty
     let content = get_draft(app.clone())?;
     if !content.trim().is_empty() {
-        let now = Local::now();
-        let id = now.format("%Y-%m-%dT%H-%M-%S").to_string();
-        let timestamp = now.format("%Y-%m-%dT%H:%M:%S").to_string();
-        let title_preview = extract_title_preview(&content);
-
-        let history = history_dir(&app)?;
-        let file_path = history.join(format!("{}.md", id));
-        fs::write(&file_path, &content).map_err(|e| e.to_string())?;
-
-        let index_path = history.join("index.json");
-        let mut entries: Vec<HistoryEntry> = if index_path.exists() {
-            let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
-            serde_json::from_str(&data).unwrap_or_default()
-        } else {
-            Vec::new()
-        };
-        entries.insert(
-            0,
-            HistoryEntry {
-                id,
-                timestamp,
-                title_preview,
-            },
-        );
-        let json = serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())?;
-        fs::write(&index_path, json).map_err(|e| e.to_string())?;
+        save_history_entry(&app, &content)?;
     }
 
     // Clear draft
@@ -349,6 +350,44 @@ pub fn get_history_entry(app: AppHandle, id: String) -> Result<String, String> {
         return Err(format!("History entry not found: {}", id));
     }
     fs::read_to_string(&file_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_history_entry(app: AppHandle, id: String) -> Result<(), String> {
+    let history = history_dir(&app)?;
+    let index_path = history.join("index.json");
+
+    let mut entries: Vec<HistoryEntry> = if index_path.exists() {
+        let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&data).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    entries.retain(|e| e.id != id);
+    let json = serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())?;
+    fs::write(&index_path, json).map_err(|e| e.to_string())?;
+
+    let _ = fs::remove_file(history.join(format!("{}.md", id)));
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn clear_history(app: AppHandle) -> Result<(), String> {
+    let history = history_dir(&app)?;
+    let index_path = history.join("index.json");
+
+    if index_path.exists() {
+        let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
+        let entries: Vec<HistoryEntry> = serde_json::from_str(&data).unwrap_or_default();
+        for entry in &entries {
+            let _ = fs::remove_file(history.join(format!("{}.md", entry.id)));
+        }
+    }
+
+    fs::write(&index_path, "[]").map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ interface Settings {
   launch_at_login: boolean;
   editor_mode: string;
   copy_as_rich_text: boolean;
+  max_history_entries?: number | null;
 }
 
 interface SettingsPanelProps {
@@ -54,6 +55,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [editorModeLocal, setEditorModeLocal] = useState("rich");
   const [copyAsRichText, setCopyAsRichText] = useState(false);
+  const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Notify backend and load settings when panel opens/closes
@@ -71,6 +73,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       setLaunchAtLogin(s.launch_at_login);
       setEditorModeLocal(s.editor_mode);
       setCopyAsRichText(s.copy_as_rich_text);
+      const limit = s.max_history_entries;
+      setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
     });
 
     // R-HK-3: defer focus so Lexical handlers cannot reclaim it
@@ -119,12 +123,15 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   }
 
   async function handleSave() {
+    const parsedLimit = Number.parseInt(maxHistoryEntries, 10);
     await invoke("save_settings", {
       settings: {
         hotkey: capturedHotkey,
         launch_at_login: launchAtLogin,
         editor_mode: editorModeLocal,
         copy_as_rich_text: copyAsRichText,
+        max_history_entries:
+          maxHistoryEntries.trim() !== "" && parsedLimit > 0 ? parsedLimit : null,
       },
     });
     setSavedHotkey(capturedHotkey);
@@ -194,7 +201,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         </div>
 
         {/* Copy as Rich Text */}
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -206,6 +213,24 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               Copy as Rich Text{" "}
               <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
             </span>
+          </label>
+        </div>
+
+        {/* Max history entries */}
+        <div className="mb-6">
+          <label className="flex items-center justify-between gap-3 select-none">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Max history entries{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">(0 = unlimited)</span>
+            </span>
+            <input
+              type="number"
+              min="0"
+              value={maxHistoryEntries}
+              onChange={(e) => setMaxHistoryEntries(e.target.value)}
+              placeholder="∞"
+              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+            />
           </label>
         </div>
 
