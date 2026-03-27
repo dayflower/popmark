@@ -30,7 +30,6 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   $createLineBreakNode,
   $createParagraphNode,
-  $createTextNode,
   $getRoot,
   $getSelection,
   $insertNodes,
@@ -43,7 +42,6 @@ import {
   type EditorState,
   IS_CODE,
   KEY_ARROW_DOWN_COMMAND,
-  KEY_ARROW_RIGHT_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_TAB_COMMAND,
   SELECTION_CHANGE_COMMAND,
@@ -231,12 +229,10 @@ function ListShiftTabExitPlugin() {
 //    fires and the user navigates away then back, IS_CODE re-derives from the anchor
 //    node. Clear it when the cursor is at offset === textContentSize and the next
 //    sibling is not also IS_CODE, so the next keypress inserts plain text outside.
-// 3. Arrow-right escape: if there is no plain-text sibling to navigate into naturally,
-//    insert an empty plain TextNode so the cursor can escape the code span.
 function InlineCodeFormatResetPlugin() {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
-    const unregisterSelectionChange = editor.registerCommand(
+    return editor.registerCommand(
       SELECTION_CHANGE_COMMAND,
       () => {
         const selection = $getSelection();
@@ -270,37 +266,6 @@ function InlineCodeFormatResetPlugin() {
       },
       COMMAND_PRIORITY_LOW,
     );
-
-    const unregisterArrowRight = editor.registerCommand(
-      KEY_ARROW_RIGHT_COMMAND,
-      (e) => {
-        const selection = $getSelection();
-        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
-        const anchor = selection.anchor;
-        const anchorNode = anchor.getNode();
-        if (!$isTextNode(anchorNode)) return false;
-        if (!(anchorNode.getFormat() & IS_CODE)) return false;
-        if (anchor.offset !== anchorNode.getTextContentSize()) return false;
-        const next = anchorNode.getNextSibling();
-        // A non-IS_CODE sibling exists — natural → navigation will move there,
-        // and SELECTION_CHANGE_COMMAND will clear the format
-        if (next !== null && $isTextNode(next) && !(next.getFormat() & IS_CODE)) return false;
-        // No plain-text sibling to escape into; create one and move cursor there
-        e?.preventDefault();
-        editor.update(() => {
-          const emptyNode = $createTextNode("");
-          anchorNode.insertAfter(emptyNode);
-          emptyNode.select(0, 0);
-        });
-        return true;
-      },
-      COMMAND_PRIORITY_LOW,
-    );
-
-    return () => {
-      unregisterSelectionChange();
-      unregisterArrowRight();
-    };
   }, [editor]);
   return null;
 }
