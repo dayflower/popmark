@@ -30,6 +30,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   $createLineBreakNode,
   $createParagraphNode,
+  $getRoot,
   $getSelection,
   $insertNodes,
   $isRangeSelection,
@@ -39,9 +40,11 @@ import {
   COMMAND_PRIORITY_LOW,
   createEditor,
   type EditorState,
+  IS_CODE,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_TAB_COMMAND,
+  SELECTION_CHANGE_COMMAND,
 } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
@@ -213,6 +216,31 @@ function ListShiftTabExitPlugin() {
         return true;
       },
       COMMAND_PRIORITY_HIGH,
+    );
+  }, [editor]);
+  return null;
+}
+
+// When all content is deleted and the editor is empty, Lexical's sticky-format
+// mechanism preserves selection.format because it skips the format-reset path
+// when isRootTextContentEmpty is true. This causes inline code format to persist
+// (new input appears wrapped in backticks with no escape). Clear IS_CODE from
+// selection.format whenever the editor is empty.
+function InlineCodeFormatResetPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerCommand(
+      SELECTION_CHANGE_COMMAND,
+      () => {
+        if ($getRoot().getTextContent() !== "") return false;
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        if (!(selection.format & IS_CODE)) return false;
+        selection.format &= ~IS_CODE;
+        selection.dirty = true;
+        return false;
+      },
+      COMMAND_PRIORITY_LOW,
     );
   }, [editor]);
   return null;
@@ -699,6 +727,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             <CodeEnterPlugin />
             <CodeExitPlugin />
             <ListShiftTabExitPlugin />
+            <InlineCodeFormatResetPlugin />
           </>
         )}
         <EditorPlugins
