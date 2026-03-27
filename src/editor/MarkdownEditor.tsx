@@ -30,6 +30,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   $createLineBreakNode,
   $createParagraphNode,
+  $createTextNode,
   $getRoot,
   $getSelection,
   $insertNodes,
@@ -42,6 +43,7 @@ import {
   type EditorState,
   IS_CODE,
   KEY_ARROW_DOWN_COMMAND,
+  KEY_ARROW_RIGHT_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_TAB_COMMAND,
   SELECTION_CHANGE_COMMAND,
@@ -221,27 +223,84 @@ function ListShiftTabExitPlugin() {
   return null;
 }
 
-// When all content is deleted and the editor is empty, Lexical's sticky-format
-// mechanism preserves selection.format because it skips the format-reset path
-// when isRootTextContentEmpty is true. This causes inline code format to persist
-// (new input appears wrapped in backticks with no escape). Clear IS_CODE from
-// selection.format whenever the editor is empty.
+// Prevents IS_CODE from sticking in two scenarios:
+// 1. Editor becomes empty: Lexical skips format-reset when root text is empty, so new
+//    input would appear inside a code span with no escape. Clear IS_CODE on every
+//    SELECTION_CHANGE while the editor is empty.
+// 2. Cursor at right boundary of an IS_CODE TextNode: after MarkdownShortcutPlugin
+//    fires and the user navigates away then back, IS_CODE re-derives from the anchor
+//    node. Clear it when the cursor is at offset === textContentSize and the next
+//    sibling is not also IS_CODE, so the next keypress inserts plain text outside.
+// 3. Arrow-right escape: if there is no plain-text sibling to navigate into naturally,
+//    insert an empty plain TextNode so the cursor can escape the code span.
 function InlineCodeFormatResetPlugin() {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
-    return editor.registerCommand(
+    const unregisterSelectionChange = editor.registerCommand(
       SELECTION_CHANGE_COMMAND,
       () => {
-        if ($getRoot().getTextContent() !== "") return false;
         const selection = $getSelection();
         if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
-        if (!(selection.format & IS_CODE)) return false;
-        selection.format &= ~IS_CODE;
-        selection.dirty = true;
+
+        // Case 1: editor is empty
+        if ($getRoot().getTextContent() === "") {
+          if (selection.format & IS_CODE) {
+            selection.format &= ~IS_CODE;
+            selection.dirty = true;
+          }
+          return false;
+        }
+
+        // Case 2: cursor at right boundary of an IS_CODE TextNode
+        const anchor = selection.anchor;
+        const anchorNode = anchor.getNode();
+        if (
+          $isTextNode(anchorNode) &&
+          anchorNode.getFormat() & IS_CODE &&
+          anchor.offset === anchorNode.getTextContentSize()
+        ) {
+          const next = anchorNode.getNextSibling();
+          if (next === null || !($isTextNode(next) && next.getFormat() & IS_CODE)) {
+            selection.format &= ~IS_CODE;
+            selection.dirty = true;
+          }
+        }
+
         return false;
       },
       COMMAND_PRIORITY_LOW,
     );
+
+    const unregisterArrowRight = editor.registerCommand(
+      KEY_ARROW_RIGHT_COMMAND,
+      (e) => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        const anchor = selection.anchor;
+        const anchorNode = anchor.getNode();
+        if (!$isTextNode(anchorNode)) return false;
+        if (!(anchorNode.getFormat() & IS_CODE)) return false;
+        if (anchor.offset !== anchorNode.getTextContentSize()) return false;
+        const next = anchorNode.getNextSibling();
+        // A non-IS_CODE sibling exists — natural → navigation will move there,
+        // and SELECTION_CHANGE_COMMAND will clear the format
+        if (next !== null && $isTextNode(next) && !(next.getFormat() & IS_CODE)) return false;
+        // No plain-text sibling to escape into; create one and move cursor there
+        e?.preventDefault();
+        editor.update(() => {
+          const emptyNode = $createTextNode("");
+          anchorNode.insertAfter(emptyNode);
+          emptyNode.select(0, 0);
+        });
+        return true;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    return () => {
+      unregisterSelectionChange();
+      unregisterArrowRight();
+    };
   }, [editor]);
   return null;
 }
