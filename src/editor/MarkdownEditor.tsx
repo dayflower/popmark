@@ -340,6 +340,7 @@ interface EditorPluginsProps {
   setIsHistoryOpen: (open: boolean) => void;
   onToggleHistory: () => void;
   setIsSettingsOpen: (open: boolean) => void;
+  onClearHistory: () => void;
   pendingContent: string | null;
   onPendingConsumed: () => void;
   newDocTrigger: number;
@@ -359,6 +360,7 @@ function EditorPlugins({
   setIsHistoryOpen,
   onToggleHistory,
   setIsSettingsOpen,
+  onClearHistory,
   pendingContent,
   onPendingConsumed,
   newDocTrigger,
@@ -603,6 +605,16 @@ function EditorPlugins({
     };
   }, [handleModeToggle]);
 
+  // Listen for View > Clear History… menu event
+  useEffect(() => {
+    const unlisten = listen("menu-clear-history", () => {
+      onClearHistory();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [onClearHistory]);
+
   // Listen for "open-settings-panel" event emitted by the tray menu
   useEffect(() => {
     const unlisten = listen("open-settings-panel", () => {
@@ -674,7 +686,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
   const [newDocTrigger, setNewDocTrigger] = useState(0);
   const [plainContent, setPlainContent] = useState("");
   const [copyAsRichText, setCopyAsRichText] = useState(false);
-  const { getEntry } = useHistory();
+  const { entries, loading, loadHistory, getEntry, deleteEntry, clearHistory } = useHistory();
   const modeToggleFnRef = useRef<(() => void) | null>(null);
   const plainDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -712,6 +724,11 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
     [getEntry],
   );
 
+  const handleClearHistory = useCallback(() => {
+    if (!window.confirm("Clear all history entries? This cannot be undone.")) return;
+    clearHistory();
+  }, [clearHistory]);
+
   const handlePendingConsumed = useCallback(() => {
     setPendingContent(null);
   }, []);
@@ -742,6 +759,13 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
   useEffect(() => {
     invoke("set_history_panel_open", { open: isHistoryOpen });
   }, [isHistoryOpen]);
+
+  // Load history entries when the panel opens
+  useEffect(() => {
+    if (isHistoryOpen) {
+      loadHistory();
+    }
+  }, [isHistoryOpen, loadHistory]);
 
   function handlePlainChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const value = e.target.value;
@@ -825,6 +849,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
           setIsHistoryOpen={setIsHistoryOpen}
           onToggleHistory={() => setIsHistoryOpen((v) => !v)}
           setIsSettingsOpen={setIsSettingsOpen}
+          onClearHistory={handleClearHistory}
           pendingContent={pendingContent}
           onPendingConsumed={handlePendingConsumed}
           newDocTrigger={newDocTrigger}
@@ -842,6 +867,9 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
           onLoadEntry={handleLoadEntry}
+          entries={entries}
+          loading={loading}
+          onDeleteEntry={deleteEntry}
         />
         <SettingsPanel
           isOpen={isSettingsOpen}

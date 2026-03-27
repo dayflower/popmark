@@ -59,11 +59,14 @@ The next time the editor is opened it shows a blank document.
 
 ## 6. History
 
-- Every document saved via Send to Clipboard is retained in history (documents are never automatically deleted).
+- Every document saved via Send to Clipboard is retained in history.
 - The history panel lists entries in reverse-chronological order (most recent first).
 - Each entry shows a timestamp and a preview of the first line.
 - Clicking an entry loads its content into the editor as the new draft.
   - If the current draft is non-empty, a confirmation is required before replacing it.
+- Hovering over an entry reveals a trash icon. Clicking it once turns the icon red (pending state); clicking it a second time deletes the entry permanently. Clicking anywhere else cancels the pending deletion.
+- View > Clear History… in the menu bar deletes all history entries at once (confirmation required).
+- If a "Max history entries" limit is set in Settings, the oldest entries are automatically deleted whenever a new entry would exceed the limit.
 
 ---
 
@@ -95,6 +98,7 @@ The next time the editor is opened it shows a blank document.
 | Launch at login | Whether the app starts automatically when the user logs in |
 | Editor mode | Whether the editor opens in **Rich** (source-visible WYSIWYG) or **Plain** (raw Markdown textarea) mode |
 | Copy as Rich Text | When enabled (Rich mode only), "Send to Clipboard" copies the content as both HTML (rich text) and plain Markdown, preserving formatting in apps that support rich paste |
+| Max history entries | Maximum number of history entries to retain. Empty or 0 means unlimited. When a new entry is saved and the count exceeds the limit, the oldest entries are deleted automatically. |
 
 ---
 

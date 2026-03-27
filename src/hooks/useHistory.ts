@@ -20,5 +20,15 @@ export function useHistory() {
     return invoke<string>("get_history_entry", { id });
   }, []);
 
-  return { entries, loading, loadHistory, getEntry };
+  const deleteEntry = useCallback(async (id: string) => {
+    await invoke("delete_history_entry", { id });
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+  }, []);
+
+  const clearHistory = useCallback(async () => {
+    await invoke("clear_history");
+    setEntries([]);
+  }, []);
+
+  return { entries, loading, loadHistory, getEntry, deleteEntry, clearHistory };
 }

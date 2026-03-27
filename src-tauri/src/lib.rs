@@ -43,6 +43,13 @@ pub fn run() {
                     true,
                     Some("cmd+shift+m"),
                 )?;
+                let menu_clear_history_item = MenuItem::with_id(
+                    app,
+                    "menu-clear-history",
+                    "Clear History\u{2026}",
+                    true,
+                    None::<&str>,
+                )?;
                 let menu_settings_item = MenuItem::with_id(
                     app,
                     "menu-settings",
@@ -147,7 +154,12 @@ pub fn run() {
                             app,
                             "View",
                             true,
-                            &[&menu_toggle_history_item, &menu_toggle_editor_mode_item],
+                            &[
+                                &menu_toggle_history_item,
+                                &menu_toggle_editor_mode_item,
+                                &PredefinedMenuItem::separator(app)?,
+                                &menu_clear_history_item,
+                            ],
                         )?,
                         &Submenu::with_items(
                             app,
@@ -223,6 +235,11 @@ pub fn run() {
                     "menu-toggle-editor-mode" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.emit("menu-toggle-editor-mode", ());
+                        }
+                    }
+                    "menu-clear-history" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-clear-history", ());
                         }
                     }
                     "menu-paste-and-match-style" => {
@@ -319,6 +336,8 @@ pub fn run() {
             commands::save_editor_mode,
             commands::set_history_panel_open,
             commands::set_settings_panel_open,
+            commands::delete_history_entry,
+            commands::clear_history,
         ])
         .on_window_event(|window, event| {
             // Intercept close request → hide instead of quitting

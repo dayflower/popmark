@@ -151,7 +151,11 @@ The history panel is accessible via the "History" toolbar button. It opens as a 
 |--------|--------|
 | Click entry | Load the document into the editor as the new draft |
 | Load with non-empty draft | Show a confirmation dialog before replacing |
-| (Future) Delete entry | Remove from history permanently |
+| Hover entry | Reveals a trash icon on the right side of the entry |
+| First trash icon click | Icon turns red (pending-delete state) |
+| Second trash icon click | Entry is deleted from index.json and disk; panel updates immediately |
+| Click outside panel (while pending) | Pending-delete state is cancelled |
+| View > Clear History… | Confirmation dialog; on confirm, all entries are deleted and index.json is reset |
 
 
 ### 9.4 Storage
@@ -221,6 +225,8 @@ The standard menu bar is active when the editor window is focused. It provides:
 |---------------------|----------|-----------------------------------------------------|
 | History             | ⌘H       | Toggle the history panel (checkmark reflects state) |
 | Toggle Editor Mode  | ⌘⇧M      | Switch between Rich WYSIWYG and Plain text mode     |
+| —                   |          | Separator                                           |
+| Clear History…      |          | Delete all history entries (confirmation required)  |
 
 **Edit menu**
 
@@ -266,6 +272,7 @@ Accessible via menu bar > Settings….
 | Launch at login      | Off                | Register as a login item              |
 | Editor mode          | `rich`             | `rich` = source-visible WYSIWYG; `plain` = raw Markdown textarea |
 | Copy as Rich Text    | Off                | When enabled (Rich mode only), "Send to Clipboard" copies HTML + plain Markdown so rich formatting is preserved in apps that support it |
+| Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
 
 ---
 
@@ -303,6 +310,8 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 | `save_settings`          | React → Rust    | Persist settings changes                     |
 | `new_document`           | React → Rust    | Auto-save current draft to history (if non-empty), then clear draft |
 | `save_editor_mode`       | React → Rust    | Persist the selected editor mode (`rich` or `plain`) to settings.json |
+| `delete_history_entry`   | React → Rust    | Remove a single history entry from index.json and delete its `.md` file |
+| `clear_history`          | React → Rust    | Delete all history `.md` files and reset index.json to an empty array |
 
 ### Lexical Markdown Serialization
 
