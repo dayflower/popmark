@@ -35,6 +35,7 @@ import {
   $insertNodes,
   $isRangeSelection,
   $isTextNode,
+  $parseSerializedNode,
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   createEditor,
@@ -42,7 +43,6 @@ import {
   KEY_ARROW_DOWN_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_TAB_COMMAND,
-  type LexicalNode,
 } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
@@ -436,18 +436,21 @@ function EditorPlugins({
             HorizontalRuleNode,
           ],
         });
-        let nodesToInsert: LexicalNode[] = [];
         await new Promise<void>((resolve) => {
           tempEditor.update(
             () => {
               $convertFromMarkdownString(text, CUSTOM_TRANSFORMERS);
-              nodesToInsert = $getRoot().getChildren();
             },
             { onUpdate: resolve },
           );
         });
+        const serializedNodes = tempEditor.getEditorState().read(() =>
+          $getRoot()
+            .getChildren()
+            .map((node) => node.exportJSON()),
+        );
         editor.update(() => {
-          $insertNodes(nodesToInsert);
+          $insertNodes(serializedNodes.map((json) => $parseSerializedNode(json)));
         });
       }
     });
