@@ -37,6 +37,7 @@ interface EntryItemProps {
   entry: HistoryEntry;
   onLoad: (id: string) => void;
   isPendingDelete: boolean;
+  isDeleting: boolean;
   onDeleteRequest: (id: string) => void;
   onDeleteConfirm: (id: string) => void;
 }
@@ -45,45 +46,51 @@ function EntryItem({
   entry,
   onLoad,
   isPendingDelete,
+  isDeleting,
   onDeleteRequest,
   onDeleteConfirm,
 }: EntryItemProps) {
   return (
-    <div className="group relative flex items-stretch">
-      <button
-        type="button"
-        onClick={() => onLoad(entry.id)}
-        className="flex-1 text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 cursor-default pr-8"
-      >
-        <div className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">
-          {formatTimestamp(entry.timestamp)}
-        </div>
-        <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
-          {entry.title_preview}
-        </div>
-      </button>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (isPendingDelete) {
-            onDeleteConfirm(entry.id);
-          } else {
-            onDeleteRequest(entry.id);
-          }
-        }}
-        className={[
-          "absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded",
-          "opacity-0 group-hover:opacity-100 focus:opacity-100",
-          "transition-opacity cursor-default",
-          isPendingDelete
-            ? "text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-            : "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300",
-        ].join(" ")}
-        title={isPendingDelete ? "Click again to confirm deletion" : "Delete entry"}
-      >
-        <TrashIcon className="w-3.5 h-3.5" />
-      </button>
+    <div
+      style={isDeleting ? { maxHeight: 0, opacity: 0, overflow: "hidden" } : { maxHeight: "80px", opacity: 1 }}
+      className="transition-all duration-200 ease-in"
+    >
+      <div className="group relative flex items-stretch">
+        <button
+          type="button"
+          onClick={() => onLoad(entry.id)}
+          className="flex-1 text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 cursor-default pr-8"
+        >
+          <div className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">
+            {formatTimestamp(entry.timestamp)}
+          </div>
+          <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+            {entry.title_preview}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isPendingDelete) {
+              onDeleteConfirm(entry.id);
+            } else {
+              onDeleteRequest(entry.id);
+            }
+          }}
+          className={[
+            "absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded",
+            "opacity-0 group-hover:opacity-100 focus:opacity-100",
+            "transition-opacity cursor-default",
+            isPendingDelete
+              ? "text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+              : "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300",
+          ].join(" ")}
+          title={isPendingDelete ? "Click again to confirm deletion" : "Delete entry"}
+        >
+          <TrashIcon className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -97,6 +104,7 @@ export function HistoryPanel({
   onDeleteEntry,
 }: HistoryPanelProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -173,10 +181,15 @@ export function HistoryPanel({
                 onLoadEntry(id);
               }}
               isPendingDelete={pendingDeleteId === entry.id}
+              isDeleting={deletingId === entry.id}
               onDeleteRequest={(id) => setPendingDeleteId(id)}
-              onDeleteConfirm={async (id) => {
+              onDeleteConfirm={(id) => {
                 setPendingDeleteId(null);
-                await onDeleteEntry(id);
+                setDeletingId(id);
+                setTimeout(() => {
+                  onDeleteEntry(id);
+                  setDeletingId(null);
+                }, 200);
               }}
             />
           ))}
