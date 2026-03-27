@@ -30,7 +30,6 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   $createLineBreakNode,
   $createParagraphNode,
-  $getRoot,
   $getSelection,
   $insertNodes,
   $isRangeSelection,
@@ -444,11 +443,8 @@ function EditorPlugins({
             { onUpdate: resolve },
           );
         });
-        const serializedNodes = tempEditor.getEditorState().read(() =>
-          $getRoot()
-            .getChildren()
-            .map((node) => node.exportJSON()),
-        );
+        const { root } = tempEditor.getEditorState().toJSON();
+        const serializedNodes = root.children;
         editor.update(() => {
           $insertNodes(serializedNodes.map((json) => $parseSerializedNode(json)));
         });
