@@ -122,8 +122,8 @@ Triggered by the "Send to Clipboard" toolbar button (keyboard shortcut: `⌘Retu
 
 **Steps executed in order:**
 
-1. Serialize the current Lexical editor state to plain Markdown text.
-2. Write the Markdown text to the system clipboard.
+1. Serialize the current Lexical editor state to plain Markdown text. If "Copy as Rich Text" is enabled in Settings (Rich mode only), also generate HTML from the Lexical state via `@lexical/html`.
+2. Write the Markdown text to the system clipboard. If "Copy as Rich Text" is enabled, write both HTML and plain Markdown via `write_html(html, fallback_text)` so that apps supporting rich paste receive formatted content.
 3. Save the document to history with the current timestamp.
 4. Clear `draft.md` (reset to empty).
 5. Hide the editor window.
@@ -226,13 +226,15 @@ The standard menu bar is active when the editor window is focused. It provides:
 
 | Item         | Shortcut    | Action           |
 |--------------|-------------|------------------|
-| Undo         | ⌘Z          | Undo last edit   |
-| Redo         | ⌘⇧Z         | Redo last edit   |
-| —            |             | Separator        |
-| Cut          | ⌘X          | Cut selection    |
-| Copy         | ⌘C          | Copy selection   |
-| Paste        | ⌘V          | Paste            |
-| Select All   | ⌘A          | Select all text  |
+| Undo                  | ⌘Z       | Undo last edit                                                  |
+| Redo                  | ⌘⇧Z      | Redo last edit                                                  |
+| —                     |           | Separator                                                       |
+| Cut                   | ⌘X       | Cut selection                                                   |
+| Copy                  | ⌘C       | Copy selection                                                  |
+| Paste                 | ⌘V       | Paste                                                           |
+| Paste and Match Style | ⌥⇧⌘V    | Paste clipboard content as plain text (strip formatting)        |
+| Paste from Markdown   |           | Parse clipboard content as Markdown and insert with formatting  |
+| Select All            | ⌘A       | Select all text                                                 |
 
 **Window menu**
 
@@ -263,6 +265,7 @@ Accessible via menu bar > Settings….
 | Global hotkey        | `⌥M`              | Key combination to toggle the editor  |
 | Launch at login      | Off                | Register as a login item              |
 | Editor mode          | `rich`             | `rich` = source-visible WYSIWYG; `plain` = raw Markdown textarea |
+| Copy as Rich Text    | Off                | When enabled (Rich mode only), "Send to Clipboard" copies HTML + plain Markdown so rich formatting is preserved in apps that support it |
 
 ---
 
@@ -291,7 +294,8 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 |--------------------------|-----------------|----------------------------------------------|
 | `get_draft`              | Rust → React    | Load current draft content on window open    |
 | `save_draft`             | React → Rust    | Persist draft (debounced auto-save)          |
-| `copy_to_clipboard`      | React → Rust    | Copy to clipboard, save history, clear draft |
+| `copy_to_clipboard`      | React → Rust    | Copy to clipboard (plain Markdown + optional HTML when Copy as Rich Text is enabled), save history, clear draft |
+| `read_clipboard_text`    | React → Rust    | Read plain text from clipboard (used by Paste and Match Style) |
 | `list_history`           | Rust → React    | Return history index entries                 |
 | `get_history_entry`      | Rust → React    | Return content of a specific history file    |
 | `export_file`            | React → Rust    | Open save dialog and write file              |
