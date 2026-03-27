@@ -30,6 +30,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   $createLineBreakNode,
   $createParagraphNode,
+  $createTextNode,
+  $getRoot,
   $getSelection,
   $insertNodes,
   $isRangeSelection,
@@ -39,9 +41,12 @@ import {
   COMMAND_PRIORITY_LOW,
   createEditor,
   type EditorState,
+  IS_CODE,
   KEY_ARROW_DOWN_COMMAND,
+  KEY_ARROW_RIGHT_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_TAB_COMMAND,
+  SELECTION_CHANGE_COMMAND,
 } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
@@ -214,6 +219,119 @@ function ListShiftTabExitPlugin() {
       },
       COMMAND_PRIORITY_HIGH,
     );
+  }, [editor]);
+  return null;
+}
+
+// Prevents IS_CODE from sticking in two scenarios:
+// 1. Editor becomes empty: Lexical skips format-reset when root text is empty, so new
+//    input would appear inside a code span with no escape. Clear IS_CODE on every
+//    SELECTION_CHANGE while the editor is empty.
+// 2. Cursor at right boundary of an IS_CODE TextNode: after MarkdownShortcutPlugin
+//    fires and the user navigates away then back, IS_CODE re-derives from the anchor
+//    node. Clear it when the cursor is at offset === textContentSize and the next
+//    sibling is not also IS_CODE, so the next keypress inserts plain text outside.
+function InlineCodeFormatResetPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerCommand(
+      SELECTION_CHANGE_COMMAND,
+      () => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+
+        // Case 1: editor is empty
+        if ($getRoot().getTextContent() === "") {
+          if (selection.format & IS_CODE) {
+            selection.format &= ~IS_CODE;
+            selection.dirty = true;
+          }
+          return false;
+        }
+
+        // Case 2: cursor at right boundary of an IS_CODE TextNode
+        const anchor = selection.anchor;
+        const anchorNode = anchor.getNode();
+        if (
+          $isTextNode(anchorNode) &&
+          anchorNode.getFormat() & IS_CODE &&
+          anchor.offset === anchorNode.getTextContentSize()
+        ) {
+          const next = anchorNode.getNextSibling();
+          if (next === null || !($isTextNode(next) && next.getFormat() & IS_CODE)) {
+            selection.format &= ~IS_CODE;
+            selection.dirty = true;
+          }
+        }
+
+        return false;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+  }, [editor]);
+  return null;
+}
+
+// Returns the IS_CODE TextNode if the cursor is at its right boundary AND it is the very
+// last node in the editor (i.e. no text follows the code span). Must be called inside a
+// Lexical read or update context.
+function $getTrailingCodeEndNode() {
+  const selection = $getSelection();
+  if (!$isRangeSelection(selection) || !selection.isCollapsed()) return null;
+  const anchor = selection.anchor;
+  const anchorNode = anchor.getNode();
+  if (!$isTextNode(anchorNode)) return null;
+  if (!(anchorNode.getFormat() & IS_CODE)) return null;
+  if (anchor.offset !== anchorNode.getTextContentSize()) return null;
+  if ($getRoot().getLastDescendant() !== anchorNode) return null;
+  return anchorNode;
+}
+
+// When the cursor is at the right end of an inline code span that is also the last node
+// in the editor, pressing → or ` inserts a plain-text space and moves the cursor there.
+// This gives visible feedback that the cursor has escaped the code span.
+function InlineCodeEscapePlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    const insertEscapeSpace = () => {
+      editor.update(() => {
+        const node = $getTrailingCodeEndNode();
+        if (!node) return;
+        const spaceNode = $createTextNode(" ");
+        node.insertAfter(spaceNode);
+        spaceNode.select(1, 1);
+      });
+    };
+
+    const unregisterArrowRight = editor.registerCommand(
+      KEY_ARROW_RIGHT_COMMAND,
+      (e) => {
+        if (!$getTrailingCodeEndNode()) return false;
+        e?.preventDefault();
+        insertEscapeSpace();
+        return true;
+      },
+      COMMAND_PRIORITY_HIGH,
+    );
+
+    // Backtick is not a named Lexical command; intercept at the DOM level
+    const root = editor.getRootElement();
+    const handleBacktick = (e: KeyboardEvent) => {
+      if (e.key !== "`" || e.metaKey || e.ctrlKey || e.altKey) return;
+      let shouldHandle = false;
+      editor.getEditorState().read(() => {
+        shouldHandle = $getTrailingCodeEndNode() !== null;
+      });
+      if (!shouldHandle) return;
+      e.preventDefault();
+      insertEscapeSpace();
+    };
+    root?.addEventListener("keydown", handleBacktick);
+
+    return () => {
+      unregisterArrowRight();
+      root?.removeEventListener("keydown", handleBacktick);
+    };
   }, [editor]);
   return null;
 }
@@ -699,6 +817,8 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             <CodeEnterPlugin />
             <CodeExitPlugin />
             <ListShiftTabExitPlugin />
+            <InlineCodeFormatResetPlugin />
+            <InlineCodeEscapePlugin />
           </>
         )}
         <EditorPlugins
