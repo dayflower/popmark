@@ -1,6 +1,15 @@
 # Project Overview
 
-**popmark** is a Markdown scratch-pad built with Tauri 2.x (Rust) + React 19 + Lexical + Tailwind CSS 4. The intended workflow: open with a global hotkey → write Markdown → "Copy & Close" to copy to clipboard. See `docs/REQUIREMENTS.md` for feature scope and `docs/SPEC.md` for technical architecture decisions and planned Tauri IPC API.
+**popmark** is a Markdown scratch-pad built with Tauri 2.x (Rust) + React 19 + Lexical + Tailwind CSS 4. The intended workflow: open with a global hotkey → write Markdown → "Copy & Close" to copy to clipboard.
+
+## Documentation
+
+- `docs/REQUIREMENTS.md` — Feature scope and user-facing behavior (the "what")
+- `docs/SPEC.md` — Technical architecture, IPC commands, data storage layout (the "how")
+
+When implementing a new feature or changing existing behavior:
+1. Update `docs/REQUIREMENTS.md` if the user-facing behavior changes
+2. Update `docs/SPEC.md` if the technical design changes (IPC commands, storage, etc.)
 
 # Commands
 
