@@ -52,7 +52,11 @@ function EntryItem({
 }: EntryItemProps) {
   return (
     <div
-      style={isDeleting ? { maxHeight: 0, opacity: 0, overflow: "hidden", transform: "translateX(-100%)" } : { maxHeight: "80px", opacity: 1, transform: "translateX(0)" }}
+      style={
+        isDeleting
+          ? { maxHeight: 0, opacity: 0, overflow: "hidden", transform: "translateX(-100%)" }
+          : { maxHeight: "80px", opacity: 1, transform: "translateX(0)" }
+      }
       className="transition-all duration-200 ease-in"
     >
       <div className="group relative flex items-stretch">

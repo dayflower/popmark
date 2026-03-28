@@ -682,6 +682,7 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showClearHistoryConfirm, setShowClearHistoryConfirm] = useState(false);
   const [pendingContent, setPendingContent] = useState<string | null>(null);
   const [newDocTrigger, setNewDocTrigger] = useState(0);
   const [plainContent, setPlainContent] = useState("");
@@ -725,9 +726,8 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
   );
 
   const handleClearHistory = useCallback(() => {
-    if (!window.confirm("Clear all history entries? This cannot be undone.")) return;
-    clearHistory();
-  }, [clearHistory]);
+    setShowClearHistoryConfirm(true);
+  }, []);
 
   const handlePendingConsumed = useCallback(() => {
     setPendingContent(null);
@@ -878,6 +878,46 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             loadCopyAsRichText();
           }}
         />
+        {showClearHistoryConfirm && (
+          <div className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Clear History"
+              tabIndex={-1}
+              className="w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 outline-none"
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setShowClearHistoryConfirm(false);
+              }}
+            >
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                Clear all history entries? This cannot be undone.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  ref={(el) => {
+                    el?.focus();
+                  }}
+                  onClick={() => setShowClearHistoryConfirm(false)}
+                  className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 cursor-default"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearHistory();
+                    setShowClearHistoryConfirm(false);
+                  }}
+                  className="px-4 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 active:bg-red-700 cursor-default"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </LexicalComposer>
   );
