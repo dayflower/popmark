@@ -41,7 +41,7 @@ Popmark is an application with a tray icon and standard menu bar, providing a qu
 Triggered by the "Send to Clipboard" button (also available via keyboard shortcut):
 
 1. Current editor content is serialized to plain Markdown and written to the system clipboard. If "Copy as Rich Text" is enabled in Settings (Rich mode only), the content is also written as HTML so that rich formatting is preserved when pasting into applications that support it.
-2. The document is saved to history with a timestamp.
+2. If the content is non-empty, the document is saved to history with a timestamp.
 3. The draft is cleared.
 4. The editor window is hidden.
 

@@ -124,7 +124,7 @@ Triggered by the "Send to Clipboard" toolbar button (keyboard shortcut: `⌘Retu
 
 1. Serialize the current Lexical editor state to plain Markdown text. If "Copy as Rich Text" is enabled in Settings (Rich mode only), also generate HTML from the Lexical state via `@lexical/html`.
 2. Write the Markdown text to the system clipboard. If "Copy as Rich Text" is enabled, write both HTML and plain Markdown via `write_html(html, fallback_text)` so that apps supporting rich paste receive formatted content.
-3. Save the document to history with the current timestamp.
+3. Save the document to history with the current timestamp (skipped if the content is empty or whitespace-only).
 4. Clear `draft.md` (reset to empty).
 5. Hide the editor window.
 
