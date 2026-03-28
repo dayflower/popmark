@@ -207,6 +207,9 @@ pub fn save_editor_mode(app: AppHandle, mode: String) -> Result<(), String> {
 // ---------------------------------------------------------------------------
 
 fn save_history_entry(app: &AppHandle, content: &str) -> Result<(), String> {
+    if content.trim().is_empty() {
+        return Ok(());
+    }
     let now = Local::now();
     let id = now.format("%Y-%m-%dT%H-%M-%S").to_string();
     let timestamp = now.format("%Y-%m-%dT%H:%M:%S").to_string();
