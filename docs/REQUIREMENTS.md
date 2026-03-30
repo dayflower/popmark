@@ -44,6 +44,7 @@ Triggered by the "Send to Clipboard" button (also available via keyboard shortcu
 2. If the content is non-empty, the document is saved to history with a timestamp.
 3. The draft is cleared.
 4. The editor window is hidden.
+5. A brief toast notification appears at the bottom-right of the active screen confirming success, or showing an error message on failure. The toast auto-dismisses after ~2 seconds with a fade-out animation and requires no user interaction.
 
 The next time the editor is opened it shows a blank document.
 

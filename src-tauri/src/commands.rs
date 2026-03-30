@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, WebviewUrl, WebviewWindowBuilder};
 use tauri::menu::CheckMenuItem;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::{DialogExt, FilePath};
@@ -255,6 +255,64 @@ fn save_history_entry(app: &AppHandle, content: &str) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------------------
+// Toast window
+// ---------------------------------------------------------------------------
+
+fn percent_encode(s: &str) -> String {
+    let mut result = String::new();
+    for byte in s.as_bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                result.push(*byte as char);
+            }
+            _ => {
+                result.push_str(&format!("%{:02X}", byte));
+            }
+        }
+    }
+    result
+}
+
+fn spawn_toast(app: &AppHandle, status: &str, message: &str) -> Result<(), String> {
+    // Close any existing toast to avoid duplicates
+    if let Some(existing) = app.get_webview_window("toast") {
+        let _ = existing.close();
+    }
+
+    let url = format!(
+        "toast.html?status={}&message={}",
+        status,
+        percent_encode(message)
+    );
+
+    let toast = WebviewWindowBuilder::new(app, "toast", WebviewUrl::App(url.into()))
+        .inner_size(280.0, 56.0)
+        .decorations(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .focused(false)
+        .build()
+        .map_err(|e: tauri::Error| e.to_string())?;
+
+    // Position at bottom-right of the active monitor's work area
+    if let Some(window) = app.get_webview_window("main") {
+        if let Ok(Some(monitor)) = window.current_monitor() {
+            let scale = monitor.scale_factor();
+            let work_area = monitor.work_area();
+            let w = (280.0 * scale) as i32;
+            let h = (56.0 * scale) as i32;
+            let margin = (20.0 * scale) as i32;
+            let x = work_area.position.x + work_area.size.width as i32 - w - margin;
+            let y = work_area.position.y + work_area.size.height as i32 - h - margin;
+            let _ = toast.set_position(PhysicalPosition::new(x, y));
+        }
+    }
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // IPC commands: draft
 // ---------------------------------------------------------------------------
 
@@ -286,14 +344,18 @@ pub fn copy_to_clipboard(
     html_content: Option<String>,
 ) -> Result<(), String> {
     // 1. Copy to clipboard
-    if let Some(html) = html_content {
+    let clipboard_result = if let Some(html) = html_content {
         app.clipboard()
             .write_html(html, Some(content.clone()))
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())
     } else {
         app.clipboard()
             .write_text(content.clone())
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())
+    };
+    if let Err(ref err) = clipboard_result {
+        let _ = spawn_toast(&app, "error", err);
+        return clipboard_result;
     }
 
     // 2. Save to history
@@ -303,10 +365,13 @@ pub fn copy_to_clipboard(
     let draft = draft_path(&app)?;
     fs::write(&draft, "").map_err(|e| e.to_string())?;
 
-    // 5. Hide window
+    // 4. Hide window
     if let Some(window) = app.get_webview_window("main") {
         window.hide().map_err(|e: tauri::Error| e.to_string())?;
     }
+
+    // 5. Show success toast (best-effort)
+    let _ = spawn_toast(&app, "success", "Copied to clipboard \u{2713}");
 
     Ok(())
 }
