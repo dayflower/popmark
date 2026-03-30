@@ -127,6 +127,7 @@ Triggered by the "Send to Clipboard" toolbar button (keyboard shortcut: `⌘Retu
 3. Save the document to history with the current timestamp (skipped if the content is empty or whitespace-only).
 4. Clear `draft.md` (reset to empty).
 5. Hide the editor window.
+6. Send an OS notification via `tauri-plugin-notification` with title "Popmark" and body "Copied to clipboard". This is best-effort: the call is fire-and-forget (errors ignored). macOS will prompt the user for notification permission on first use; notifications are silenced during Focus / Do Not Disturb.
 
 After this action, the next time the editor is opened it shows a blank document.
 
