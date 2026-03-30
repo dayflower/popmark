@@ -340,12 +340,10 @@ pub fn run() {
             commands::clear_history,
         ])
         .on_window_event(|window, event| {
-            // Intercept close request on the main window → hide instead of quitting
-            if window.label() == "main" {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
-                    let _ = window.hide();
-                }
+            // Intercept close request → hide instead of quitting
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
             }
         })
         .build(tauri::generate_context!())

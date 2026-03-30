@@ -127,27 +127,8 @@ Triggered by the "Send to Clipboard" toolbar button (keyboard shortcut: `⌘Retu
 3. Save the document to history with the current timestamp (skipped if the content is empty or whitespace-only).
 4. Clear `draft.md` (reset to empty).
 5. Hide the editor window.
-6. Spawn a toast window (see §8a) confirming success. On clipboard write failure, spawn a toast with the error message instead (and abort the command).
 
 After this action, the next time the editor is opened it shows a blank document.
-
----
-
-## 8a. Toast Window
-
-A short-lived overlay window displayed after "Send to Clipboard".
-
-| Property       | Value                                                      |
-|----------------|------------------------------------------------------------|
-| Label          | `toast`                                                    |
-| Size           | 280 × 56 px (logical pixels)                              |
-| Style          | Frameless (`decorations: false`), always-on-top, non-focusable                        |
-| Position       | Bottom-right of the active monitor's work area, 20 px margin |
-| Content        | Green pill: `"Copied to clipboard ✓"` on success; red pill: error message on failure |
-| Lifetime       | Fades out at 1.5 s; closes at 2 s via `getCurrentWindow().close()` |
-| Multiplicity   | Any existing `toast` window is closed before a new one is spawned |
-| URL protocol   | `toast.html?status=success|error&message=<percent-encoded>` |
-| Entry point    | `toast.html` → `src/toast.tsx` → `src/ToastApp.tsx`       |
 
 ---
 
