@@ -44,6 +44,7 @@ Triggered by the "Send to Clipboard" button (also available via keyboard shortcu
 2. If the content is non-empty, the document is saved to history with a timestamp.
 3. The draft is cleared.
 4. The editor window is hidden.
+5. An OS notification ("Copied to clipboard") is sent as a brief confirmation. Requires notification permission (one-time system prompt); silenced during Focus / Do Not Disturb.
 
 The next time the editor is opened it shows a blank document.
 

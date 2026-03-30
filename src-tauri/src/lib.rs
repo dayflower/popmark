@@ -19,6 +19,7 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             None,
         ))
+        .plugin(tauri_plugin_notification::init())
         .manage(AppState {
             current_shortcut: Mutex::new(None),
             current_hotkey_str: Mutex::new(String::new()),

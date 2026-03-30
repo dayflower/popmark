@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri::menu::CheckMenuItem;
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -307,6 +308,13 @@ pub fn copy_to_clipboard(
     if let Some(window) = app.get_webview_window("main") {
         window.hide().map_err(|e: tauri::Error| e.to_string())?;
     }
+
+    // 6. Notify user (best-effort; silently ignored if permission denied or DND)
+    let _ = app.notification()
+        .builder()
+        .title("Popmark")
+        .body("Copied to clipboard")
+        .show();
 
     Ok(())
 }
