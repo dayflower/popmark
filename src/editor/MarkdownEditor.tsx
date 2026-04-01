@@ -798,11 +798,6 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             ? () => invoke("copy_to_clipboard", { content: plainContent })
             : undefined
         }
-        onExport={
-          editorMode === "plain"
-            ? () => invoke("export_file", { content: plainContent, defaultName: "note.md" })
-            : undefined
-        }
         copyAsRichText={copyAsRichText}
       />
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
