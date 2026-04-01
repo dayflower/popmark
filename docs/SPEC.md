@@ -98,9 +98,9 @@ A minimal toolbar appears at the top of the editor window:
 | History           | Open/close the history panel (leftmost; shows pressed state when panel is open) |
 | New               | Auto-save draft to history (if non-empty), clear draft, start new document |
 | Send to Clipboard | Copy Markdown, save to history, clear draft, hide window |
-| Plain / Rich      | Toggle between plain text (raw Markdown textarea) and rich WYSIWYG mode (also **⌘⇧M**) |
+| Rich / Plain      | Dual-button toggle group at the far right: clicking the inactive button switches the editor mode (also **⌘⇧M**); clicking the already-active button is a no-op |
 
-Buttons are icon-only (lucide-react icons). The Plain/Rich toggle retains a text label. Export is not available in the toolbar; it is accessible via the File menu (⌘S).
+Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses text labels. Export is not available in the toolbar; it is accessible via the File menu (⌘S).
 
 ---
 

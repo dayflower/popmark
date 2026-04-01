@@ -68,19 +68,26 @@ export function Toolbar({
       >
         <ClipboardCopy size={16} />
       </button>
-      <button
-        type="button"
-        onClick={onModeToggle}
-        className={[
-          "px-3 py-1 text-sm rounded cursor-default ml-auto",
-          editorMode === "plain"
-            ? "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-500"
-            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700",
-        ].join(" ")}
-        title="Toggle plain text mode (⌘⇧M)"
-      >
-        {editorMode === "plain" ? "Rich" : "Plain"}
-      </button>
+      <div className="flex ml-auto rounded overflow-hidden border border-gray-300 dark:border-gray-600">
+        {(["rich", "plain"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => {
+              if (editorMode !== mode) onModeToggle();
+            }}
+            className={[
+              "px-3 py-1 text-sm cursor-default capitalize",
+              editorMode === mode
+                ? "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700",
+            ].join(" ")}
+            title={mode === "rich" ? "Rich text mode (⌘⇧M)" : "Plain text mode (⌘⇧M)"}
+          >
+            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
