@@ -889,6 +889,21 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             copyAsRichText={copyAsRichText}
             onPastePlainText={handlePastePlainText}
           />
+          <HistoryPanel
+            isOpen={isHistoryOpen}
+            onClose={() => setIsHistoryOpen(false)}
+            onLoadEntry={handleLoadEntry}
+            entries={entries}
+            loading={loading}
+            onDeleteEntry={deleteEntry}
+          />
+          <SettingsPanel
+            isOpen={isSettingsOpen}
+            onClose={() => {
+              setIsSettingsOpen(false);
+              loadCopyAsRichText();
+            }}
+          />
         </div>
         <div className="flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">
           <SendToClipboardButton
@@ -897,21 +912,6 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             copyAsRichText={copyAsRichText}
           />
         </div>
-        <HistoryPanel
-          isOpen={isHistoryOpen}
-          onClose={() => setIsHistoryOpen(false)}
-          onLoadEntry={handleLoadEntry}
-          entries={entries}
-          loading={loading}
-          onDeleteEntry={deleteEntry}
-        />
-        <SettingsPanel
-          isOpen={isSettingsOpen}
-          onClose={() => {
-            setIsSettingsOpen(false);
-            loadCopyAsRichText();
-          }}
-        />
         {showClearHistoryConfirm && (
           <div className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center">
             <div
