@@ -336,6 +336,42 @@ function InlineCodeEscapePlugin() {
   return null;
 }
 
+interface SendToClipboardButtonProps {
+  editorMode: "rich" | "plain";
+  plainContent: string;
+  copyAsRichText: boolean;
+}
+
+function SendToClipboardButton({
+  editorMode,
+  plainContent,
+  copyAsRichText,
+}: SendToClipboardButtonProps) {
+  const [editor] = useLexicalComposerContext();
+
+  function handleClick() {
+    if (editorMode === "plain") {
+      invoke("copy_to_clipboard", { content: plainContent });
+    } else {
+      editor.getEditorState().read(() => {
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        const htmlContent = copyAsRichText ? $generateHtmlFromNodes(editor) : undefined;
+        invoke("copy_to_clipboard", { content, htmlContent });
+      });
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="absolute bottom-4 right-4 bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm cursor-default select-none"
+    >
+      Send to clipboard (⌘↵)
+    </button>
+  );
+}
+
 interface EditorPluginsProps {
   setIsHistoryOpen: (open: boolean) => void;
   onToggleHistory: () => void;
@@ -793,12 +829,6 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
         onToggleHistory={() => setIsHistoryOpen((v) => !v)}
         editorMode={editorMode}
         onModeToggle={() => modeToggleFnRef.current?.()}
-        onSendToClipboard={
-          editorMode === "plain"
-            ? () => invoke("copy_to_clipboard", { content: plainContent })
-            : undefined
-        }
-        copyAsRichText={copyAsRichText}
       />
       <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
         {editorMode === "plain" ? (
@@ -807,7 +837,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             value={plainContent}
             onChange={handlePlainChange}
             onKeyDown={handlePlainKeyDown}
-            className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
+            className="w-full h-full p-4 pb-16 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
             placeholder="Start writing…"
             // biome-ignore lint/a11y/noAutofocus: intentional — mirrors rich mode focus behavior
             autoFocus
@@ -817,7 +847,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
           <>
             <RichTextPlugin
               contentEditable={
-                <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
+                <ContentEditable className="h-full overflow-y-auto p-4 pb-16 outline-none prose prose-sm dark:prose-invert max-w-none" />
               }
               placeholder={
                 <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
@@ -857,6 +887,11 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
           onFocusPlain={handleFocusPlain}
           copyAsRichText={copyAsRichText}
           onPastePlainText={handlePastePlainText}
+        />
+        <SendToClipboardButton
+          editorMode={editorMode}
+          plainContent={plainContent}
+          copyAsRichText={copyAsRichText}
         />
         <HistoryPanel
           isOpen={isHistoryOpen}
