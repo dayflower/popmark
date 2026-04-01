@@ -2,7 +2,7 @@ import { $generateHtmlFromNodes } from "@lexical/html";
 import { $convertToMarkdownString, TRANSFORMERS } from "@lexical/markdown";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { invoke } from "@tauri-apps/api/core";
-import { ClipboardCopy, FilePlus, PanelLeft } from "lucide-react";
+import { ClipboardCopy, FilePlus, PanelLeft, SquareMenu, SquarePilcrow } from "lucide-react";
 
 interface ToolbarProps {
   isHistoryOpen: boolean;
@@ -69,7 +69,12 @@ export function Toolbar({
         <ClipboardCopy size={16} />
       </button>
       <div className="flex ml-auto rounded overflow-hidden border border-gray-300 dark:border-gray-600">
-        {(["rich", "plain"] as const).map((mode) => (
+        {(
+          [
+            { mode: "rich", Icon: SquarePilcrow, title: "Rich text mode (⌘⇧M)" },
+            { mode: "plain", Icon: SquareMenu, title: "Plain text mode (⌘⇧M)" },
+          ] as const
+        ).map(({ mode, Icon, title }) => (
           <button
             key={mode}
             type="button"
@@ -77,14 +82,14 @@ export function Toolbar({
               if (editorMode !== mode) onModeToggle();
             }}
             className={[
-              "px-3 py-1 text-sm cursor-default capitalize",
+              "p-1.5 cursor-default",
               editorMode === mode
                 ? "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700",
             ].join(" ")}
-            title={mode === "rich" ? "Rich text mode (⌘⇧M)" : "Plain text mode (⌘⇧M)"}
+            title={title}
           >
-            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+            <Icon size={16} />
           </button>
         ))}
       </div>
