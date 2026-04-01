@@ -365,7 +365,7 @@ function SendToClipboardButton({
     <button
       type="button"
       onClick={handleClick}
-      className="absolute bottom-4 right-4 bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm cursor-default select-none"
+      className="bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm cursor-default"
     >
       Send to clipboard (⌘↵)
     </button>
@@ -830,69 +830,73 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
         editorMode={editorMode}
         onModeToggle={() => modeToggleFnRef.current?.()}
       />
-      <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
-        {editorMode === "plain" ? (
-          <textarea
-            ref={textareaRef}
-            value={plainContent}
-            onChange={handlePlainChange}
-            onKeyDown={handlePlainKeyDown}
-            className="w-full h-full p-4 pb-16 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
-            placeholder="Start writing…"
-            // biome-ignore lint/a11y/noAutofocus: intentional — mirrors rich mode focus behavior
-            autoFocus
-            spellCheck={false}
-          />
-        ) : (
-          <>
-            <RichTextPlugin
-              contentEditable={
-                <ContentEditable className="h-full overflow-y-auto p-4 pb-16 outline-none prose prose-sm dark:prose-invert max-w-none" />
-              }
-              placeholder={
-                <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
-                  Start writing…
-                </div>
-              }
-              ErrorBoundary={LexicalErrorBoundary}
+      <div className="relative flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
+        <div className="flex-1 overflow-hidden relative">
+          {editorMode === "plain" ? (
+            <textarea
+              ref={textareaRef}
+              value={plainContent}
+              onChange={handlePlainChange}
+              onKeyDown={handlePlainKeyDown}
+              className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
+              placeholder="Start writing…"
+              // biome-ignore lint/a11y/noAutofocus: intentional — mirrors rich mode focus behavior
+              autoFocus
+              spellCheck={false}
             />
-            <HistoryPlugin />
-            <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
-            <HorizontalRulePlugin />
-            <ListPlugin />
-            <CheckListPlugin />
-            <TabIndentationPlugin />
-            <ClickableLinkPlugin newTab={false} />
-            <CodeEnterPlugin />
-            <CodeExitPlugin />
-            <ListShiftTabExitPlugin />
-            <InlineCodeFormatResetPlugin />
-            <InlineCodeEscapePlugin />
-          </>
-        )}
-        <EditorPlugins
-          setIsHistoryOpen={setIsHistoryOpen}
-          onToggleHistory={() => setIsHistoryOpen((v) => !v)}
-          setIsSettingsOpen={setIsSettingsOpen}
-          onClearHistory={handleClearHistory}
-          pendingContent={pendingContent}
-          onPendingConsumed={handlePendingConsumed}
-          newDocTrigger={newDocTrigger}
-          onNew={handleNew}
-          editorMode={editorMode}
-          onModeChange={onModeChange}
-          plainContent={plainContent}
-          setPlainContent={setPlainContent}
-          modeToggleFnRef={modeToggleFnRef}
-          onFocusPlain={handleFocusPlain}
-          copyAsRichText={copyAsRichText}
-          onPastePlainText={handlePastePlainText}
-        />
-        <SendToClipboardButton
-          editorMode={editorMode}
-          plainContent={plainContent}
-          copyAsRichText={copyAsRichText}
-        />
+          ) : (
+            <>
+              <RichTextPlugin
+                contentEditable={
+                  <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
+                }
+                placeholder={
+                  <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
+                    Start writing…
+                  </div>
+                }
+                ErrorBoundary={LexicalErrorBoundary}
+              />
+              <HistoryPlugin />
+              <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
+              <HorizontalRulePlugin />
+              <ListPlugin />
+              <CheckListPlugin />
+              <TabIndentationPlugin />
+              <ClickableLinkPlugin newTab={false} />
+              <CodeEnterPlugin />
+              <CodeExitPlugin />
+              <ListShiftTabExitPlugin />
+              <InlineCodeFormatResetPlugin />
+              <InlineCodeEscapePlugin />
+            </>
+          )}
+          <EditorPlugins
+            setIsHistoryOpen={setIsHistoryOpen}
+            onToggleHistory={() => setIsHistoryOpen((v) => !v)}
+            setIsSettingsOpen={setIsSettingsOpen}
+            onClearHistory={handleClearHistory}
+            pendingContent={pendingContent}
+            onPendingConsumed={handlePendingConsumed}
+            newDocTrigger={newDocTrigger}
+            onNew={handleNew}
+            editorMode={editorMode}
+            onModeChange={onModeChange}
+            plainContent={plainContent}
+            setPlainContent={setPlainContent}
+            modeToggleFnRef={modeToggleFnRef}
+            onFocusPlain={handleFocusPlain}
+            copyAsRichText={copyAsRichText}
+            onPastePlainText={handlePastePlainText}
+          />
+        </div>
+        <div className="flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">
+          <SendToClipboardButton
+            editorMode={editorMode}
+            plainContent={plainContent}
+            copyAsRichText={copyAsRichText}
+          />
+        </div>
         <HistoryPanel
           isOpen={isHistoryOpen}
           onClose={() => setIsHistoryOpen(false)}
