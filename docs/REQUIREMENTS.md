@@ -73,9 +73,9 @@ The next time the editor is opened it shows a blank document.
 
 ## 7. Export
 
-- Users can save the current editor content as a `.md` file via a native save dialog.
+- Users can save the current editor content as a `.md` file via a native save dialog (File menu, ⌘S).
 - Export does not clear the draft and does not add an entry to history.
-- Export is an optional convenience; it is not the primary workflow.
+- Export is an optional convenience; it is not the primary workflow. There is no Export button in the toolbar.
 
 ---
 
