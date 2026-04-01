@@ -235,7 +235,9 @@ The standard menu bar is active when the editor window is focused. It provides:
 | Item                | Shortcut | Action                                              |
 |---------------------|----------|-----------------------------------------------------|
 | History             | ⌘H       | Toggle the history panel (checkmark reflects state) |
-| Toggle Editor Mode  | ⌘⇧M      | Switch between Rich WYSIWYG and Plain text mode     |
+| Editor Mode ▶       |          | Submenu to select the active editor mode            |
+| — Rich text         | ⌘⇧M      | Switch to Rich WYSIWYG mode (checkmark = active)    |
+| — Plain text        |          | Switch to Plain text mode (checkmark = active)      |
 | —                   |          | Separator                                           |
 | Clear History…      |          | Delete all history entries (confirmation required)  |
 
@@ -321,6 +323,7 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 | `save_settings`          | React → Rust    | Persist settings changes                     |
 | `new_document`           | React → Rust    | Auto-save current draft to history (if non-empty), then clear draft |
 | `save_editor_mode`       | React → Rust    | Persist the selected editor mode (`rich` or `plain`) to settings.json |
+| `set_editor_mode_menu`   | React → Rust    | Sync the View > Editor Mode submenu checkmarks to the current mode |
 | `delete_history_entry`   | React → Rust    | Remove a single history entry from index.json and delete its `.md` file |
 | `clear_history`          | React → Rust    | Delete all history `.md` files and reset index.json to an empty array |
 

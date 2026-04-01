@@ -18,6 +18,8 @@ pub struct AppState {
     pub current_shortcut: Mutex<Option<Shortcut>>,
     pub current_hotkey_str: Mutex<String>,
     pub history_menu_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    pub editor_mode_rich_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    pub editor_mode_plain_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -428,6 +430,17 @@ pub async fn export_file(
 // ---------------------------------------------------------------------------
 // Menu state sync
 // ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub fn set_editor_mode_menu(state: tauri::State<'_, AppState>, mode: String) {
+    let is_rich = mode == "rich";
+    if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+        let _ = item.set_checked(is_rich);
+    }
+    if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+        let _ = item.set_checked(!is_rich);
+    }
+}
 
 #[tauri::command]
 pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {

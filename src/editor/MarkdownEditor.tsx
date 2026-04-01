@@ -631,15 +631,17 @@ function EditorPlugins({
     };
   }, [onToggleHistory]);
 
-  // Listen for menu bar View > Toggle Editor Mode event (⌘⇧M via native menu)
+  // Listen for menu bar View > Editor Mode submenu events (⌘⇧M via native menu)
   useEffect(() => {
-    const unlisten = listen("menu-toggle-editor-mode", () => {
+    const unlisten = listen<string>("menu-set-editor-mode", (event) => {
+      const targetMode = event.payload as "rich" | "plain";
+      if (targetMode === editorMode) return;
       handleModeToggle();
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [handleModeToggle]);
+  }, [handleModeToggle, editorMode]);
 
   // Listen for View > Clear History… menu event
   useEffect(() => {
@@ -795,6 +797,11 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
   useEffect(() => {
     invoke("set_history_panel_open", { open: isHistoryOpen });
   }, [isHistoryOpen]);
+
+  // Sync editor mode to the View > Editor Mode submenu checkmarks
+  useEffect(() => {
+    invoke("set_editor_mode_menu", { mode: editorMode });
+  }, [editorMode]);
 
   // Load history entries when the panel opens
   useEffect(() => {
