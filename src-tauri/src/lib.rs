@@ -259,11 +259,27 @@ pub fn run() {
                         }
                     }
                     "menu-set-editor-mode-rich" => {
+                        // Immediately correct checkmarks; macOS auto-toggles on click
+                        let state = app.state::<AppState>();
+                        if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(true);
+                        }
+                        if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(false);
+                        }
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.emit("menu-set-editor-mode", "rich");
                         }
                     }
                     "menu-set-editor-mode-plain" => {
+                        // Immediately correct checkmarks; macOS auto-toggles on click
+                        let state = app.state::<AppState>();
+                        if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(false);
+                        }
+                        if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(true);
+                        }
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.emit("menu-set-editor-mode", "plain");
                         }
