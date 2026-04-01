@@ -97,10 +97,19 @@ A minimal toolbar appears at the top of the editor window:
 |-------------------|-------------------------------|
 | History           | Open/close the history panel (leftmost; shows pressed state when panel is open) |
 | New               | Auto-save draft to history (if non-empty), clear draft, start new document |
-| Send to Clipboard | Copy Markdown, save to history, clear draft, hide window |
 | Rich / Plain      | Dual-button toggle group at the far right: clicking the inactive button switches the editor mode (also **⌘⇧M**); clicking the already-active button is a no-op |
 
 Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses text labels. Export is not available in the toolbar; it is accessible via the File menu (⌘S).
+
+### 6.4 Send to Clipboard Button
+
+A prominent primary-action button is anchored to the **bottom-right of the editor pane** (inside the `<LexicalComposer>` context, outside the `ContentEditable`):
+
+- **Label:** `Send to clipboard (⌘↵)`
+- **Position:** `absolute bottom-4 right-4` within the `relative`-positioned editor container
+- **Style:** `bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm`
+- **Behavior:** same as the keyboard shortcut `⌘Return` — copy Markdown (and optionally HTML) to clipboard, save to history, clear draft, hide window
+- The scrollable editor area has bottom padding (`pb-16`) to prevent content from being obscured by the button when scrolled to the bottom
 
 ---
 
@@ -119,7 +128,7 @@ Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses tex
 
 ## 8. Send to Clipboard
 
-Triggered by the "Send to Clipboard" toolbar button (keyboard shortcut: `⌘Return`).
+Triggered by the "Send to clipboard (⌘↵)" button anchored to the bottom-right of the editor pane (keyboard shortcut: `⌘Return`).
 
 **Steps executed in order:**
 

@@ -336,6 +336,42 @@ function InlineCodeEscapePlugin() {
   return null;
 }
 
+interface SendToClipboardButtonProps {
+  editorMode: "rich" | "plain";
+  plainContent: string;
+  copyAsRichText: boolean;
+}
+
+function SendToClipboardButton({
+  editorMode,
+  plainContent,
+  copyAsRichText,
+}: SendToClipboardButtonProps) {
+  const [editor] = useLexicalComposerContext();
+
+  function handleClick() {
+    if (editorMode === "plain") {
+      invoke("copy_to_clipboard", { content: plainContent });
+    } else {
+      editor.getEditorState().read(() => {
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        const htmlContent = copyAsRichText ? $generateHtmlFromNodes(editor) : undefined;
+        invoke("copy_to_clipboard", { content, htmlContent });
+      });
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm cursor-default"
+    >
+      Send to clipboard (⌘↵)
+    </button>
+  );
+}
+
 interface EditorPluginsProps {
   setIsHistoryOpen: (open: boolean) => void;
   onToggleHistory: () => void;
@@ -793,86 +829,89 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
         onToggleHistory={() => setIsHistoryOpen((v) => !v)}
         editorMode={editorMode}
         onModeToggle={() => modeToggleFnRef.current?.()}
-        onSendToClipboard={
-          editorMode === "plain"
-            ? () => invoke("copy_to_clipboard", { content: plainContent })
-            : undefined
-        }
-        copyAsRichText={copyAsRichText}
       />
-      <div className="relative flex-1 overflow-hidden bg-white dark:bg-gray-900">
-        {editorMode === "plain" ? (
-          <textarea
-            ref={textareaRef}
-            value={plainContent}
-            onChange={handlePlainChange}
-            onKeyDown={handlePlainKeyDown}
-            className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
-            placeholder="Start writing…"
-            // biome-ignore lint/a11y/noAutofocus: intentional — mirrors rich mode focus behavior
-            autoFocus
-            spellCheck={false}
-          />
-        ) : (
-          <>
-            <RichTextPlugin
-              contentEditable={
-                <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
-              }
-              placeholder={
-                <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
-                  Start writing…
-                </div>
-              }
-              ErrorBoundary={LexicalErrorBoundary}
+      <div className="relative flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
+        <div className="flex-1 overflow-hidden relative">
+          {editorMode === "plain" ? (
+            <textarea
+              ref={textareaRef}
+              value={plainContent}
+              onChange={handlePlainChange}
+              onKeyDown={handlePlainKeyDown}
+              className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
+              placeholder="Start writing…"
+              // biome-ignore lint/a11y/noAutofocus: intentional — mirrors rich mode focus behavior
+              autoFocus
+              spellCheck={false}
             />
-            <HistoryPlugin />
-            <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
-            <HorizontalRulePlugin />
-            <ListPlugin />
-            <CheckListPlugin />
-            <TabIndentationPlugin />
-            <ClickableLinkPlugin newTab={false} />
-            <CodeEnterPlugin />
-            <CodeExitPlugin />
-            <ListShiftTabExitPlugin />
-            <InlineCodeFormatResetPlugin />
-            <InlineCodeEscapePlugin />
-          </>
-        )}
-        <EditorPlugins
-          setIsHistoryOpen={setIsHistoryOpen}
-          onToggleHistory={() => setIsHistoryOpen((v) => !v)}
-          setIsSettingsOpen={setIsSettingsOpen}
-          onClearHistory={handleClearHistory}
-          pendingContent={pendingContent}
-          onPendingConsumed={handlePendingConsumed}
-          newDocTrigger={newDocTrigger}
-          onNew={handleNew}
-          editorMode={editorMode}
-          onModeChange={onModeChange}
-          plainContent={plainContent}
-          setPlainContent={setPlainContent}
-          modeToggleFnRef={modeToggleFnRef}
-          onFocusPlain={handleFocusPlain}
-          copyAsRichText={copyAsRichText}
-          onPastePlainText={handlePastePlainText}
-        />
-        <HistoryPanel
-          isOpen={isHistoryOpen}
-          onClose={() => setIsHistoryOpen(false)}
-          onLoadEntry={handleLoadEntry}
-          entries={entries}
-          loading={loading}
-          onDeleteEntry={deleteEntry}
-        />
-        <SettingsPanel
-          isOpen={isSettingsOpen}
-          onClose={() => {
-            setIsSettingsOpen(false);
-            loadCopyAsRichText();
-          }}
-        />
+          ) : (
+            <>
+              <RichTextPlugin
+                contentEditable={
+                  <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
+                }
+                placeholder={
+                  <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">
+                    Start writing…
+                  </div>
+                }
+                ErrorBoundary={LexicalErrorBoundary}
+              />
+              <HistoryPlugin />
+              <MarkdownShortcutPlugin transformers={CUSTOM_TRANSFORMERS} />
+              <HorizontalRulePlugin />
+              <ListPlugin />
+              <CheckListPlugin />
+              <TabIndentationPlugin />
+              <ClickableLinkPlugin newTab={false} />
+              <CodeEnterPlugin />
+              <CodeExitPlugin />
+              <ListShiftTabExitPlugin />
+              <InlineCodeFormatResetPlugin />
+              <InlineCodeEscapePlugin />
+            </>
+          )}
+          <EditorPlugins
+            setIsHistoryOpen={setIsHistoryOpen}
+            onToggleHistory={() => setIsHistoryOpen((v) => !v)}
+            setIsSettingsOpen={setIsSettingsOpen}
+            onClearHistory={handleClearHistory}
+            pendingContent={pendingContent}
+            onPendingConsumed={handlePendingConsumed}
+            newDocTrigger={newDocTrigger}
+            onNew={handleNew}
+            editorMode={editorMode}
+            onModeChange={onModeChange}
+            plainContent={plainContent}
+            setPlainContent={setPlainContent}
+            modeToggleFnRef={modeToggleFnRef}
+            onFocusPlain={handleFocusPlain}
+            copyAsRichText={copyAsRichText}
+            onPastePlainText={handlePastePlainText}
+          />
+          <HistoryPanel
+            isOpen={isHistoryOpen}
+            onClose={() => setIsHistoryOpen(false)}
+            onLoadEntry={handleLoadEntry}
+            entries={entries}
+            loading={loading}
+            onDeleteEntry={deleteEntry}
+          />
+          <SettingsPanel
+            isOpen={isSettingsOpen}
+            onClose={() => {
+              setIsSettingsOpen(false);
+              loadCopyAsRichText();
+            }}
+          />
+        </div>
+        <div className="flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">
+          <SendToClipboardButton
+            editorMode={editorMode}
+            plainContent={plainContent}
+            copyAsRichText={copyAsRichText}
+          />
+        </div>
         {showClearHistoryConfirm && (
           <div className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center">
             <div
