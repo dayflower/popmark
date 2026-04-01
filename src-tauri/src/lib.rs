@@ -24,6 +24,8 @@ pub fn run() {
             current_shortcut: Mutex::new(None),
             current_hotkey_str: Mutex::new(String::new()),
             history_menu_item: Mutex::new(None),
+            editor_mode_rich_item: Mutex::new(None),
+            editor_mode_plain_item: Mutex::new(None),
         })
         .setup(|app| {
             // macOS system menu bar: popmark menu + File menu + View menu + Edit menu
@@ -37,12 +39,31 @@ pub fn run() {
                     false,
                     Some("cmd+h"),
                 )?;
-                let menu_toggle_editor_mode_item = MenuItem::with_id(
+                let saved_mode = commands::get_settings(app.handle().clone())
+                    .unwrap_or_default()
+                    .editor_mode;
+                let is_rich = saved_mode != "plain";
+                let menu_editor_mode_rich_item = CheckMenuItem::with_id(
                     app,
-                    "menu-toggle-editor-mode",
-                    "Toggle Editor Mode",
+                    "menu-set-editor-mode-rich",
+                    "Rich text",
                     true,
+                    is_rich,
                     Some("cmd+shift+m"),
+                )?;
+                let menu_editor_mode_plain_item = CheckMenuItem::with_id(
+                    app,
+                    "menu-set-editor-mode-plain",
+                    "Plain text",
+                    true,
+                    !is_rich,
+                    None::<&str>,
+                )?;
+                let menu_editor_mode_submenu = Submenu::with_items(
+                    app,
+                    "Editor Mode",
+                    true,
+                    &[&menu_editor_mode_rich_item, &menu_editor_mode_plain_item],
                 )?;
                 let menu_clear_history_item = MenuItem::with_id(
                     app,
@@ -157,7 +178,7 @@ pub fn run() {
                             true,
                             &[
                                 &menu_toggle_history_item,
-                                &menu_toggle_editor_mode_item,
+                                &menu_editor_mode_submenu,
                                 &PredefinedMenuItem::separator(app)?,
                                 &menu_clear_history_item,
                             ],
@@ -185,6 +206,10 @@ pub fn run() {
                 app.set_menu(menu)?;
                 *app.state::<AppState>().history_menu_item.lock().unwrap() =
                     Some(menu_toggle_history_item);
+                *app.state::<AppState>().editor_mode_rich_item.lock().unwrap() =
+                    Some(menu_editor_mode_rich_item);
+                *app.state::<AppState>().editor_mode_plain_item.lock().unwrap() =
+                    Some(menu_editor_mode_plain_item);
                 app.on_menu_event(|app, event| match event.id().as_ref() {
                     "menu-toggle-history" => {
                         if let Some(window) = app.get_webview_window("main") {
@@ -233,9 +258,30 @@ pub fn run() {
                             }
                         }
                     }
-                    "menu-toggle-editor-mode" => {
+                    "menu-set-editor-mode-rich" => {
+                        // Immediately correct checkmarks; macOS auto-toggles on click
+                        let state = app.state::<AppState>();
+                        if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(true);
+                        }
+                        if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(false);
+                        }
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-toggle-editor-mode", ());
+                            let _ = window.emit("menu-set-editor-mode", "rich");
+                        }
+                    }
+                    "menu-set-editor-mode-plain" => {
+                        // Immediately correct checkmarks; macOS auto-toggles on click
+                        let state = app.state::<AppState>();
+                        if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(false);
+                        }
+                        if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+                            let _ = item.set_checked(true);
+                        }
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-set-editor-mode", "plain");
                         }
                     }
                     "menu-clear-history" => {
@@ -336,6 +382,7 @@ pub fn run() {
             commands::save_settings,
             commands::save_editor_mode,
             commands::set_history_panel_open,
+            commands::set_editor_mode_menu,
             commands::set_settings_panel_open,
             commands::delete_history_entry,
             commands::clear_history,
