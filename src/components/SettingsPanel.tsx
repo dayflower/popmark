@@ -125,82 +125,84 @@ export function SettingsPanel() {
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Settings</h2>
+    <div className="p-6 flex flex-col h-full">
+      <div className="flex-1">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Settings</h2>
 
-      {/* Global shortcut */}
-      <div className="mb-4">
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-          Global Shortcut
-        </p>
-        {/* Hotkey capture box: a <button> that turns into a capture target when clicked */}
-        <button
-          ref={captureBoxRef}
-          type="button"
-          data-capture-box
-          className={[
-            "w-full px-3 py-2 border rounded text-center font-mono text-sm select-none cursor-pointer",
-            isCapturing
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-              : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500",
-          ].join(" ")}
-          onClick={isCapturing ? undefined : startCapture}
-          onKeyDown={isCapturing ? handleCaptureKeyDown : undefined}
-          aria-label={
-            isCapturing
-              ? "Press the desired key combination"
-              : `Current shortcut: ${capturedHotkey}`
-          }
-        >
-          {isCapturing ? "Press shortcut…" : formatHotkey(capturedHotkey)}
-        </button>
-      </div>
+        {/* Global shortcut */}
+        <div className="mb-4">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Global Shortcut
+          </p>
+          {/* Hotkey capture box: a <button> that turns into a capture target when clicked */}
+          <button
+            ref={captureBoxRef}
+            type="button"
+            data-capture-box
+            className={[
+              "w-full px-3 py-2 border rounded text-center font-mono text-sm select-none cursor-pointer",
+              isCapturing
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500",
+            ].join(" ")}
+            onClick={isCapturing ? undefined : startCapture}
+            onKeyDown={isCapturing ? handleCaptureKeyDown : undefined}
+            aria-label={
+              isCapturing
+                ? "Press the desired key combination"
+                : `Current shortcut: ${capturedHotkey}`
+            }
+          >
+            {isCapturing ? "Press shortcut…" : formatHotkey(capturedHotkey)}
+          </button>
+        </div>
 
-      {/* Launch at login */}
-      <div className="mb-3">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={launchAtLogin}
-            onChange={(e) => setLaunchAtLogin(e.target.checked)}
-            className="w-4 h-4 accent-blue-500"
-          />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Launch at login</span>
-        </label>
-      </div>
+        {/* Launch at login */}
+        <div className="mb-3">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={launchAtLogin}
+              onChange={(e) => setLaunchAtLogin(e.target.checked)}
+              className="w-4 h-4 accent-blue-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Launch at login</span>
+          </label>
+        </div>
 
-      {/* Copy as Rich Text */}
-      <div className="mb-4">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={copyAsRichText}
-            onChange={(e) => setCopyAsRichText(e.target.checked)}
-            className="w-4 h-4 accent-blue-500"
-          />
-          <span className="text-sm text-gray-700 dark:text-gray-300">
-            Copy as Rich Text{" "}
-            <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
-          </span>
-        </label>
-      </div>
+        {/* Copy as Rich Text */}
+        <div className="mb-4">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={copyAsRichText}
+              onChange={(e) => setCopyAsRichText(e.target.checked)}
+              className="w-4 h-4 accent-blue-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Copy as Rich Text{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
+            </span>
+          </label>
+        </div>
 
-      {/* Max history entries */}
-      <div className="mb-6">
-        <label className="flex items-center justify-between gap-3 select-none">
-          <span className="text-sm text-gray-700 dark:text-gray-300">
-            Max history entries{" "}
-            <span className="text-xs text-gray-400 dark:text-gray-500">(0 = unlimited)</span>
-          </span>
-          <input
-            type="number"
-            min="0"
-            value={maxHistoryEntries}
-            onChange={(e) => setMaxHistoryEntries(e.target.value)}
-            placeholder="∞"
-            className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-          />
-        </label>
+        {/* Max history entries */}
+        <div className="mb-6">
+          <label className="flex items-center justify-between gap-3 select-none">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Max history entries{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">(0 = unlimited)</span>
+            </span>
+            <input
+              type="number"
+              min="0"
+              value={maxHistoryEntries}
+              onChange={(e) => setMaxHistoryEntries(e.target.value)}
+              placeholder="∞"
+              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+            />
+          </label>
+        </div>
       </div>
 
       {/* Action buttons */}
