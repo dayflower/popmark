@@ -389,6 +389,7 @@ interface EditorPluginsProps {
   copyAsRichText: boolean;
   setCopyAsRichText: (v: boolean) => void;
   onPastePlainText: (text: string) => void;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 // Handles draft load/save, keyboard shortcuts, and panel event listening
@@ -409,6 +410,7 @@ function EditorPlugins({
   copyAsRichText,
   setCopyAsRichText,
   onPastePlainText,
+  textareaRef,
 }: EditorPluginsProps) {
   const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -668,36 +670,44 @@ function EditorPlugins({
   useEffect(() => {
     if (pendingContent === null) return;
 
-    if (editorMode === "plain") {
-      if (
-        plainContent.trim().length > 0 &&
-        !window.confirm("Replace current draft with this history entry?")
-      ) {
+    (async () => {
+      if (editorMode === "plain") {
+        if (plainContent.trim().length > 0) {
+          if (!window.confirm("Replace current draft with this history entry?")) {
+            onPendingConsumed();
+            return;
+          }
+          await invoke("save_draft", { content: plainContent });
+          await invoke("new_document");
+        }
+        setPlainContent(pendingContent);
+        invoke("save_draft", { content: pendingContent });
+        setTimeout(() => textareaRef.current?.setSelectionRange(0, 0), 0);
         onPendingConsumed();
         return;
       }
-      setPlainContent(pendingContent);
-      invoke("save_draft", { content: pendingContent });
+
+      let hasContent = false;
+      editor.getEditorState().read(() => {
+        const text = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        hasContent = text.trim().length > 0;
+      });
+
+      if (hasContent) {
+        if (!window.confirm("Replace current draft with this history entry?")) {
+          onPendingConsumed();
+          return;
+        }
+        await invoke("new_document");
+      }
+
+      editor.update(() => {
+        $convertFromMarkdownString(pendingContent, CUSTOM_TRANSFORMERS);
+        $getRoot().selectStart();
+      });
       onPendingConsumed();
-      return;
-    }
-
-    let hasContent = false;
-    editor.getEditorState().read(() => {
-      const text = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-      hasContent = text.trim().length > 0;
-    });
-
-    if (hasContent && !window.confirm("Replace current draft with this history entry?")) {
-      onPendingConsumed();
-      return;
-    }
-
-    editor.update(() => {
-      $convertFromMarkdownString(pendingContent, CUSTOM_TRANSFORMERS);
-    });
-    onPendingConsumed();
-  }, [editor, pendingContent, onPendingConsumed, editorMode, plainContent, setPlainContent]);
+    })();
+  }, [editor, pendingContent, onPendingConsumed, editorMode, plainContent, setPlainContent, textareaRef]);
 
   function handleChange(editorState: EditorState) {
     if (editorMode === "plain") return;
@@ -787,6 +797,29 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
     },
     [plainContent],
   );
+
+  // Load history on mount so the initial Recall Last enabled state can be set
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  // Sync Recall Last menu item enabled state whenever history entries change
+  useEffect(() => {
+    invoke("set_recall_last_enabled", { enabled: entries.length > 0 });
+  }, [entries]);
+
+  // Listen for Edit > Recall Last menu event (⌘R)
+  useEffect(() => {
+    const unlisten = listen("menu-recall-last", async () => {
+      const content = await invoke<string>("recall_last_history").catch(() => null);
+      if (content !== null) {
+        setPendingContent(content);
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   // Sync history panel open state to the View > History menu item checkmark
   useEffect(() => {
@@ -890,6 +923,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             copyAsRichText={copyAsRichText}
             setCopyAsRichText={setCopyAsRichText}
             onPastePlainText={handlePastePlainText}
+            textareaRef={textareaRef}
           />
           <HistoryPanel
             isOpen={isHistoryOpen}

@@ -26,6 +26,7 @@ pub fn run() {
             history_menu_item: Mutex::new(None),
             editor_mode_rich_item: Mutex::new(None),
             editor_mode_plain_item: Mutex::new(None),
+            recall_last_item: Mutex::new(None),
         })
         .setup(|app| {
             // macOS system menu bar: popmark menu + File menu + View menu + Edit menu
@@ -155,6 +156,15 @@ pub fn run() {
                                 true,
                                 None::<&str>,
                             )?;
+                            let menu_recall_last_item = MenuItem::with_id(
+                                app,
+                                "menu-recall-last",
+                                "Recall Last",
+                                false,
+                                Some("cmd+r"),
+                            )?;
+                            *app.state::<AppState>().recall_last_item.lock().unwrap() =
+                                Some(menu_recall_last_item.clone());
                             &Submenu::with_items(
                                 app,
                                 "Edit",
@@ -169,6 +179,8 @@ pub fn run() {
                                     &menu_paste_and_match_style_item,
                                     &menu_paste_from_markdown_item,
                                     &PredefinedMenuItem::select_all(app, None)?,
+                                    &PredefinedMenuItem::separator(app)?,
+                                    &menu_recall_last_item,
                                 ],
                             )?
                         },
@@ -294,6 +306,11 @@ pub fn run() {
                             let _ = window.emit("menu-paste-from-markdown", ());
                         }
                     }
+                    "menu-recall-last" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-recall-last", ());
+                        }
+                    }
                     "menu-help" => {
                         // stub: no help documentation yet
                     }
@@ -378,6 +395,8 @@ pub fn run() {
             commands::set_hotkey_capture_active,
             commands::delete_history_entry,
             commands::clear_history,
+            commands::recall_last_history,
+            commands::set_recall_last_enabled,
         ])
         .on_window_event(|window, event| {
             // Intercept close request → hide instead of quitting

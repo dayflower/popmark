@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
-use tauri::menu::CheckMenuItem;
+use tauri::menu::{CheckMenuItem, MenuItem};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_dialog::{DialogExt, FilePath};
@@ -20,6 +20,7 @@ pub struct AppState {
     pub history_menu_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     pub editor_mode_rich_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     pub editor_mode_plain_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    pub recall_last_item: Mutex<Option<MenuItem<tauri::Wry>>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -406,6 +407,32 @@ pub fn clear_history(app: AppHandle) -> Result<(), String> {
     fs::write(&index_path, "[]").map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// IPC commands: recall last history
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub fn recall_last_history(app: AppHandle) -> Result<String, String> {
+    let history = history_dir(&app)?;
+    let index_path = history.join("index.json");
+    if !index_path.exists() {
+        return Err("No history entries".to_string());
+    }
+    let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
+    let entries: Vec<HistoryEntry> = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    if entries.is_empty() {
+        return Err("No history entries".to_string());
+    }
+    get_history_entry(app, entries[0].id.clone())
+}
+
+#[tauri::command]
+pub fn set_recall_last_enabled(state: tauri::State<'_, AppState>, enabled: bool) {
+    if let Some(item) = state.recall_last_item.lock().unwrap().as_ref() {
+        let _ = item.set_enabled(enabled);
+    }
 }
 
 // ---------------------------------------------------------------------------
