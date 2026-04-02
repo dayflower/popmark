@@ -201,7 +201,7 @@ pub fn save_editor_mode(app: AppHandle, mode: String) -> Result<(), String> {
     let path = settings_path(&app)?;
     let mut settings: Settings = if path.exists() {
         let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&data).unwrap_or_default()
+        serde_json::from_str(&data).map_err(|e| e.to_string())?
     } else {
         Settings::default()
     };
@@ -466,6 +466,7 @@ pub fn show_settings_window(app: AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("settings") {
         window.show().map_err(|e| e.to_string())?;
         window.set_focus().map_err(|e| e.to_string())?;
+        let _ = window.emit("settings-window-shown", ());
     }
     Ok(())
 }
