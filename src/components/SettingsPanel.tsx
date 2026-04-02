@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import type { Settings } from "../types/settings";
 
@@ -46,17 +47,25 @@ export function SettingsPanel() {
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
   const captureBoxRef = useRef<HTMLButtonElement>(null);
 
-  // Load settings on mount
+  // Load settings on mount and whenever the settings window is shown
   useEffect(() => {
-    invoke<Settings>("get_settings").then((s) => {
-      setSavedHotkey(s.hotkey);
-      setCapturedHotkey(s.hotkey);
-      setLaunchAtLogin(s.launch_at_login);
-      setEditorModeLocal(s.editor_mode);
-      setCopyAsRichText(s.copy_as_rich_text);
-      const limit = s.max_history_entries;
-      setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
-    });
+    function loadSettings() {
+      invoke<Settings>("get_settings").then((s) => {
+        setSavedHotkey(s.hotkey);
+        setCapturedHotkey(s.hotkey);
+        setLaunchAtLogin(s.launch_at_login);
+        setEditorModeLocal(s.editor_mode);
+        setCopyAsRichText(s.copy_as_rich_text);
+        const limit = s.max_history_entries;
+        setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
+      });
+    }
+
+    loadSettings();
+    const unlisten = listen("settings-window-shown", () => loadSettings());
+    return () => {
+      unlisten.then((fn) => fn());
+    };
   }, []);
 
   // ESC to cancel (when not capturing)
