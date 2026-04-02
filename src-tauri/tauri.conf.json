@@ -17,6 +17,17 @@
         "height": 500,
         "decorations": true,
         "visible": false
+      },
+      {
+        "label": "settings",
+        "title": "Popmark Settings",
+        "url": "index.html#settings",
+        "width": 360,
+        "height": 460,
+        "resizable": false,
+        "visible": false,
+        "decorations": true,
+        "alwaysOnTop": true
       }
     ],
     "security": {

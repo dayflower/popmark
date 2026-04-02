@@ -277,7 +277,11 @@ The standard menu bar is active when the editor window is focused. It provides:
 
 ## 12. Settings
 
-Accessible via menu bar > Settings….
+Accessible via menu bar > Settings… or tray > Settings….
+
+Settings opens as a **standalone OS-level window** (label: `settings`, 360×460, always-on-top). The window is created hidden at app startup and shown/hidden on demand (`show_settings_window` / `hide_settings_window`). This eliminates focus-management complexity and global-shortcut interference that existed with the former in-window modal approach.
+
+After the user saves, the backend emits a `settings-changed` event to the main window so it can update `copy_as_rich_text` and `editor_mode` without requiring a reload.
 
 | Setting              | Default            | Description                           |
 |----------------------|--------------------|---------------------------------------|
@@ -320,10 +324,13 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 | `get_history_entry`      | Rust → React    | Return content of a specific history file    |
 | `export_file`            | React → Rust    | Open save dialog and write file              |
 | `get_settings`           | Rust → React    | Return current settings                      |
-| `save_settings`          | React → Rust    | Persist settings changes                     |
+| `save_settings`          | React → Rust    | Persist settings changes; emits `settings-changed` event to the main window |
 | `new_document`           | React → Rust    | Auto-save current draft to history (if non-empty), then clear draft |
 | `save_editor_mode`       | React → Rust    | Persist the selected editor mode (`rich` or `plain`) to settings.json |
 | `set_editor_mode_menu`   | React → Rust    | Sync the View > Editor Mode submenu checkmarks to the current mode |
+| `show_settings_window`   | React → Rust    | Show the settings window and unregister the global shortcut |
+| `hide_settings_window`   | React → Rust    | Hide the settings window and re-register the global shortcut |
+| `set_hotkey_capture_active` | React → Rust | Unregister (active=true) or re-register (active=false) the global shortcut during hotkey capture |
 | `delete_history_entry`   | React → Rust    | Remove a single history entry from index.json and delete its `.md` file |
 | `clear_history`          | React → Rust    | Delete all history `.md` files and reset index.json to an empty array |
 
