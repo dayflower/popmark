@@ -217,12 +217,7 @@ pub fn run() {
                         }
                     }
                     "menu-settings" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.emit("window-shown", ());
-                            let _ = window.emit("open-settings-panel", ());
-                        }
+                        let _ = commands::show_settings_window(app.clone());
                     }
                     "menu-new-document" => {
                         if let Some(window) = app.get_webview_window("main") {
@@ -344,12 +339,7 @@ pub fn run() {
                         }
                     }
                     "open-settings" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.emit("window-shown", ());
-                            let _ = window.emit("open-settings-panel", ());
-                        }
+                        let _ = commands::show_settings_window(app.clone());
                     }
                     "quit-popmark" => {
                         app.exit(0);
@@ -383,7 +373,9 @@ pub fn run() {
             commands::save_editor_mode,
             commands::set_history_panel_open,
             commands::set_editor_mode_menu,
-            commands::set_settings_panel_open,
+            commands::show_settings_window,
+            commands::hide_settings_window,
+            commands::set_hotkey_capture_active,
             commands::delete_history_entry,
             commands::clear_history,
         ])
@@ -392,6 +384,19 @@ pub fn run() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();
+                // Re-register global shortcut when settings window is closed
+                if window.label() == "settings" {
+                    let app = window.app_handle();
+                    let hotkey = app
+                        .state::<AppState>()
+                        .current_hotkey_str
+                        .lock()
+                        .unwrap()
+                        .clone();
+                    if !hotkey.is_empty() {
+                        let _ = commands::re_register_shortcut(app, &hotkey);
+                    }
+                }
             }
         })
         .build(tauri::generate_context!())

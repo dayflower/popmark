@@ -1,18 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
-
-interface Settings {
-  hotkey: string;
-  launch_at_login: boolean;
-  editor_mode: string;
-  copy_as_rich_text: boolean;
-  max_history_entries?: number | null;
-}
-
-interface SettingsPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import type { Settings } from "../types/settings";
 
 // Map a keyboard Code (e.g. "KeyM", "Space") to the hotkey segment (e.g. "m", "space")
 function codeToHotkeySegment(code: string): string {
@@ -48,7 +36,7 @@ function formatHotkey(hotkey: string): string {
     .join("");
 }
 
-export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
+export function SettingsPanel() {
   const [savedHotkey, setSavedHotkey] = useState("alt+m");
   const [capturedHotkey, setCapturedHotkey] = useState("alt+m");
   const [isCapturing, setIsCapturing] = useState(false);
@@ -56,17 +44,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [editorModeLocal, setEditorModeLocal] = useState("rich");
   const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const captureBoxRef = useRef<HTMLButtonElement>(null);
 
-  // Notify backend and load settings when panel opens/closes
+  // Load settings on mount
   useEffect(() => {
-    if (!isOpen) {
-      invoke("set_settings_panel_open", { open: false });
-      return;
-    }
-
-    invoke("set_settings_panel_open", { open: true });
-
     invoke<Settings>("get_settings").then((s) => {
       setSavedHotkey(s.hotkey);
       setCapturedHotkey(s.hotkey);
@@ -76,14 +57,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       const limit = s.max_history_entries;
       setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
     });
+  }, []);
 
-    // R-HK-3: defer focus so Lexical handlers cannot reclaim it
-    setTimeout(() => dialogRef.current?.focus(), 0);
-  }, [isOpen]);
-
-  // ESC to close (when not capturing)
+  // ESC to cancel (when not capturing)
   useEffect(() => {
-    if (!isOpen) return;
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape" && !isCapturing) {
         handleCancel();
@@ -94,8 +71,9 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   });
 
   function startCapture() {
+    invoke("set_hotkey_capture_active", { active: true });
     setIsCapturing(true);
-    dialogRef.current?.querySelector<HTMLElement>("[data-capture-box]")?.focus();
+    captureBoxRef.current?.focus();
   }
 
   function handleCaptureKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
@@ -103,6 +81,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     e.stopPropagation();
 
     if (e.key === "Escape") {
+      invoke("set_hotkey_capture_active", { active: false });
       setIsCapturing(false);
       setCapturedHotkey(savedHotkey);
       return;
@@ -119,6 +98,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     parts.push(codeToHotkeySegment(e.code));
 
     setCapturedHotkey(parts.join("+"));
+    invoke("set_hotkey_capture_active", { active: false });
     setIsCapturing(false);
   }
 
@@ -135,29 +115,18 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       },
     });
     setSavedHotkey(capturedHotkey);
-    onClose();
+    invoke("hide_settings_window");
   }
 
   function handleCancel() {
     setIsCapturing(false);
     setCapturedHotkey(savedHotkey);
-    onClose();
+    invoke("hide_settings_window");
   }
 
-  if (!isOpen) return null;
-
   return (
-    // Backdrop
-    <div className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center">
-      {/* Dialog box */}
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Settings"
-        tabIndex={-1}
-        className="w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 outline-none"
-      >
+    <div className="p-6 flex flex-col h-full">
+      <div className="flex-1">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Settings</h2>
 
         {/* Global shortcut */}
@@ -167,6 +136,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           </p>
           {/* Hotkey capture box: a <button> that turns into a capture target when clicked */}
           <button
+            ref={captureBoxRef}
             type="button"
             data-capture-box
             className={[
@@ -233,24 +203,24 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             />
           </label>
         </div>
+      </div>
 
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 cursor-default"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 cursor-default"
-          >
-            Save
-          </button>
-        </div>
+      {/* Action buttons */}
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 cursor-default"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 cursor-default"
+        >
+          Save
+        </button>
       </div>
     </div>
   );

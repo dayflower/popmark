@@ -188,6 +188,11 @@ pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
         app.autolaunch().disable().map_err(|e| e.to_string())?;
     }
 
+    // Notify main window that settings changed
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.emit("settings-changed", &settings);
+    }
+
     Ok(())
 }
 
@@ -450,16 +455,50 @@ pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
 }
 
 #[tauri::command]
-pub fn set_settings_panel_open(app: AppHandle, open: bool) -> Result<(), String> {
+pub fn show_settings_window(app: AppHandle) -> Result<(), String> {
+    // Unregister global shortcut while settings window is open
     let state = app.state::<AppState>();
-    if open {
-        // R-HK-2: unregister from OS while Settings panel is open
+    let mut current = state.current_shortcut.lock().unwrap();
+    if let Some(old) = current.take() {
+        let _ = app.global_shortcut().unregister(old);
+    }
+
+    if let Some(window) = app.get_webview_window("settings") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn hide_settings_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("settings") {
+        window.hide().map_err(|e| e.to_string())?;
+    }
+    // Re-register global shortcut
+    let hotkey = app
+        .state::<AppState>()
+        .current_hotkey_str
+        .lock()
+        .unwrap()
+        .clone();
+    if !hotkey.is_empty() {
+        re_register_shortcut(&app, &hotkey)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_hotkey_capture_active(app: AppHandle, active: bool) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    if active {
+        // Unregister while user is capturing a new hotkey
         let mut current = state.current_shortcut.lock().unwrap();
         if let Some(old) = current.take() {
             let _ = app.global_shortcut().unregister(old);
         }
     } else {
-        // Re-register using the stored hotkey string
+        // Re-register with the stored hotkey
         let hotkey = state.current_hotkey_str.lock().unwrap().clone();
         if !hotkey.is_empty() {
             re_register_shortcut(&app, &hotkey)?;

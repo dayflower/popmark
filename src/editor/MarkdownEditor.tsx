@@ -50,9 +50,9 @@ import {
 } from "lexical";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HistoryPanel } from "../components/HistoryPanel";
-import { SettingsPanel } from "../components/SettingsPanel";
 import { Toolbar } from "../components/Toolbar";
 import { useHistory } from "../hooks/useHistory";
+import type { Settings } from "../types/settings";
 
 // Support both "- [ ] " and "-[ ] " (with or without space between dash and bracket)
 const CUSTOM_CHECK_LIST = {
@@ -375,7 +375,6 @@ function SendToClipboardButton({
 interface EditorPluginsProps {
   setIsHistoryOpen: (open: boolean) => void;
   onToggleHistory: () => void;
-  setIsSettingsOpen: (open: boolean) => void;
   onClearHistory: () => void;
   pendingContent: string | null;
   onPendingConsumed: () => void;
@@ -388,6 +387,7 @@ interface EditorPluginsProps {
   modeToggleFnRef: React.MutableRefObject<(() => void) | null>;
   onFocusPlain: () => void;
   copyAsRichText: boolean;
+  setCopyAsRichText: (v: boolean) => void;
   onPastePlainText: (text: string) => void;
 }
 
@@ -395,7 +395,6 @@ interface EditorPluginsProps {
 function EditorPlugins({
   setIsHistoryOpen,
   onToggleHistory,
-  setIsSettingsOpen,
   onClearHistory,
   pendingContent,
   onPendingConsumed,
@@ -408,6 +407,7 @@ function EditorPlugins({
   modeToggleFnRef,
   onFocusPlain,
   copyAsRichText,
+  setCopyAsRichText,
   onPastePlainText,
 }: EditorPluginsProps) {
   const [editor] = useLexicalComposerContext();
@@ -653,15 +653,16 @@ function EditorPlugins({
     };
   }, [onClearHistory]);
 
-  // Listen for "open-settings-panel" event emitted by the tray menu
+  // Listen for settings-changed event emitted by the backend after save_settings
   useEffect(() => {
-    const unlisten = listen("open-settings-panel", () => {
-      setIsSettingsOpen(true);
+    const unlisten = listen<Settings>("settings-changed", (event) => {
+      setCopyAsRichText(event.payload.copy_as_rich_text ?? false);
+      onModeChange(event.payload.editor_mode === "plain" ? "plain" : "rich");
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [setIsSettingsOpen]);
+  }, [setCopyAsRichText, onModeChange]);
 
   // Load a pending history entry into the editor or textarea
   useEffect(() => {
@@ -719,7 +720,6 @@ interface MarkdownEditorProps {
 
 export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showClearHistoryConfirm, setShowClearHistoryConfirm] = useState(false);
   const [pendingContent, setPendingContent] = useState<string | null>(null);
   const [newDocTrigger, setNewDocTrigger] = useState(0);
@@ -730,16 +730,11 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
   const plainDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load copyAsRichText from settings; re-run after settings panel closes
-  const loadCopyAsRichText = useCallback(() => {
+  // Load copyAsRichText from settings on mount
+  useEffect(() => {
     invoke<{ copy_as_rich_text: boolean }>("get_settings").then((s) => {
       setCopyAsRichText(s.copy_as_rich_text ?? false);
     });
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs only on mount
-  useEffect(() => {
-    loadCopyAsRichText();
   }, []);
 
   const handleNew = useCallback(() => {
@@ -881,7 +876,6 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
           <EditorPlugins
             setIsHistoryOpen={setIsHistoryOpen}
             onToggleHistory={() => setIsHistoryOpen((v) => !v)}
-            setIsSettingsOpen={setIsSettingsOpen}
             onClearHistory={handleClearHistory}
             pendingContent={pendingContent}
             onPendingConsumed={handlePendingConsumed}
@@ -894,6 +888,7 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             modeToggleFnRef={modeToggleFnRef}
             onFocusPlain={handleFocusPlain}
             copyAsRichText={copyAsRichText}
+            setCopyAsRichText={setCopyAsRichText}
             onPastePlainText={handlePastePlainText}
           />
           <HistoryPanel
@@ -903,13 +898,6 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             entries={entries}
             loading={loading}
             onDeleteEntry={deleteEntry}
-          />
-          <SettingsPanel
-            isOpen={isSettingsOpen}
-            onClose={() => {
-              setIsSettingsOpen(false);
-              loadCopyAsRichText();
-            }}
           />
         </div>
         <div className="flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">
