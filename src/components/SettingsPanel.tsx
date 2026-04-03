@@ -45,6 +45,13 @@ export function SettingsPanel() {
   const [editorModeLocal, setEditorModeLocal] = useState("rich");
   const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
+  const [richFontFamily, setRichFontFamily] = useState<string>("");
+  const [richFontSize, setRichFontSize] = useState<string>("");
+  const [richFontFallback, setRichFontFallback] = useState<boolean>(true);
+  const [plainFontFamily, setPlainFontFamily] = useState<string>("");
+  const [plainFontSize, setPlainFontSize] = useState<string>("");
+  const [plainFontFallback, setPlainFontFallback] = useState<boolean>(true);
+  const [fontList, setFontList] = useState<string[]>([]);
   const captureBoxRef = useRef<HTMLButtonElement>(null);
 
   // Load settings on mount and whenever the settings window is shown
@@ -58,10 +65,20 @@ export function SettingsPanel() {
         setCopyAsRichText(s.copy_as_rich_text);
         const limit = s.max_history_entries;
         setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
+        setRichFontFamily(s.rich_font_family ?? "");
+        setRichFontSize(s.rich_font_size != null ? String(s.rich_font_size) : "");
+        setRichFontFallback(s.rich_font_fallback ?? false);
+        setPlainFontFamily(s.plain_font_family ?? "");
+        setPlainFontSize(s.plain_font_size != null ? String(s.plain_font_size) : "");
+        setPlainFontFallback(s.plain_font_fallback ?? false);
       });
     }
 
     loadSettings();
+
+    // Fetch system font list once on mount (stable within an app session)
+    invoke<string[]>("list_fonts").then((fonts) => setFontList(fonts));
+
     const unlisten = listen("settings-window-shown", () => loadSettings());
     return () => {
       unlisten.then((fn) => fn());
@@ -113,6 +130,8 @@ export function SettingsPanel() {
 
   async function handleSave() {
     const parsedLimit = Number.parseInt(maxHistoryEntries, 10);
+    const parsedRichSize = Number.parseFloat(richFontSize);
+    const parsedPlainSize = Number.parseFloat(plainFontSize);
     await invoke("save_settings", {
       settings: {
         hotkey: capturedHotkey,
@@ -121,6 +140,13 @@ export function SettingsPanel() {
         copy_as_rich_text: copyAsRichText,
         max_history_entries:
           maxHistoryEntries.trim() !== "" && parsedLimit > 0 ? parsedLimit : null,
+        rich_font_family: richFontFamily.trim() || null,
+        rich_font_size: richFontSize.trim() !== "" && parsedRichSize > 0 ? parsedRichSize : null,
+        rich_font_fallback: richFontFallback,
+        plain_font_family: plainFontFamily.trim() || null,
+        plain_font_size:
+          plainFontSize.trim() !== "" && parsedPlainSize > 0 ? parsedPlainSize : null,
+        plain_font_fallback: plainFontFallback,
       },
     });
     setSavedHotkey(capturedHotkey);
@@ -196,7 +222,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Max history entries */}
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="flex items-center justify-between gap-3 select-none">
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Max history entries{" "}
@@ -211,6 +237,106 @@ export function SettingsPanel() {
               className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
             />
           </label>
+        </div>
+
+        {/* Rich Mode Font */}
+        <div className="mb-4">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Rich Mode Font
+          </p>
+          <datalist id="rich-font-family-list">
+            {fontList.map((f) => (
+              <option key={f} value={f} />
+            ))}
+          </datalist>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Family</span>
+            <input
+              type="text"
+              list="rich-font-family-list"
+              value={richFontFamily}
+              onChange={(e) => setRichFontFamily(e.target.value)}
+              placeholder="Inter, serif, …"
+              className="w-48 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Size{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
+            </span>
+            <input
+              type="number"
+              min="1"
+              value={richFontSize}
+              onChange={(e) => setRichFontSize(e.target.value)}
+              placeholder="14"
+              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={richFontFallback}
+                onChange={(e) => setRichFontFallback(e.target.checked)}
+                className="w-4 h-4 accent-blue-500"
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Append standard fallback fonts
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Plain Mode Font */}
+        <div className="mb-6">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Plain Mode Font
+          </p>
+          <datalist id="plain-font-family-list">
+            {fontList.map((f) => (
+              <option key={f} value={f} />
+            ))}
+          </datalist>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Family</span>
+            <input
+              type="text"
+              list="plain-font-family-list"
+              value={plainFontFamily}
+              onChange={(e) => setPlainFontFamily(e.target.value)}
+              placeholder='"Courier New", monospace, …'
+              className="w-48 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Size{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
+            </span>
+            <input
+              type="number"
+              min="1"
+              value={plainFontSize}
+              onChange={(e) => setPlainFontSize(e.target.value)}
+              placeholder="14"
+              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={plainFontFallback}
+                onChange={(e) => setPlainFontFallback(e.target.checked)}
+                className="w-4 h-4 accent-blue-500"
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Append standard fallback fonts
+              </span>
+            </label>
+          </div>
         </div>
       </div>
 

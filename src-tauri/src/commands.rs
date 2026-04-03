@@ -37,10 +37,26 @@ pub struct Settings {
     pub copy_as_rich_text: bool,
     #[serde(default)]
     pub max_history_entries: Option<u32>,
+    #[serde(default)]
+    pub rich_font_family: Option<String>,
+    #[serde(default)]
+    pub rich_font_size: Option<f32>,
+    #[serde(default)]
+    pub plain_font_family: Option<String>,
+    #[serde(default)]
+    pub plain_font_size: Option<f32>,
+    #[serde(default = "default_font_fallback")]
+    pub rich_font_fallback: bool,
+    #[serde(default = "default_font_fallback")]
+    pub plain_font_fallback: bool,
 }
 
 fn default_editor_mode() -> String {
     "rich".to_string()
+}
+
+fn default_font_fallback() -> bool {
+    true
 }
 
 impl Default for Settings {
@@ -51,6 +67,12 @@ impl Default for Settings {
             editor_mode: "rich".to_string(),
             copy_as_rich_text: false,
             max_history_entries: None,
+            rich_font_family: None,
+            rich_font_size: None,
+            plain_font_family: None,
+            plain_font_size: None,
+            rich_font_fallback: true,
+            plain_font_fallback: true,
         }
     }
 }
@@ -195,6 +217,19 @@ pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn list_fonts() -> Result<Vec<String>, String> {
+    let collection = font_enumeration::Collection::new()
+        .map_err(|e| e.to_string())?;
+    let mut families: Vec<String> = collection
+        .all()
+        .map(|f| f.family_name.clone())
+        .collect();
+    families.sort_unstable();
+    families.dedup();
+    Ok(families)
 }
 
 #[tauri::command]
