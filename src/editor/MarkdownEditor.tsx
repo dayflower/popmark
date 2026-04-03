@@ -754,9 +754,20 @@ function EditorPlugins({
 interface MarkdownEditorProps {
   editorMode: "rich" | "plain";
   onModeChange: (mode: "rich" | "plain") => void;
+  richFontFamily?: string | null;
+  richFontSize?: number | null;
+  plainFontFamily?: string | null;
+  plainFontSize?: number | null;
 }
 
-export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  editorMode,
+  onModeChange,
+  richFontFamily,
+  richFontSize,
+  plainFontFamily,
+  plainFontSize,
+}: MarkdownEditorProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [showClearHistoryConfirm, setShowClearHistoryConfirm] = useState(false);
   const [replaceConfirmActions, setReplaceConfirmActions] = useState<{
@@ -910,6 +921,10 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
               onChange={handlePlainChange}
               onKeyDown={handlePlainKeyDown}
               className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
+              style={{
+                fontFamily: plainFontFamily ?? undefined,
+                fontSize: plainFontSize ? `${plainFontSize}px` : undefined,
+              }}
               placeholder="Start writing…"
               // biome-ignore lint/a11y/noAutofocus: intentional — mirrors rich mode focus behavior
               autoFocus
@@ -919,7 +934,13 @@ export function MarkdownEditor({ editorMode, onModeChange }: MarkdownEditorProps
             <>
               <RichTextPlugin
                 contentEditable={
-                  <ContentEditable className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none" />
+                  <ContentEditable
+                    className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none"
+                    style={{
+                      fontFamily: richFontFamily ?? undefined,
+                      fontSize: richFontSize ? `${richFontSize}px` : undefined,
+                    }}
+                  />
                 }
                 placeholder={
                   <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-600 pointer-events-none">

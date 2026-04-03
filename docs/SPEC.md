@@ -279,9 +279,9 @@ The standard menu bar is active when the editor window is focused. It provides:
 
 Accessible via menu bar > Settings… or tray > Settings….
 
-Settings opens as a **standalone OS-level window** (label: `settings`, 360×460, always-on-top). The window is created hidden at app startup and shown/hidden on demand (`show_settings_window` / `hide_settings_window`). This eliminates focus-management complexity and global-shortcut interference that existed with the former in-window modal approach.
+Settings opens as a **standalone OS-level window** (label: `settings`, 360×580, always-on-top). The window is created hidden at app startup and shown/hidden on demand (`show_settings_window` / `hide_settings_window`). This eliminates focus-management complexity and global-shortcut interference that existed with the former in-window modal approach.
 
-After the user saves, the backend emits a `settings-changed` event to the main window so it can update `copy_as_rich_text` and `editor_mode` without requiring a reload.
+After the user saves, the backend emits a `settings-changed` event to the main window so it can update font settings and other preferences without requiring a reload.
 
 | Setting              | Default            | Description                           |
 |----------------------|--------------------|---------------------------------------|
@@ -290,6 +290,28 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Editor mode          | `rich`             | `rich` = source-visible WYSIWYG; `plain` = raw Markdown textarea |
 | Copy as Rich Text    | Off                | When enabled (Rich mode only), "Send to Clipboard" copies HTML + plain Markdown so rich formatting is preserved in apps that support it |
 | Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
+| Rich mode font family | null (browser default) | Custom `font-family` applied to the Rich mode `ContentEditable` via inline style |
+| Rich mode font size  | null (default)     | Custom `font-size` (px) applied to the Rich mode `ContentEditable` via inline style |
+| Plain mode font family | null (browser default) | Custom `font-family` applied to the Plain mode `<textarea>` via inline style |
+| Plain mode font size | null (default)     | Custom `font-size` (px) applied to the Plain mode `<textarea>` via inline style |
+
+### 12.1 settings.json Schema
+
+```json
+{
+  "hotkey": "alt+m",
+  "launch_at_login": false,
+  "editor_mode": "rich",
+  "copy_as_rich_text": false,
+  "max_history_entries": null,
+  "rich_font_family": null,
+  "rich_font_size": null,
+  "plain_font_family": null,
+  "plain_font_size": null
+}
+```
+
+All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility.
 
 ---
 

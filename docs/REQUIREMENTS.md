@@ -100,6 +100,10 @@ The next time the editor is opened it shows a blank document.
 | Editor mode | Whether the editor opens in **Rich** (source-visible WYSIWYG) or **Plain** (raw Markdown textarea) mode |
 | Copy as Rich Text | When enabled (Rich mode only), "Send to Clipboard" copies the content as both HTML (rich text) and plain Markdown, preserving formatting in apps that support rich paste |
 | Max history entries | Maximum number of history entries to retain. Empty or 0 means unlimited. When a new entry is saved and the count exceeds the limit, the oldest entries are deleted automatically. |
+| Rich mode font family | Custom font family for the Rich mode editor. When empty, the browser default is used. |
+| Rich mode font size | Custom font size (in px) for the Rich mode editor. When empty, the default size is used. |
+| Plain mode font family | Custom font family for the Plain mode textarea. When empty, the default monospace font is used. |
+| Plain mode font size | Custom font size (in px) for the Plain mode textarea. When empty, the default size is used. |
 
 ---
 

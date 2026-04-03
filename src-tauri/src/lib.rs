@@ -388,6 +388,7 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::save_editor_mode,
+            commands::list_fonts,
             commands::set_history_panel_open,
             commands::set_editor_mode_menu,
             commands::show_settings_window,
