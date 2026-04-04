@@ -15,32 +15,32 @@
     "check:ci": "biome check --reporter=github src/ vite.config.ts"
   },
   "dependencies": {
-    "@lexical/code": "^0.41.0",
-    "@lexical/history": "^0.41.0",
-    "@lexical/html": "^0.41.0",
-    "@lexical/link": "^0.41.0",
-    "@lexical/list": "^0.41.0",
-    "@lexical/markdown": "^0.41.0",
-    "@lexical/react": "^0.41.0",
-    "@lexical/rich-text": "^0.41.0",
+    "@lexical/code": "^0.42.0",
+    "@lexical/history": "^0.42.0",
+    "@lexical/html": "^0.42.0",
+    "@lexical/link": "^0.42.0",
+    "@lexical/list": "^0.42.0",
+    "@lexical/markdown": "^0.42.0",
+    "@lexical/react": "^0.42.0",
+    "@lexical/rich-text": "^0.42.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
     "@tauri-apps/plugin-global-shortcut": "^2.3.1",
-    "lexical": "^0.41.0",
+    "lexical": "^0.42.0",
     "lucide-react": "^1.7.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.7",
-    "@tailwindcss/vite": "^4.2.1",
+    "@biomejs/biome": "^2.4.10",
+    "@tailwindcss/vite": "^4.2.2",
     "@tauri-apps/cli": "^2",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "tailwindcss": "^4.2.1",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "tailwindcss": "^4.2.2",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.3"
   }
 }
