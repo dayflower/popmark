@@ -485,11 +485,14 @@ function EditorPlugins({
     if (editorMode === "plain") {
       setPlainContent("");
     } else {
-      editor.update(() => {
-        const root = $getRoot();
-        root.clear();
-        root.append($createParagraphNode());
-      });
+      editor.update(
+        () => {
+          const root = $getRoot();
+          root.clear();
+          root.append($createParagraphNode());
+        },
+        { discrete: true },
+      );
     }
   }, [editor, editorMode, setPlainContent]);
 
@@ -511,6 +514,11 @@ function EditorPlugins({
         });
         return;
       }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "Backspace") {
+        e.preventDefault();
+        handleClearAll();
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         getCurrentWindow().hide();
@@ -518,7 +526,7 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, editorMode, copyAsRichText]);
+  }, [editor, editorMode, copyAsRichText, handleClearAll]);
 
   // Listen for menu bar "New Document" event
   useEffect(() => {
