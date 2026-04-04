@@ -661,12 +661,12 @@ function EditorPlugins({
   useEffect(() => {
     const unlisten = listen<Settings>("settings-changed", (event) => {
       setCopyAsRichText(event.payload.copy_as_rich_text ?? false);
-      onModeChange(event.payload.editor_mode === "plain" ? "plain" : "rich");
+      // editor_mode not handled here — managed via handleModeToggle / save_editor_mode
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [setCopyAsRichText, onModeChange]);
+  }, [setCopyAsRichText]);
 
   // Load a pending history entry into the editor or textarea
   useEffect(() => {

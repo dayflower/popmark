@@ -194,9 +194,16 @@ pub fn get_settings(app: AppHandle) -> Result<Settings, String> {
 }
 
 #[tauri::command]
-pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
+pub fn save_settings(app: AppHandle, mut settings: Settings) -> Result<(), String> {
     // Persist to disk
     let path = settings_path(&app)?;
+    // Preserve the current editor_mode — managed exclusively via save_editor_mode
+    if path.exists() {
+        let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        if let Ok(current) = serde_json::from_str::<Settings>(&data) {
+            settings.editor_mode = current.editor_mode;
+        }
+    }
     let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
     fs::write(&path, json).map_err(|e| e.to_string())?;
 
