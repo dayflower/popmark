@@ -42,7 +42,6 @@ export function SettingsPanel() {
   const [capturedHotkey, setCapturedHotkey] = useState("alt+m");
   const [isCapturing, setIsCapturing] = useState(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
-  const [editorModeLocal, setEditorModeLocal] = useState("rich");
   const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
   const [richFontFamily, setRichFontFamily] = useState<string>("");
@@ -61,7 +60,6 @@ export function SettingsPanel() {
         setSavedHotkey(s.hotkey);
         setCapturedHotkey(s.hotkey);
         setLaunchAtLogin(s.launch_at_login);
-        setEditorModeLocal(s.editor_mode);
         setCopyAsRichText(s.copy_as_rich_text);
         const limit = s.max_history_entries;
         setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
@@ -136,7 +134,6 @@ export function SettingsPanel() {
       settings: {
         hotkey: capturedHotkey,
         launch_at_login: launchAtLogin,
-        editor_mode: editorModeLocal,
         copy_as_rich_text: copyAsRichText,
         max_history_entries:
           maxHistoryEntries.trim() !== "" && parsedLimit > 0 ? parsedLimit : null,
