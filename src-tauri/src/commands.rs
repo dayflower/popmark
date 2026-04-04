@@ -133,6 +133,16 @@ fn extract_title_preview(content: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// Data folder opener (menu-only, not an IPC command)
+// ---------------------------------------------------------------------------
+
+pub fn open_history_folder(app: AppHandle) {
+    if let Ok(dir) = history_dir(&app) {
+        let _ = tauri_plugin_opener::open_path(dir, None::<&str>);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Shortcut registration helper
 // ---------------------------------------------------------------------------
 

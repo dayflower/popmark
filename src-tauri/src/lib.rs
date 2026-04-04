@@ -20,6 +20,7 @@ pub fn run() {
             None,
         ))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(AppState {
             current_shortcut: Mutex::new(None),
             current_hotkey_str: Mutex::new(String::new()),
@@ -94,6 +95,13 @@ pub fn run() {
                     true,
                     Some("cmd+s"),
                 )?;
+                let menu_show_history_folder_item = MenuItem::with_id(
+                    app,
+                    "menu-show-history-folder",
+                    "Show History Folder in Finder",
+                    true,
+                    None::<&str>,
+                )?;
                 let menu_send_to_clipboard_item = MenuItem::with_id(
                     app,
                     "menu-send-to-clipboard",
@@ -138,6 +146,8 @@ pub fn run() {
                                 &menu_new_item,
                                 &PredefinedMenuItem::separator(app)?,
                                 &menu_export_item,
+                                &menu_show_history_folder_item,
+                                &PredefinedMenuItem::separator(app)?,
                                 &menu_send_to_clipboard_item,
                             ],
                         )?,
@@ -240,6 +250,9 @@ pub fn run() {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.emit("menu-export", ());
                         }
+                    }
+                    "menu-show-history-folder" => {
+                        commands::open_history_folder(app.clone());
                     }
                     "menu-send-to-clipboard" => {
                         if let Some(window) = app.get_webview_window("main") {

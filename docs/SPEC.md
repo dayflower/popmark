@@ -222,13 +222,14 @@ The standard menu bar is active when the editor window is focused. It provides:
 
 **File menu**
 
-| Item               | Shortcut | Action                        |
-|--------------------|----------|-------------------------------|
-| New Document       | ⌘N       | Auto-save draft to history (if non-empty), clear draft, start new |
-| —                  |          | Separator                     |
-| Export…            | ⌘S       | Save current content as `.md` via save dialog |
-| —                  |          | Separator                     |
-| Send to Clipboard  | ⌘Return  | Copy to clipboard, save to history, clear draft, hide window |
+| Item                        | Shortcut | Action                        |
+|-----------------------------|----------|-------------------------------|
+| New Document                | ⌘N       | Auto-save draft to history (if non-empty), clear draft, start new |
+| —                           |          | Separator                     |
+| Export…                     | ⌘S       | Save current content as `.md` via save dialog |
+| Show History Folder in Finder |          | Open the history directory in Finder / system file manager |
+| —                           |          | Separator                     |
+| Send to Clipboard           | ⌘Return  | Copy to clipboard, save to history, clear draft, hide window |
 
 **View menu**
 
