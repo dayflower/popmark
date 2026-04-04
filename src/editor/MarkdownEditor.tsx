@@ -481,6 +481,18 @@ function EditorPlugins({
     }
   }, [editor, editorMode, onModeChange, setPlainContent]);
 
+  const handleClearAll = useCallback(() => {
+    if (editorMode === "plain") {
+      setPlainContent("");
+    } else {
+      editor.update(() => {
+        const root = $getRoot();
+        root.clear();
+        root.append($createParagraphNode());
+      });
+    }
+  }, [editor, editorMode, setPlainContent]);
+
   // Keep the ref in sync so Toolbar and textarea keydown can call it
   useEffect(() => {
     modeToggleFnRef.current = handleModeToggle;
@@ -517,6 +529,16 @@ function EditorPlugins({
       unlisten.then((fn) => fn());
     };
   }, [onNew]);
+
+  // Listen for Edit > Clear All menu event
+  useEffect(() => {
+    const unlisten = listen("menu-clear-all", () => {
+      handleClearAll();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [handleClearAll]);
 
   // Listen for menu bar "Export…" event
   useEffect(() => {

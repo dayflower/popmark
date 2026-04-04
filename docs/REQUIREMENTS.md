@@ -58,6 +58,17 @@ The next time the editor is opened it shows a blank document.
 
 ---
 
+## 5b. Clear All
+
+- Users can clear all editor content instantly via Edit > Clear All (⌘⇧⌫).
+- No confirmation dialog is shown.
+- The cleared content is **not** saved to history.
+- The action **is** undoable via Cmd+Z (rich mode only; plain mode undo stack is not preserved).
+- If the editor is already empty, the action does nothing (no side effects guaranteed).
+- There is no toolbar button for this action.
+
+---
+
 ## 6. History
 
 - Every document saved via Send to Clipboard is retained in history.

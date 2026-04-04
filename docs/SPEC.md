@@ -255,6 +255,10 @@ The standard menu bar is active when the editor window is focused. It provides:
 | Paste and Match Style | ⌥⇧⌘V    | Paste clipboard content as plain text (strip formatting)        |
 | Paste from Markdown   |           | Parse clipboard content as Markdown and insert with formatting  |
 | Select All            | ⌘A       | Select all text                                                 |
+| —                     |           | Separator                                                       |
+| Recall Last           | ⌘R       | Load the most recent history entry into the editor              |
+| —                     |           | Separator                                                       |
+| Clear All             | ⌘⇧⌫      | Clear all editor content immediately (undoable; no history save) |
 
 **Window menu**
 
