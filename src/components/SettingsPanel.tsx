@@ -259,8 +259,7 @@ export function SettingsPanel() {
           </div>
           <div className="flex items-center justify-between gap-3 mb-2">
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              Size{" "}
-              <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
+              Size <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
             </span>
             <input
               type="number"
@@ -309,8 +308,7 @@ export function SettingsPanel() {
           </div>
           <div className="flex items-center justify-between gap-3 mb-2">
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              Size{" "}
-              <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
+              Size <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
             </span>
             <input
               type="number"

@@ -32,9 +32,13 @@ function App() {
   useEffect(() => {
     invoke<Settings>("get_settings").then((s) => {
       setEditorMode(s.editor_mode === "plain" ? "plain" : "rich");
-      setRichFontFamily(composeFontFamily(s.rich_font_family, s.rich_font_fallback, RICH_FALLBACK_STACK));
+      setRichFontFamily(
+        composeFontFamily(s.rich_font_family, s.rich_font_fallback, RICH_FALLBACK_STACK),
+      );
       setRichFontSize(s.rich_font_size ?? null);
-      setPlainFontFamily(composeFontFamily(s.plain_font_family, s.plain_font_fallback, PLAIN_FALLBACK_STACK));
+      setPlainFontFamily(
+        composeFontFamily(s.plain_font_family, s.plain_font_fallback, PLAIN_FALLBACK_STACK),
+      );
       setPlainFontSize(s.plain_font_size ?? null);
       setSettingsLoaded(true);
     });
@@ -43,9 +47,13 @@ function App() {
   useEffect(() => {
     const unlisten = listen<Settings>("settings-changed", (event) => {
       const s = event.payload;
-      setRichFontFamily(composeFontFamily(s.rich_font_family, s.rich_font_fallback, RICH_FALLBACK_STACK));
+      setRichFontFamily(
+        composeFontFamily(s.rich_font_family, s.rich_font_fallback, RICH_FALLBACK_STACK),
+      );
       setRichFontSize(s.rich_font_size ?? null);
-      setPlainFontFamily(composeFontFamily(s.plain_font_family, s.plain_font_fallback, PLAIN_FALLBACK_STACK));
+      setPlainFontFamily(
+        composeFontFamily(s.plain_font_family, s.plain_font_fallback, PLAIN_FALLBACK_STACK),
+      );
       setPlainFontSize(s.plain_font_size ?? null);
     });
     return () => {
