@@ -37,6 +37,7 @@ import {
   $isRangeSelection,
   $isTextNode,
   $parseSerializedNode,
+  $selectAll,
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   createEditor,
@@ -487,9 +488,11 @@ function EditorPlugins({
     } else {
       editor.update(
         () => {
-          const root = $getRoot();
-          root.clear();
-          root.append($createParagraphNode());
+          $selectAll();
+          const selection = $getSelection();
+          if ($isRangeSelection(selection)) {
+            selection.removeText();
+          }
         },
         { discrete: true },
       );
