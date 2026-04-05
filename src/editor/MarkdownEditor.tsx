@@ -484,7 +484,16 @@ function EditorPlugins({
 
   const handleClearAll = useCallback(() => {
     if (editorMode === "plain") {
-      setPlainContent("");
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.focus();
+        // Use select() + execCommand("insertText") so the clear is undoable.
+        // The trade-off: undoing restores the text with the full selection still active,
+        // because the browser records the pre-operation selection state as part of the
+        // undo entry. No known workaround for this with the textarea + execCommand approach.
+        textarea.select();
+        document.execCommand("insertText", false, "");
+      }
     } else {
       editor.update(
         () => {
@@ -496,7 +505,7 @@ function EditorPlugins({
       );
       editor.focus();
     }
-  }, [editor, editorMode, setPlainContent]);
+  }, [editor, editorMode, textareaRef]);
 
   // Keep the ref in sync so Toolbar and textarea keydown can call it
   useEffect(() => {
