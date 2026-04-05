@@ -42,6 +42,7 @@ import {
   COMMAND_PRIORITY_LOW,
   createEditor,
   type EditorState,
+  HISTORY_PUSH_TAG,
   IS_CODE,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_RIGHT_COMMAND,
@@ -494,8 +495,9 @@ function EditorPlugins({
             selection.removeText();
           }
         },
-        { discrete: true },
+        { tag: HISTORY_PUSH_TAG },
       );
+      editor.focus();
     }
   }, [editor, editorMode, setPlainContent]);
 
