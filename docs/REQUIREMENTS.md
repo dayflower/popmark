@@ -63,7 +63,7 @@ The next time the editor is opened it shows a blank document.
 - Users can clear all editor content instantly via Edit > Clear All (⌘⇧⌫).
 - No confirmation dialog is shown.
 - The cleared content is **not** saved to history.
-- The action **is** undoable via Cmd+Z (rich mode only; plain mode undo stack is not preserved).
+- The action **is** undoable via Cmd+Z. After undoing in plain mode, the text is restored with a full selection active (inherent browser limitation of the `execCommand`-based approach).
 - If the editor is already empty, the action does nothing (no side effects guaranteed).
 - There is no toolbar button for this action.
 
