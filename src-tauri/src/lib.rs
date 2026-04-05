@@ -389,6 +389,17 @@ pub fn run() {
                     }
                     _ => {}
                 });
+            #[cfg(target_os = "macos")]
+            {
+                const TRAY_ICON_PNG: &[u8] = include_bytes!("../icons/tray-icon.png");
+                let img = image::load_from_memory(TRAY_ICON_PNG)
+                    .map_err(|e| e.to_string())?
+                    .into_rgba8();
+                let (width, height) = image::GenericImageView::dimensions(&img);
+                let icon = tauri::image::Image::new_owned(img.into_raw(), width, height);
+                builder = builder.icon(icon).icon_as_template(true);
+            }
+            #[cfg(not(target_os = "macos"))]
             if let Some(icon) = app.default_window_icon() {
                 builder = builder.icon(icon.clone());
             }
