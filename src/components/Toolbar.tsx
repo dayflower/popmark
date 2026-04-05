@@ -41,8 +41,8 @@ export function Toolbar({
       <div className="flex ml-auto rounded overflow-hidden border border-gray-300 dark:border-gray-600">
         {(
           [
-            { mode: "rich", Icon: SquarePilcrow, title: "Rich text mode (⌘⇧M)" },
-            { mode: "plain", Icon: SquareMenu, title: "Plain text mode (⌘⇧M)" },
+            { mode: "rich", Icon: SquarePilcrow, title: "Rich text mode (⌘⇧R)" },
+            { mode: "plain", Icon: SquareMenu, title: "Plain text mode (⌘⇧P)" },
           ] as const
         ).map(({ mode, Icon, title }) => (
           <button

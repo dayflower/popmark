@@ -60,7 +60,7 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 ### 6.1 Rendering Style
 
-The editor supports two modes, toggled via the toolbar button or **⌘⇧M**:
+The editor supports two modes, toggled via the toolbar button (**⌘⇧R** for Rich, **⌘⇧P** for Plain):
 
 - **Rich mode** (default): **source-visible WYSIWYG** (Obsidian style) — Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible in the editor while visual styling is applied at the same time (font size, weight, color, etc.). The user can edit the raw markers directly, and the styling updates live.
 - **Plain text mode**: a plain `<textarea>` displays the raw Markdown source. `spellCheck` is disabled and all Lexical formatting plugins are inactive.
@@ -97,7 +97,7 @@ A minimal toolbar appears at the top of the editor window:
 |-------------------|-------------------------------|
 | History           | Open/close the history panel (leftmost; shows pressed state when panel is open) |
 | New               | Auto-save draft to history (if non-empty), clear draft, start new document |
-| Rich / Plain      | Dual-button toggle group at the far right: clicking the inactive button switches the editor mode (also **⌘⇧M**); clicking the already-active button is a no-op |
+| Rich / Plain      | Dual-button toggle group at the far right: clicking the inactive button switches the editor mode (**⌘⇧R** for Rich, **⌘⇧P** for Plain); clicking the already-active button is a no-op |
 
 Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses text labels. Export is not available in the toolbar; it is accessible via the File menu (⌘S).
 
@@ -237,8 +237,8 @@ The standard menu bar is active when the editor window is focused. It provides:
 |---------------------|----------|-----------------------------------------------------|
 | History             | ⌘H       | Toggle the history panel (checkmark reflects state) |
 | Editor Mode ▶       |          | Submenu to select the active editor mode            |
-| — Rich text         | ⌘⇧M      | Switch to Rich WYSIWYG mode (checkmark = active)    |
-| — Plain text        |          | Switch to Plain text mode (checkmark = active)      |
+| — Rich text         | ⌘⇧R      | Switch to Rich WYSIWYG mode (checkmark = active)    |
+| — Plain text        | ⌘⇧P      | Switch to Plain text mode (checkmark = active)      |
 | —                   |          | Separator                                           |
 | Clear History…      |          | Delete all history entries (confirmation required)  |
 
