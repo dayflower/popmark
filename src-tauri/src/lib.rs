@@ -51,7 +51,7 @@ pub fn run() {
                     "Rich text",
                     true,
                     is_rich,
-                    Some("cmd+shift+m"),
+                    Some("cmd+shift+r"),
                 )?;
                 let menu_editor_mode_plain_item = CheckMenuItem::with_id(
                     app,
@@ -59,7 +59,7 @@ pub fn run() {
                     "Plain text",
                     true,
                     !is_rich,
-                    None::<&str>,
+                    Some("cmd+shift+p"),
                 )?;
                 let menu_editor_mode_submenu = Submenu::with_items(
                     app,

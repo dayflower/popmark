@@ -17,7 +17,7 @@ Popmark is an application with a tray icon and standard menu bar, providing a qu
 
 ## 3. Editor
 
-- The editor supports two modes, selected via a **Rich / Plain** dual-button toggle group at the right end of the toolbar or **⌘⇧M**:
+- The editor supports two modes, selected via a **Rich / Plain** dual-button toggle group at the right end of the toolbar (**⌘⇧R** for Rich, **⌘⇧P** for Plain):
   - **Rich mode** (default): **source-visible WYSIWYG** (Obsidian-style) — Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible while visual styling (font size, weight, color, etc.) is applied at the same time. Users can edit the raw markers directly; styling updates live.
   - **Plain text mode**: displays the raw Markdown source in a monospaced textarea; no visual formatting is applied.
 - The selected mode is persisted and restored on next launch.
