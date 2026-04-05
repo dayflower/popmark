@@ -196,10 +196,9 @@ pub fn run() {
                                     &menu_paste_and_match_style_item,
                                     &menu_paste_from_markdown_item,
                                     &PredefinedMenuItem::select_all(app, None)?,
+                                    &menu_clear_all_item,
                                     &PredefinedMenuItem::separator(app)?,
                                     &menu_recall_last_item,
-                                    &PredefinedMenuItem::separator(app)?,
-                                    &menu_clear_all_item,
                                 ],
                             )?
                         },
