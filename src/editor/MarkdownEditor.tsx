@@ -41,6 +41,7 @@ import {
   COMMAND_PRIORITY_LOW,
   createEditor,
   type EditorState,
+  HISTORY_PUSH_TAG,
   IS_CODE,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_RIGHT_COMMAND,
@@ -481,6 +482,31 @@ function EditorPlugins({
     }
   }, [editor, editorMode, onModeChange, setPlainContent]);
 
+  const handleClearAll = useCallback(() => {
+    if (editorMode === "plain") {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.focus();
+        // Use select() + execCommand("insertText") so the clear is undoable.
+        // The trade-off: undoing restores the text with the full selection still active,
+        // because the browser records the pre-operation selection state as part of the
+        // undo entry. No known workaround for this with the textarea + execCommand approach.
+        textarea.select();
+        document.execCommand("insertText", false, "");
+      }
+    } else {
+      editor.update(
+        () => {
+          const root = $getRoot();
+          root.clear();
+          root.append($createParagraphNode());
+        },
+        { tag: HISTORY_PUSH_TAG },
+      );
+      editor.focus();
+    }
+  }, [editor, editorMode, textareaRef]);
+
   // Keep the ref in sync so Toolbar and textarea keydown can call it
   useEffect(() => {
     modeToggleFnRef.current = handleModeToggle;
@@ -499,6 +525,11 @@ function EditorPlugins({
         });
         return;
       }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "Backspace") {
+        e.preventDefault();
+        handleClearAll();
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         getCurrentWindow().hide();
@@ -506,7 +537,7 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, editorMode, copyAsRichText]);
+  }, [editor, editorMode, copyAsRichText, handleClearAll]);
 
   // Listen for menu bar "New Document" event
   useEffect(() => {
@@ -517,6 +548,16 @@ function EditorPlugins({
       unlisten.then((fn) => fn());
     };
   }, [onNew]);
+
+  // Listen for Edit > Clear All menu event
+  useEffect(() => {
+    const unlisten = listen("menu-clear-all", () => {
+      handleClearAll();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [handleClearAll]);
 
   // Listen for menu bar "Export…" event
   useEffect(() => {

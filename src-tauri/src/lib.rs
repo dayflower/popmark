@@ -175,6 +175,13 @@ pub fn run() {
                             )?;
                             *app.state::<AppState>().recall_last_item.lock().unwrap() =
                                 Some(menu_recall_last_item.clone());
+                            let menu_clear_all_item = MenuItem::with_id(
+                                app,
+                                "menu-clear-all",
+                                "Clear All",
+                                true,
+                                Some("cmd+shift+backspace"),
+                            )?;
                             &Submenu::with_items(
                                 app,
                                 "Edit",
@@ -189,6 +196,7 @@ pub fn run() {
                                     &menu_paste_and_match_style_item,
                                     &menu_paste_from_markdown_item,
                                     &PredefinedMenuItem::select_all(app, None)?,
+                                    &menu_clear_all_item,
                                     &PredefinedMenuItem::separator(app)?,
                                     &menu_recall_last_item,
                                 ],
@@ -322,6 +330,11 @@ pub fn run() {
                     "menu-recall-last" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.emit("menu-recall-last", ());
+                        }
+                    }
+                    "menu-clear-all" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("menu-clear-all", ());
                         }
                     }
                     "menu-help" => {
