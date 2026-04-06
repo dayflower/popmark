@@ -221,7 +221,6 @@ pub fn run() {
                                 &PredefinedMenuItem::minimize(app, None)?,
                                 &PredefinedMenuItem::maximize(app, None)?,
                                 &PredefinedMenuItem::fullscreen(app, None)?,
-                                &PredefinedMenuItem::separator(app)?,
                                 &menu_move_to_center_item,
                             ],
                         )?,
