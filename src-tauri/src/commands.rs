@@ -51,6 +51,8 @@ pub struct Settings {
     pub plain_font_fallback: bool,
     #[serde(default = "default_send_shortcut")]
     pub send_shortcut: String,
+    #[serde(default = "default_notify_on_copy")]
+    pub notify_on_copy: bool,
 }
 
 fn default_editor_mode() -> String {
@@ -63,6 +65,10 @@ fn default_font_fallback() -> bool {
 
 fn default_send_shortcut() -> String {
     "super+enter".to_string()
+}
+
+fn default_notify_on_copy() -> bool {
+    true
 }
 
 impl Default for Settings {
@@ -80,6 +86,7 @@ impl Default for Settings {
             rich_font_fallback: true,
             plain_font_fallback: true,
             send_shortcut: "super+enter".to_string(),
+            notify_on_copy: true,
         }
     }
 }
@@ -377,11 +384,14 @@ pub fn copy_to_clipboard(
     }
 
     // 6. Notify user (best-effort; silently ignored if permission denied or DND)
-    let _ = app.notification()
-        .builder()
-        .title("Popmark")
-        .body("Copied to clipboard")
-        .show();
+    let settings = get_settings(app.clone()).unwrap_or_default();
+    if settings.notify_on_copy {
+        let _ = app.notification()
+            .builder()
+            .title("Popmark")
+            .body("Copied to clipboard")
+            .show();
+    }
 
     Ok(())
 }

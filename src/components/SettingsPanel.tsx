@@ -13,6 +13,7 @@ export function SettingsPanel() {
   const [isCapturingSend, setIsCapturingSend] = useState(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [copyAsRichText, setCopyAsRichText] = useState(false);
+  const [notifyOnCopy, setNotifyOnCopy] = useState<boolean>(true);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
   const [richFontFamily, setRichFontFamily] = useState<string>("");
   const [richFontSize, setRichFontSize] = useState<string>("");
@@ -32,6 +33,7 @@ export function SettingsPanel() {
         setCapturedHotkey(s.hotkey);
         setLaunchAtLogin(s.launch_at_login);
         setCopyAsRichText(s.copy_as_rich_text);
+        setNotifyOnCopy(s.notify_on_copy ?? true);
         const limit = s.max_history_entries;
         setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
         setRichFontFamily(s.rich_font_family ?? "");
@@ -147,6 +149,7 @@ export function SettingsPanel() {
           plainFontSize.trim() !== "" && parsedPlainSize > 0 ? parsedPlainSize : null,
         plain_font_fallback: plainFontFallback,
         send_shortcut: capturedSendShortcut,
+        notify_on_copy: notifyOnCopy,
       },
     });
     setSavedHotkey(capturedHotkey);
@@ -236,7 +239,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Copy as Rich Text */}
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -247,6 +250,21 @@ export function SettingsPanel() {
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Copy as Rich Text{" "}
               <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
+            </span>
+          </label>
+        </div>
+
+        {/* Notify on copy */}
+        <div className="mb-4">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={notifyOnCopy}
+              onChange={(e) => setNotifyOnCopy(e.target.checked)}
+              className="w-4 h-4 accent-blue-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Notify on copy
             </span>
           </label>
         </div>
