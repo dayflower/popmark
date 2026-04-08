@@ -1053,6 +1053,7 @@ export function MarkdownEditor({
             entries={entries}
             loading={loading}
             onDeleteEntry={deleteEntry}
+            onClearAll={clearHistory}
           />
         </div>
         <div className="flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">

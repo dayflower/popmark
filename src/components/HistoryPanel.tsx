@@ -1,3 +1,4 @@
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { useEffect, useRef, useState } from "react";
 import type { HistoryEntry } from "../types/history";
 
@@ -8,6 +9,7 @@ interface HistoryPanelProps {
   entries: HistoryEntry[];
   loading: boolean;
   onDeleteEntry: (id: string) => Promise<void>;
+  onClearAll: () => Promise<void>;
 }
 
 function formatTimestamp(iso: string): string {
@@ -106,6 +108,7 @@ export function HistoryPanel({
   entries,
   loading,
   onDeleteEntry,
+  onClearAll,
 }: HistoryPanelProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -153,14 +156,31 @@ export function HistoryPanel({
         >
           History
         </span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-default leading-none"
-          title="Close history panel"
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-2">
+          {entries.length > 0 && (
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await confirm("Clear all history? This cannot be undone.", {
+                  title: "Clear All History",
+                  kind: "warning",
+                });
+                if (ok) await onClearAll();
+              }}
+              className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 hover:border-red-400 dark:hover:border-red-500 rounded-full px-2 py-0.5 cursor-default transition-colors"
+            >
+              Clear All
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-default leading-none"
+            title="Close history panel"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-1">
