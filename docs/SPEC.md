@@ -137,7 +137,7 @@ Triggered by the "Send to clipboard" button anchored to the bottom-right of the 
 3. Save the document to history with the current timestamp (skipped if the content is empty or whitespace-only).
 4. Clear `draft.md` (reset to empty).
 5. Hide the editor window.
-6. Send an OS notification via `tauri-plugin-notification` with title "Popmark" and body "Copied to clipboard". This is best-effort: the call is fire-and-forget (errors ignored). macOS will prompt the user for notification permission on first use; notifications are silenced during Focus / Do Not Disturb.
+6. If `notify_on_copy` is `true` in settings, send an OS notification via `tauri-plugin-notification` with title "Popmark" and body "Copied to clipboard". This is best-effort: the call is fire-and-forget (errors ignored). macOS will prompt the user for notification permission on first use; notifications are silenced during Focus / Do Not Disturb.
 
 After this action, the next time the editor is opened it shows a blank document.
 
@@ -295,6 +295,7 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Editor mode          | `rich`             | `rich` = source-visible WYSIWYG; `plain` = raw Markdown textarea |
 | Copy as Rich Text    | Off                | When enabled (Rich mode only), "Send to Clipboard" copies HTML + plain Markdown so rich formatting is preserved in apps that support it |
 | Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
+| Notify on copy       | On                 | When enabled, an OS notification is sent after "Send to Clipboard". Stored as `notify_on_copy` in `settings.json`. |
 | Rich mode font family | null (browser default) | Custom `font-family` applied to the Rich mode `ContentEditable` via inline style |
 | Rich mode font size  | null (default)     | Custom `font-size` (px) applied to the Rich mode `ContentEditable` via inline style |
 | Plain mode font family | null (browser default) | Custom `font-family` applied to the Plain mode `<textarea>` via inline style |
@@ -313,11 +314,12 @@ After the user saves, the backend emits a `settings-changed` event to the main w
   "rich_font_size": null,
   "plain_font_family": null,
   "plain_font_size": null,
-  "send_shortcut": "super+enter"
+  "send_shortcut": "super+enter",
+  "notify_on_copy": true
 }
 ```
 
-All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`).
+All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`).
 
 ---
 
