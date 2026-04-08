@@ -27,6 +27,7 @@ import { $getNearestNodeOfType } from "@lexical/utils";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import {
   $createLineBreakNode,
   $createParagraphNode,
@@ -410,7 +411,6 @@ interface EditorPluginsProps {
   setSendShortcut: (v: string) => void;
   onPastePlainText: (text: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  onShowReplaceConfirm: (onConfirm: () => void, onCancel: () => void) => void;
 }
 
 // Handles draft load/save, keyboard shortcuts, and panel event listening
@@ -434,7 +434,6 @@ function EditorPlugins({
   setSendShortcut,
   onPastePlainText,
   textareaRef,
-  onShowReplaceConfirm,
 }: EditorPluginsProps) {
   const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -738,19 +737,19 @@ function EditorPlugins({
     (async () => {
       if (editorMode === "plain") {
         if (plainContent.trim().length > 0) {
-          onShowReplaceConfirm(
-            async () => {
-              await invoke("save_draft", { content: plainContent });
-              await invoke("new_document");
-              setPlainContent(pendingContent);
-              invoke("save_draft", { content: pendingContent });
-              setTimeout(() => textareaRef.current?.setSelectionRange(0, 0), 0);
-              onPendingConsumed();
-            },
-            () => {
-              onPendingConsumed();
-            },
-          );
+          const ok = await confirm("Replace current draft with this history entry?", {
+            title: "Popmark",
+            okLabel: "Replace",
+            cancelLabel: "Cancel",
+          });
+          if (ok) {
+            await invoke("save_draft", { content: plainContent });
+            await invoke("new_document");
+            setPlainContent(pendingContent);
+            invoke("save_draft", { content: pendingContent });
+            setTimeout(() => textareaRef.current?.setSelectionRange(0, 0), 0);
+          }
+          onPendingConsumed();
           return;
         }
         setPlainContent(pendingContent);
@@ -767,19 +766,19 @@ function EditorPlugins({
       });
 
       if (hasContent) {
-        onShowReplaceConfirm(
-          async () => {
-            await invoke("new_document");
-            editor.update(() => {
-              $convertFromMarkdownString(pendingContent, CUSTOM_TRANSFORMERS);
-              $getRoot().selectStart();
-            });
-            onPendingConsumed();
-          },
-          () => {
-            onPendingConsumed();
-          },
-        );
+        const ok = await confirm("Replace current draft with this history entry?", {
+          title: "Popmark",
+          okLabel: "Replace",
+          cancelLabel: "Cancel",
+        });
+        if (ok) {
+          await invoke("new_document");
+          editor.update(() => {
+            $convertFromMarkdownString(pendingContent, CUSTOM_TRANSFORMERS);
+            $getRoot().selectStart();
+          });
+        }
+        onPendingConsumed();
         return;
       }
 
@@ -797,7 +796,6 @@ function EditorPlugins({
     plainContent,
     setPlainContent,
     textareaRef,
-    onShowReplaceConfirm,
   ]);
 
   function handleChange(editorState: EditorState) {
@@ -832,11 +830,6 @@ export function MarkdownEditor({
   plainFontSize,
 }: MarkdownEditorProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [showClearHistoryConfirm, setShowClearHistoryConfirm] = useState(false);
-  const [replaceConfirmActions, setReplaceConfirmActions] = useState<{
-    onConfirm: () => void;
-    onCancel: () => void;
-  } | null>(null);
   const [pendingContent, setPendingContent] = useState<string | null>(null);
   const [newDocTrigger, setNewDocTrigger] = useState(0);
   const [plainContent, setPlainContent] = useState("");
@@ -876,16 +869,20 @@ export function MarkdownEditor({
     [getEntry],
   );
 
-  const handleClearHistory = useCallback(() => {
-    setShowClearHistoryConfirm(true);
-  }, []);
+  const handleClearHistory = useCallback(async () => {
+    const ok = await confirm("Clear all history entries? This cannot be undone.", {
+      title: "Clear History",
+      okLabel: "Clear All",
+      cancelLabel: "Cancel",
+      kind: "warning",
+    });
+    if (ok) {
+      clearHistory();
+    }
+  }, [clearHistory]);
 
   const handlePendingConsumed = useCallback(() => {
     setPendingContent(null);
-  }, []);
-
-  const handleShowReplaceConfirm = useCallback((onConfirm: () => void, onCancel: () => void) => {
-    setReplaceConfirmActions({ onConfirm, onCancel });
   }, []);
 
   const handleFocusPlain = useCallback(() => {
@@ -1048,7 +1045,6 @@ export function MarkdownEditor({
             setSendShortcut={setSendShortcut}
             onPastePlainText={handlePastePlainText}
             textareaRef={textareaRef}
-            onShowReplaceConfirm={handleShowReplaceConfirm}
           />
           <HistoryPanel
             isOpen={isHistoryOpen}
@@ -1067,93 +1063,6 @@ export function MarkdownEditor({
             sendShortcut={sendShortcut}
           />
         </div>
-        {replaceConfirmActions && (
-          <div className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center">
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Replace Draft"
-              tabIndex={-1}
-              className="w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 outline-none"
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  e.stopPropagation();
-                  replaceConfirmActions.onCancel();
-                  setReplaceConfirmActions(null);
-                }
-              }}
-            >
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                Replace current draft with this history entry?
-              </p>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    replaceConfirmActions.onCancel();
-                    setReplaceConfirmActions(null);
-                  }}
-                  className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 cursor-default"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  ref={(el) => {
-                    el?.focus();
-                  }}
-                  onClick={() => {
-                    replaceConfirmActions.onConfirm();
-                    setReplaceConfirmActions(null);
-                  }}
-                  className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 cursor-default"
-                >
-                  Replace
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showClearHistoryConfirm && (
-          <div className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center">
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Clear History"
-              tabIndex={-1}
-              className="w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 outline-none"
-              onKeyDown={(e) => {
-                if (e.key === "Escape") setShowClearHistoryConfirm(false);
-              }}
-            >
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                Clear all history entries? This cannot be undone.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  ref={(el) => {
-                    el?.focus();
-                  }}
-                  onClick={() => setShowClearHistoryConfirm(false)}
-                  className="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 cursor-default"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    clearHistory();
-                    setShowClearHistoryConfirm(false);
-                  }}
-                  className="px-4 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 active:bg-red-700 cursor-default"
-                >
-                  Clear All
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </LexicalComposer>
   );
