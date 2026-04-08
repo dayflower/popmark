@@ -107,7 +107,7 @@ pub fn run() {
                     "menu-send-to-clipboard",
                     "Send to Clipboard",
                     true,
-                    Some("cmd+return"),
+                    None::<&str>,
                 )?;
                 let menu_move_to_center_item = MenuItem::with_id(
                     app,

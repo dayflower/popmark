@@ -49,6 +49,8 @@ pub struct Settings {
     pub rich_font_fallback: bool,
     #[serde(default = "default_font_fallback")]
     pub plain_font_fallback: bool,
+    #[serde(default = "default_send_shortcut")]
+    pub send_shortcut: String,
 }
 
 fn default_editor_mode() -> String {
@@ -57,6 +59,10 @@ fn default_editor_mode() -> String {
 
 fn default_font_fallback() -> bool {
     true
+}
+
+fn default_send_shortcut() -> String {
+    "super+enter".to_string()
 }
 
 impl Default for Settings {
@@ -73,6 +79,7 @@ impl Default for Settings {
             plain_font_size: None,
             rich_font_fallback: true,
             plain_font_fallback: true,
+            send_shortcut: "super+enter".to_string(),
         }
     }
 }

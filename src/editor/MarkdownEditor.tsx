@@ -54,6 +54,21 @@ import { HistoryPanel } from "../components/HistoryPanel";
 import { Toolbar } from "../components/Toolbar";
 import { useHistory } from "../hooks/useHistory";
 import type { Settings } from "../types/settings";
+import { codeToHotkeySegment, formatHotkey } from "../utils/hotkey";
+
+function matchesSendShortcut(e: KeyboardEvent | React.KeyboardEvent, shortcut: string): boolean {
+  const parts = shortcut.toLowerCase().split("+");
+  const key = parts[parts.length - 1];
+  return (
+    e.ctrlKey === parts.includes("ctrl") &&
+    e.altKey === parts.includes("alt") &&
+    e.shiftKey === parts.includes("shift") &&
+    e.metaKey === parts.includes("super") &&
+    (e.key.toLowerCase() === key ||
+      e.code.toLowerCase() === key ||
+      codeToHotkeySegment(e.code) === key)
+  );
+}
 
 // Support both "- [ ] " and "-[ ] " (with or without space between dash and bracket)
 const CUSTOM_CHECK_LIST = {
@@ -341,12 +356,14 @@ interface SendToClipboardButtonProps {
   editorMode: "rich" | "plain";
   plainContent: string;
   copyAsRichText: boolean;
+  sendShortcut: string;
 }
 
 function SendToClipboardButton({
   editorMode,
   plainContent,
   copyAsRichText,
+  sendShortcut,
 }: SendToClipboardButtonProps) {
   const [editor] = useLexicalComposerContext();
 
@@ -368,7 +385,7 @@ function SendToClipboardButton({
       onClick={handleClick}
       className="bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm cursor-default"
     >
-      Send to clipboard (⌘↵)
+      Send to clipboard ({formatHotkey(sendShortcut)})
     </button>
   );
 }
@@ -389,6 +406,8 @@ interface EditorPluginsProps {
   onFocusPlain: () => void;
   copyAsRichText: boolean;
   setCopyAsRichText: (v: boolean) => void;
+  sendShortcut: string;
+  setSendShortcut: (v: string) => void;
   onPastePlainText: (text: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   onShowReplaceConfirm: (onConfirm: () => void, onCancel: () => void) => void;
@@ -411,6 +430,8 @@ function EditorPlugins({
   onFocusPlain,
   copyAsRichText,
   setCopyAsRichText,
+  sendShortcut,
+  setSendShortcut,
   onPastePlainText,
   textareaRef,
   onShowReplaceConfirm,
@@ -514,8 +535,8 @@ function EditorPlugins({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        // Plain mode handles Cmd+Enter in the textarea's onKeyDown
+      if (matchesSendShortcut(e, sendShortcut)) {
+        // Plain mode handles the shortcut in the textarea's onKeyDown
         if (editorMode === "plain") return;
         e.preventDefault();
         editor.getEditorState().read(() => {
@@ -537,7 +558,7 @@ function EditorPlugins({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, editorMode, copyAsRichText, handleClearAll]);
+  }, [editor, editorMode, copyAsRichText, sendShortcut, handleClearAll]);
 
   // Listen for menu bar "New Document" event
   useEffect(() => {
@@ -702,12 +723,13 @@ function EditorPlugins({
   useEffect(() => {
     const unlisten = listen<Settings>("settings-changed", (event) => {
       setCopyAsRichText(event.payload.copy_as_rich_text ?? false);
+      setSendShortcut(event.payload.send_shortcut ?? "super+enter");
       // editor_mode not handled here — managed via handleModeToggle / save_editor_mode
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [setCopyAsRichText]);
+  }, [setCopyAsRichText, setSendShortcut]);
 
   // Load a pending history entry into the editor or textarea
   useEffect(() => {
@@ -819,15 +841,17 @@ export function MarkdownEditor({
   const [newDocTrigger, setNewDocTrigger] = useState(0);
   const [plainContent, setPlainContent] = useState("");
   const [copyAsRichText, setCopyAsRichText] = useState(false);
+  const [sendShortcut, setSendShortcut] = useState("super+enter");
   const { entries, loading, loadHistory, getEntry, deleteEntry, clearHistory } = useHistory();
   const modeToggleFnRef = useRef<(() => void) | null>(null);
   const plainDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load copyAsRichText from settings on mount
+  // Load settings on mount
   useEffect(() => {
-    invoke<{ copy_as_rich_text: boolean }>("get_settings").then((s) => {
+    invoke<{ copy_as_rich_text: boolean; send_shortcut?: string }>("get_settings").then((s) => {
       setCopyAsRichText(s.copy_as_rich_text ?? false);
+      setSendShortcut(s.send_shortcut ?? "super+enter");
     });
   }, []);
 
@@ -936,7 +960,7 @@ export function MarkdownEditor({
   }
 
   function handlePlainKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    if (matchesSendShortcut(e, sendShortcut)) {
       e.preventDefault();
       invoke("copy_to_clipboard", { content: plainContent });
       return;
@@ -1020,6 +1044,8 @@ export function MarkdownEditor({
             onFocusPlain={handleFocusPlain}
             copyAsRichText={copyAsRichText}
             setCopyAsRichText={setCopyAsRichText}
+            sendShortcut={sendShortcut}
+            setSendShortcut={setSendShortcut}
             onPastePlainText={handlePastePlainText}
             textareaRef={textareaRef}
             onShowReplaceConfirm={handleShowReplaceConfirm}
@@ -1038,6 +1064,7 @@ export function MarkdownEditor({
             editorMode={editorMode}
             plainContent={plainContent}
             copyAsRichText={copyAsRichText}
+            sendShortcut={sendShortcut}
           />
         </div>
         {replaceConfirmActions && (
