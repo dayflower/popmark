@@ -263,9 +263,7 @@ export function SettingsPanel() {
               onChange={(e) => setNotifyOnCopy(e.target.checked)}
               className="w-4 h-4 accent-blue-500"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              Notify on copy
-            </span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Notify on copy</span>
           </label>
         </div>
 
