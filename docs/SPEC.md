@@ -105,10 +105,10 @@ Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses tex
 
 A prominent primary-action button is anchored to the **bottom-right of the editor pane** (inside the `<LexicalComposer>` context, outside the `ContentEditable`):
 
-- **Label:** `Send to clipboard (⌘↵)`
+- **Label:** `Send to clipboard (⌘↵)` — the shortcut hint is rendered dynamically using `formatHotkey(sendShortcut)` from the current `send_shortcut` setting
 - **Position:** `absolute bottom-4 right-4` within the `relative`-positioned editor container
 - **Style:** `bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm`
-- **Behavior:** same as the keyboard shortcut `⌘Return` — copy Markdown (and optionally HTML) to clipboard, save to history, clear draft, hide window
+- **Behavior:** same as the configured keyboard shortcut (default `⌘Return`) — copy Markdown (and optionally HTML) to clipboard, save to history, clear draft, hide window
 - The scrollable editor area has bottom padding (`pb-16`) to prevent content from being obscured by the button when scrolled to the bottom
 
 ---
@@ -128,7 +128,7 @@ A prominent primary-action button is anchored to the **bottom-right of the edito
 
 ## 8. Send to Clipboard
 
-Triggered by the "Send to clipboard (⌘↵)" button anchored to the bottom-right of the editor pane (keyboard shortcut: `⌘Return`).
+Triggered by the "Send to clipboard" button anchored to the bottom-right of the editor pane (keyboard shortcut: configurable via `send_shortcut` setting, default `⌘Return`).
 
 **Steps executed in order:**
 
@@ -229,7 +229,7 @@ The standard menu bar is active when the editor window is focused. It provides:
 | Export…                     | ⌘S       | Save current content as `.md` via save dialog |
 | Show History Folder in Finder |          | Open the history directory in Finder / system file manager |
 | —                           |          | Separator                     |
-| Send to Clipboard           | ⌘Return  | Copy to clipboard, save to history, clear draft, hide window |
+| Send to Clipboard           | (configurable, default ⌘↵) | Copy to clipboard, save to history, clear draft, hide window |
 
 **View menu**
 
@@ -290,6 +290,7 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Setting              | Default            | Description                           |
 |----------------------|--------------------|---------------------------------------|
 | Global hotkey        | `⌥M`              | Key combination to toggle the editor  |
+| Send to Clipboard shortcut | `⌘↵` (`super+enter`) | Key combination to trigger "Send to Clipboard" from inside the editor. Captured via the Settings UI; stored as `send_shortcut` in `settings.json`. This is a window-local shortcut (not a system-level global shortcut). |
 | Launch at login      | Off                | Register as a login item              |
 | Editor mode          | `rich`             | `rich` = source-visible WYSIWYG; `plain` = raw Markdown textarea |
 | Copy as Rich Text    | Off                | When enabled (Rich mode only), "Send to Clipboard" copies HTML + plain Markdown so rich formatting is preserved in apps that support it |
@@ -311,11 +312,12 @@ After the user saves, the backend emits a `settings-changed` event to the main w
   "rich_font_family": null,
   "rich_font_size": null,
   "plain_font_family": null,
-  "plain_font_size": null
+  "plain_font_size": null,
+  "send_shortcut": "super+enter"
 }
 ```
 
-All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility.
+All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`).
 
 ---
 

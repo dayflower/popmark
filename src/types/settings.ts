@@ -10,4 +10,5 @@ export interface Settings {
   plain_font_size?: number | null;
   rich_font_fallback?: boolean;
   plain_font_fallback?: boolean;
+  send_shortcut?: string;
 }

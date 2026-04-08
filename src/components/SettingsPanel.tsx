@@ -2,45 +2,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import type { Settings } from "../types/settings";
-
-// Map a keyboard Code (e.g. "KeyM", "Space") to the hotkey segment (e.g. "m", "space")
-function codeToHotkeySegment(code: string): string {
-  if (code.startsWith("Key")) return code.slice(3).toLowerCase();
-  if (code.startsWith("Digit")) return code.slice(5);
-  return code.toLowerCase();
-}
-
-// Format a stored hotkey string (e.g. "alt+m") as macOS symbols (e.g. "⌥M")
-function formatHotkey(hotkey: string): string {
-  return hotkey
-    .split("+")
-    .map((part) => {
-      switch (part.toLowerCase()) {
-        case "ctrl":
-        case "control":
-          return "⌃";
-        case "alt":
-          return "⌥";
-        case "shift":
-          return "⇧";
-        case "meta":
-        case "super":
-        case "cmd":
-        case "command":
-          return "⌘";
-        case "space":
-          return "Space";
-        default:
-          return part.toUpperCase();
-      }
-    })
-    .join("");
-}
+import { codeToHotkeySegment, formatHotkey } from "../utils/hotkey";
 
 export function SettingsPanel() {
   const [savedHotkey, setSavedHotkey] = useState("alt+m");
   const [capturedHotkey, setCapturedHotkey] = useState("alt+m");
   const [isCapturing, setIsCapturing] = useState(false);
+  const [savedSendShortcut, setSavedSendShortcut] = useState("super+enter");
+  const [capturedSendShortcut, setCapturedSendShortcut] = useState("super+enter");
+  const [isCapturingSend, setIsCapturingSend] = useState(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
@@ -52,6 +22,7 @@ export function SettingsPanel() {
   const [plainFontFallback, setPlainFontFallback] = useState<boolean>(true);
   const [fontList, setFontList] = useState<string[]>([]);
   const captureBoxRef = useRef<HTMLButtonElement>(null);
+  const sendCaptureBoxRef = useRef<HTMLButtonElement>(null);
 
   // Load settings on mount and whenever the settings window is shown
   useEffect(() => {
@@ -69,6 +40,9 @@ export function SettingsPanel() {
         setPlainFontFamily(s.plain_font_family ?? "");
         setPlainFontSize(s.plain_font_size != null ? String(s.plain_font_size) : "");
         setPlainFontFallback(s.plain_font_fallback ?? false);
+        const sendShortcut = s.send_shortcut ?? "super+enter";
+        setSavedSendShortcut(sendShortcut);
+        setCapturedSendShortcut(sendShortcut);
       });
     }
 
@@ -86,7 +60,7 @@ export function SettingsPanel() {
   // ESC to cancel (when not capturing)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && !isCapturing) {
+      if (e.key === "Escape" && !isCapturing && !isCapturingSend) {
         handleCancel();
       }
     }
@@ -126,6 +100,34 @@ export function SettingsPanel() {
     setIsCapturing(false);
   }
 
+  function startCaptureSend() {
+    setIsCapturingSend(true);
+    sendCaptureBoxRef.current?.focus();
+  }
+
+  function handleSendCaptureKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.key === "Escape") {
+      setIsCapturingSend(false);
+      setCapturedSendShortcut(savedSendShortcut);
+      return;
+    }
+
+    if (["Alt", "Control", "Shift", "Meta", "Super"].includes(e.key)) return;
+
+    const parts: string[] = [];
+    if (e.ctrlKey) parts.push("ctrl");
+    if (e.altKey) parts.push("alt");
+    if (e.shiftKey) parts.push("shift");
+    if (e.metaKey) parts.push("super");
+    parts.push(codeToHotkeySegment(e.code));
+
+    setCapturedSendShortcut(parts.join("+"));
+    setIsCapturingSend(false);
+  }
+
   async function handleSave() {
     const parsedLimit = Number.parseInt(maxHistoryEntries, 10);
     const parsedRichSize = Number.parseFloat(richFontSize);
@@ -144,15 +146,19 @@ export function SettingsPanel() {
         plain_font_size:
           plainFontSize.trim() !== "" && parsedPlainSize > 0 ? parsedPlainSize : null,
         plain_font_fallback: plainFontFallback,
+        send_shortcut: capturedSendShortcut,
       },
     });
     setSavedHotkey(capturedHotkey);
+    setSavedSendShortcut(capturedSendShortcut);
     invoke("hide_settings_window");
   }
 
   function handleCancel() {
     setIsCapturing(false);
     setCapturedHotkey(savedHotkey);
+    setIsCapturingSend(false);
+    setCapturedSendShortcut(savedSendShortcut);
     invoke("hide_settings_window");
   }
 
@@ -186,6 +192,33 @@ export function SettingsPanel() {
             }
           >
             {isCapturing ? "Press shortcut…" : formatHotkey(capturedHotkey)}
+          </button>
+        </div>
+
+        {/* Send to Clipboard Shortcut */}
+        <div className="mb-4">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Send to Clipboard Shortcut
+          </p>
+          <button
+            ref={sendCaptureBoxRef}
+            type="button"
+            data-capture-box
+            className={[
+              "w-full px-3 py-2 border rounded text-center font-mono text-sm select-none cursor-pointer",
+              isCapturingSend
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500",
+            ].join(" ")}
+            onClick={isCapturingSend ? undefined : startCaptureSend}
+            onKeyDown={isCapturingSend ? handleSendCaptureKeyDown : undefined}
+            aria-label={
+              isCapturingSend
+                ? "Press the desired key combination"
+                : `Current shortcut: ${capturedSendShortcut}`
+            }
+          >
+            {isCapturingSend ? "Press shortcut…" : formatHotkey(capturedSendShortcut)}
           </button>
         </div>
 
