@@ -171,17 +171,17 @@ export function SettingsPanel() {
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Settings</h2>
 
         {/* Global shortcut */}
-        <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
             Global Shortcut
-          </p>
+          </span>
           {/* Hotkey capture box: a <button> that turns into a capture target when clicked */}
           <button
             ref={captureBoxRef}
             type="button"
             data-capture-box
             className={[
-              "w-full px-3 py-2 border rounded text-center font-mono text-sm select-none cursor-pointer",
+              "w-44 px-3 py-1.5 border rounded text-center font-mono text-sm select-none cursor-pointer",
               isCapturing
                 ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                 : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500",
@@ -199,16 +199,16 @@ export function SettingsPanel() {
         </div>
 
         {/* Send to Clipboard Shortcut */}
-        <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
             Send to Clipboard Shortcut
-          </p>
+          </span>
           <button
             ref={sendCaptureBoxRef}
             type="button"
             data-capture-box
             className={[
-              "w-full px-3 py-2 border rounded text-center font-mono text-sm select-none cursor-pointer",
+              "w-44 px-3 py-1.5 border rounded text-center font-mono text-sm select-none cursor-pointer",
               isCapturingSend
                 ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                 : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500",
@@ -287,41 +287,36 @@ export function SettingsPanel() {
           </label>
         </div>
 
-        {/* Rich Mode Font */}
-        <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Rich Mode Font
-          </p>
-          <datalist id="rich-font-family-list">
-            {fontList.map((f) => (
-              <option key={f} value={f} />
-            ))}
-          </datalist>
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Family</span>
-            <input
-              type="text"
-              list="rich-font-family-list"
-              value={richFontFamily}
-              onChange={(e) => setRichFontFamily(e.target.value)}
-              placeholder="Inter, serif, …"
-              className="w-48 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Size <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
-            </span>
-            <input
-              type="number"
-              min="1"
-              value={richFontSize}
-              onChange={(e) => setRichFontSize(e.target.value)}
-              placeholder="14"
-              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-center gap-2">
+        {/* Font settings: Rich | Plain in 2 columns */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* Rich Mode Font */}
+          <div>
+            <datalist id="rich-font-family-list">
+              {fontList.map((f) => (
+                <option key={f} value={f} />
+              ))}
+            </datalist>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Rich Mode Font
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="text"
+                list="rich-font-family-list"
+                value={richFontFamily}
+                onChange={(e) => setRichFontFamily(e.target.value)}
+                placeholder="Family…"
+                className="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+              />
+              <input
+                type="number"
+                min="1"
+                value={richFontSize}
+                onChange={(e) => setRichFontSize(e.target.value)}
+                placeholder="px"
+                className="w-14 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+              />
+            </div>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -329,48 +324,40 @@ export function SettingsPanel() {
                 onChange={(e) => setRichFontFallback(e.target.checked)}
                 className="w-4 h-4 accent-blue-500"
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Append standard fallback fonts
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                Append fallback fonts
               </span>
             </label>
           </div>
-        </div>
 
-        {/* Plain Mode Font */}
-        <div className="mb-6">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Plain Mode Font
-          </p>
-          <datalist id="plain-font-family-list">
-            {fontList.map((f) => (
-              <option key={f} value={f} />
-            ))}
-          </datalist>
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Family</span>
-            <input
-              type="text"
-              list="plain-font-family-list"
-              value={plainFontFamily}
-              onChange={(e) => setPlainFontFamily(e.target.value)}
-              placeholder='"Courier New", monospace, …'
-              className="w-48 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              Size <span className="text-xs text-gray-400 dark:text-gray-500">(px)</span>
-            </span>
-            <input
-              type="number"
-              min="1"
-              value={plainFontSize}
-              onChange={(e) => setPlainFontSize(e.target.value)}
-              placeholder="14"
-              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="flex items-center gap-2">
+          {/* Plain Mode Font */}
+          <div>
+            <datalist id="plain-font-family-list">
+              {fontList.map((f) => (
+                <option key={f} value={f} />
+              ))}
+            </datalist>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Plain Mode Font
+            </p>
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="text"
+                list="plain-font-family-list"
+                value={plainFontFamily}
+                onChange={(e) => setPlainFontFamily(e.target.value)}
+                placeholder="Family…"
+                className="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+              />
+              <input
+                type="number"
+                min="1"
+                value={plainFontSize}
+                onChange={(e) => setPlainFontSize(e.target.value)}
+                placeholder="px"
+                className="w-14 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+              />
+            </div>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -378,8 +365,8 @@ export function SettingsPanel() {
                 onChange={(e) => setPlainFontFallback(e.target.checked)}
                 className="w-4 h-4 accent-blue-500"
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Append standard fallback fonts
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                Append fallback fonts
               </span>
             </label>
           </div>
