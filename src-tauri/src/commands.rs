@@ -1,7 +1,7 @@
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri::menu::{CheckMenuItem, MenuItem};
@@ -147,6 +147,44 @@ fn extract_title_preview(content: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// Settings persistence helpers
+// ---------------------------------------------------------------------------
+
+fn load_settings_from_disk(app: &AppHandle) -> Result<Settings, String> {
+    let path = settings_path(app)?;
+    if path.exists() {
+        let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&data).map_err(|e| e.to_string())
+    } else {
+        Ok(Settings::default())
+    }
+}
+
+fn save_settings_to_disk(app: &AppHandle, settings: &Settings) -> Result<(), String> {
+    let path = settings_path(app)?;
+    let json = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
+    fs::write(&path, json).map_err(|e| e.to_string())
+}
+
+// ---------------------------------------------------------------------------
+// History management helpers
+// ---------------------------------------------------------------------------
+
+fn history_file_path(history_dir: &Path, id: &str) -> PathBuf {
+    history_dir.join(format!("{}.md", id))
+}
+
+fn load_history_entries(app: &AppHandle) -> Result<Vec<HistoryEntry>, String> {
+    let history = history_dir(app)?;
+    let index_path = history.join("index.json");
+    if !index_path.exists() {
+        return Ok(Vec::new());
+    }
+    let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&data).map_err(|e| e.to_string())
+}
+
+// ---------------------------------------------------------------------------
 // Data folder opener (menu-only, not an IPC command)
 // ---------------------------------------------------------------------------
 
@@ -208,28 +246,16 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
 
 #[tauri::command]
 pub fn get_settings(app: AppHandle) -> Result<Settings, String> {
-    let path = settings_path(&app)?;
-    if path.exists() {
-        let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&data).map_err(|e| e.to_string())
-    } else {
-        Ok(Settings::default())
-    }
+    load_settings_from_disk(&app)
 }
 
 #[tauri::command]
 pub fn save_settings(app: AppHandle, mut settings: Settings) -> Result<(), String> {
-    // Persist to disk
-    let path = settings_path(&app)?;
     // Preserve the current editor_mode — managed exclusively via save_editor_mode
-    if path.exists() {
-        let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        if let Ok(current) = serde_json::from_str::<Settings>(&data) {
-            settings.editor_mode = current.editor_mode;
-        }
+    if let Ok(current) = load_settings_from_disk(&app) {
+        settings.editor_mode = current.editor_mode;
     }
-    let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
-    fs::write(&path, json).map_err(|e| e.to_string())?;
+    save_settings_to_disk(&app, &settings)?;
 
     // Re-register global shortcut with new hotkey
     re_register_shortcut(&app, &settings.hotkey)?;
@@ -265,16 +291,9 @@ pub fn list_fonts() -> Result<Vec<String>, String> {
 
 #[tauri::command]
 pub fn save_editor_mode(app: AppHandle, mode: String) -> Result<(), String> {
-    let path = settings_path(&app)?;
-    let mut settings: Settings = if path.exists() {
-        let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&data).map_err(|e| e.to_string())?
-    } else {
-        Settings::default()
-    };
+    let mut settings = load_settings_from_disk(&app)?;
     settings.editor_mode = mode;
-    let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
-    fs::write(&path, json).map_err(|e| e.to_string())
+    save_settings_to_disk(&app, &settings)
 }
 
 // ---------------------------------------------------------------------------
@@ -291,16 +310,10 @@ fn save_history_entry(app: &AppHandle, content: &str) -> Result<(), String> {
     let title_preview = extract_title_preview(content);
 
     let history = history_dir(app)?;
-    let file_path = history.join(format!("{}.md", id));
-    fs::write(&file_path, content).map_err(|e| e.to_string())?;
+    fs::write(&history_file_path(&history, &id), content).map_err(|e| e.to_string())?;
 
     let index_path = history.join("index.json");
-    let mut entries: Vec<HistoryEntry> = if index_path.exists() {
-        let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&data).unwrap_or_default()
-    } else {
-        Vec::new()
-    };
+    let mut entries = load_history_entries(app).unwrap_or_default();
     entries.insert(
         0,
         HistoryEntry {
@@ -311,13 +324,13 @@ fn save_history_entry(app: &AppHandle, content: &str) -> Result<(), String> {
     );
 
     // Apply retention limit
-    let settings = get_settings(app.clone())?;
+    let settings = load_settings_from_disk(app)?;
     if let Some(limit) = settings.max_history_entries {
         if limit > 0 {
             let limit = limit as usize;
             while entries.len() > limit {
                 if let Some(removed) = entries.pop() {
-                    let _ = fs::remove_file(history.join(format!("{}.md", removed.id)));
+                    let _ = fs::remove_file(history_file_path(&history, &removed.id));
                 }
             }
         }
@@ -384,7 +397,7 @@ pub fn copy_to_clipboard(
     }
 
     // 6. Notify user (best-effort; silently ignored if permission denied or DND)
-    let settings = get_settings(app.clone()).unwrap_or_default();
+    let settings = load_settings_from_disk(&app).unwrap_or_default();
     if settings.notify_on_copy {
         let _ = app.notification()
             .builder()
@@ -421,19 +434,13 @@ pub fn new_document(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn list_history(app: AppHandle) -> Result<Vec<HistoryEntry>, String> {
-    let history = history_dir(&app)?;
-    let index_path = history.join("index.json");
-    if !index_path.exists() {
-        return Ok(Vec::new());
-    }
-    let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
-    serde_json::from_str(&data).map_err(|e| e.to_string())
+    load_history_entries(&app)
 }
 
 #[tauri::command]
 pub fn get_history_entry(app: AppHandle, id: String) -> Result<String, String> {
     let history = history_dir(&app)?;
-    let file_path = history.join(format!("{}.md", id));
+    let file_path = history_file_path(&history, &id);
     if !file_path.exists() {
         return Err(format!("History entry not found: {}", id));
     }
@@ -445,17 +452,12 @@ pub fn delete_history_entry(app: AppHandle, id: String) -> Result<(), String> {
     let history = history_dir(&app)?;
     let index_path = history.join("index.json");
 
-    let mut entries: Vec<HistoryEntry> = if index_path.exists() {
-        let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&data).unwrap_or_default()
-    } else {
-        Vec::new()
-    };
+    let mut entries = load_history_entries(&app).unwrap_or_default();
     entries.retain(|e| e.id != id);
     let json = serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())?;
     fs::write(&index_path, json).map_err(|e| e.to_string())?;
 
-    let _ = fs::remove_file(history.join(format!("{}.md", id)));
+    let _ = fs::remove_file(history_file_path(&history, &id));
 
     Ok(())
 }
@@ -465,12 +467,9 @@ pub fn clear_history(app: AppHandle) -> Result<(), String> {
     let history = history_dir(&app)?;
     let index_path = history.join("index.json");
 
-    if index_path.exists() {
-        let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
-        let entries: Vec<HistoryEntry> = serde_json::from_str(&data).unwrap_or_default();
-        for entry in &entries {
-            let _ = fs::remove_file(history.join(format!("{}.md", entry.id)));
-        }
+    let entries = load_history_entries(&app).unwrap_or_default();
+    for entry in &entries {
+        let _ = fs::remove_file(history_file_path(&history, &entry.id));
     }
 
     fs::write(&index_path, "[]").map_err(|e| e.to_string())?;
@@ -484,13 +483,7 @@ pub fn clear_history(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn recall_last_history(app: AppHandle) -> Result<String, String> {
-    let history = history_dir(&app)?;
-    let index_path = history.join("index.json");
-    if !index_path.exists() {
-        return Err("No history entries".to_string());
-    }
-    let data = fs::read_to_string(&index_path).map_err(|e| e.to_string())?;
-    let entries: Vec<HistoryEntry> = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    let entries = load_history_entries(&app)?;
     if entries.is_empty() {
         return Err("No history entries".to_string());
     }
