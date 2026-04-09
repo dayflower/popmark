@@ -1,6 +1,5 @@
-import { $isCodeNode, CodeHighlightNode, CodeNode } from "@lexical/code";
+import { $isCodeNode } from "@lexical/code";
 import { $generateHtmlFromNodes } from "@lexical/html";
-import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { $createListNode, $isListItemNode, ListItemNode, ListNode } from "@lexical/list";
 import {
   $convertFromMarkdownString,
@@ -15,14 +14,12 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { $getNearestNodeOfType } from "@lexical/utils";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -56,6 +53,7 @@ import { Toolbar } from "../components/Toolbar";
 import { useHistory } from "../hooks/useHistory";
 import type { Settings } from "../types/settings";
 import { codeToHotkeySegment, formatHotkey } from "../utils/hotkey";
+import { EDITOR_NODES } from "./nodes";
 
 function matchesSendShortcut(e: KeyboardEvent | React.KeyboardEvent, shortcut: string): boolean {
   const parts = shortcut.toLowerCase().split("+");
@@ -86,17 +84,7 @@ const initialConfig = {
       italic: "editor-italic",
     },
   },
-  nodes: [
-    HeadingNode,
-    QuoteNode,
-    CodeNode,
-    CodeHighlightNode,
-    ListNode,
-    ListItemNode,
-    LinkNode,
-    AutoLinkNode,
-    HorizontalRuleNode,
-  ],
+  nodes: EDITOR_NODES,
   onError: (error: Error) => {
     console.error(error);
   },
@@ -644,17 +632,7 @@ function EditorPlugins({
         onPastePlainText(text);
       } else {
         const tempEditor = createEditor({
-          nodes: [
-            HeadingNode,
-            QuoteNode,
-            CodeNode,
-            CodeHighlightNode,
-            ListNode,
-            ListItemNode,
-            LinkNode,
-            AutoLinkNode,
-            HorizontalRuleNode,
-          ],
+          nodes: EDITOR_NODES,
         });
         await new Promise<void>((resolve) => {
           tempEditor.update(

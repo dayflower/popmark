@@ -1,11 +1,12 @@
 mod commands;
 
 use commands::AppState;
+use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
-    Emitter, Manager, PhysicalPosition,
+    AppHandle, Emitter, Manager, PhysicalPosition,
 };
 use tauri_plugin_autostart::MacosLauncher;
 
@@ -241,30 +242,22 @@ pub fn run() {
                     Some(menu_editor_mode_plain_item);
                 app.on_menu_event(|app, event| match event.id().as_ref() {
                     "menu-toggle-history" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-toggle-history", ());
-                        }
+                        emit_to_main_window(app, "menu-toggle-history", ());
                     }
                     "menu-settings" => {
                         let _ = commands::show_settings_window(app.clone());
                     }
                     "menu-new-document" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-new-document", ());
-                        }
+                        emit_to_main_window(app, "menu-new-document", ());
                     }
                     "menu-export" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-export", ());
-                        }
+                        emit_to_main_window(app, "menu-export", ());
                     }
                     "menu-show-history-folder" => {
                         commands::open_history_folder(app.clone());
                     }
                     "menu-send-to-clipboard" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-send-to-clipboard", ());
-                        }
+                        emit_to_main_window(app, "menu-send-to-clipboard", ());
                     }
                     "menu-move-to-center" => {
                         if let Some(window) = app.get_webview_window("main") {
@@ -294,9 +287,7 @@ pub fn run() {
                         if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
                             let _ = item.set_checked(false);
                         }
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-set-editor-mode", "rich");
-                        }
+                        emit_to_main_window(app, "menu-set-editor-mode", "rich");
                     }
                     "menu-set-editor-mode-plain" => {
                         // Immediately correct checkmarks; macOS auto-toggles on click
@@ -307,34 +298,22 @@ pub fn run() {
                         if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
                             let _ = item.set_checked(true);
                         }
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-set-editor-mode", "plain");
-                        }
+                        emit_to_main_window(app, "menu-set-editor-mode", "plain");
                     }
                     "menu-clear-history" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-clear-history", ());
-                        }
+                        emit_to_main_window(app, "menu-clear-history", ());
                     }
                     "menu-paste-and-match-style" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-paste-and-match-style", ());
-                        }
+                        emit_to_main_window(app, "menu-paste-and-match-style", ());
                     }
                     "menu-paste-from-markdown" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-paste-from-markdown", ());
-                        }
+                        emit_to_main_window(app, "menu-paste-from-markdown", ());
                     }
                     "menu-recall-last" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-recall-last", ());
-                        }
+                        emit_to_main_window(app, "menu-recall-last", ());
                     }
                     "menu-clear-all" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("menu-clear-all", ());
-                        }
+                        emit_to_main_window(app, "menu-clear-all", ());
                     }
                     "menu-help" => {
                         // stub: no help documentation yet
@@ -366,19 +345,11 @@ pub fn run() {
                 .menu(&tray_menu)
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "show-editor" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.emit("window-shown", ());
-                        }
+                        show_and_focus_main_window(app);
                     }
                     "open-history" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.emit("window-shown", ());
-                            let _ = window.emit("open-history-panel", ());
-                        }
+                        show_and_focus_main_window(app);
+                        emit_to_main_window(app, "open-history-panel", ());
                     }
                     "open-settings" => {
                         let _ = commands::show_settings_window(app.clone());
@@ -465,12 +436,22 @@ pub fn run() {
             } = event
             {
                 if !has_visible_windows {
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                        let _ = window.emit("window-shown", ());
-                    }
+                    show_and_focus_main_window(app_handle);
                 }
             }
         });
+}
+
+fn emit_to_main_window(app: &AppHandle, event: &str, payload: impl Serialize + Clone) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.emit(event, payload);
+    }
+}
+
+fn show_and_focus_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+        let _ = window.emit("window-shown", ());
+    }
 }
