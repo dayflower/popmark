@@ -264,9 +264,7 @@ export function SettingsPanel() {
             fontSize={fontState.plainFontSize}
             fontFallback={fontState.plainFontFallback}
             fontList={fontList}
-            onFontFamilyChange={(v) =>
-              dispatchFont({ type: "setFamily", mode: "plain", value: v })
-            }
+            onFontFamilyChange={(v) => dispatchFont({ type: "setFamily", mode: "plain", value: v })}
             onFontSizeChange={(v) => dispatchFont({ type: "setSize", mode: "plain", value: v })}
             onFontFallbackChange={(v) =>
               dispatchFont({ type: "setFallback", mode: "plain", value: v })

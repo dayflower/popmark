@@ -1,5 +1,5 @@
-import { useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useRef } from "react";
 import { codeToHotkeySegment, formatHotkey } from "../utils/hotkey";
 
 interface HotkeyCaptureProps {
