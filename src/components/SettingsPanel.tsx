@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Settings } from "../types/settings";
 import { codeToHotkeySegment, formatHotkey } from "../utils/hotkey";
 
@@ -59,6 +59,14 @@ export function SettingsPanel() {
     };
   }, []);
 
+  const handleCancel = useCallback(() => {
+    setIsCapturing(false);
+    setCapturedHotkey(savedHotkey);
+    setIsCapturingSend(false);
+    setCapturedSendShortcut(savedSendShortcut);
+    invoke("hide_settings_window");
+  }, [savedHotkey, savedSendShortcut]);
+
   // ESC to cancel (when not capturing)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -68,7 +76,7 @@ export function SettingsPanel() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
+  }, [isCapturing, isCapturingSend, handleCancel]);
 
   function startCapture() {
     invoke("set_hotkey_capture_active", { active: true });
@@ -154,14 +162,6 @@ export function SettingsPanel() {
     });
     setSavedHotkey(capturedHotkey);
     setSavedSendShortcut(capturedSendShortcut);
-    invoke("hide_settings_window");
-  }
-
-  function handleCancel() {
-    setIsCapturing(false);
-    setCapturedHotkey(savedHotkey);
-    setIsCapturingSend(false);
-    setCapturedSendShortcut(savedSendShortcut);
     invoke("hide_settings_window");
   }
 
