@@ -1,3 +1,20 @@
+export function matchesSendShortcut(
+  e: KeyboardEvent | React.KeyboardEvent,
+  shortcut: string,
+): boolean {
+  const parts = shortcut.toLowerCase().split("+");
+  const key = parts[parts.length - 1];
+  return (
+    e.ctrlKey === parts.includes("ctrl") &&
+    e.altKey === parts.includes("alt") &&
+    e.shiftKey === parts.includes("shift") &&
+    e.metaKey === parts.includes("super") &&
+    (e.key.toLowerCase() === key ||
+      e.code.toLowerCase() === key ||
+      codeToHotkeySegment(e.code) === key)
+  );
+}
+
 // Map a keyboard Code (e.g. "KeyM", "Space") to the hotkey segment (e.g. "m", "space")
 export function codeToHotkeySegment(code: string): string {
   if (code.startsWith("Key")) return code.slice(3).toLowerCase();
