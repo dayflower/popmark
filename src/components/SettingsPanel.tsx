@@ -1,8 +1,59 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import type { Settings } from "../types/settings";
-import { codeToHotkeySegment, formatHotkey } from "../utils/hotkey";
+import { CheckboxSetting } from "./CheckboxSetting";
+import { FontSettings } from "./FontSettings";
+import { HotkeyCapture } from "./HotkeyCapture";
+
+// --- Font state ---
+
+interface FontState {
+  richFontFamily: string;
+  richFontSize: string;
+  richFontFallback: boolean;
+  plainFontFamily: string;
+  plainFontSize: string;
+  plainFontFallback: boolean;
+}
+
+type FontMode = "rich" | "plain";
+
+type FontAction =
+  | { type: "setFamily"; mode: FontMode; value: string }
+  | { type: "setSize"; mode: FontMode; value: string }
+  | { type: "setFallback"; mode: FontMode; value: boolean }
+  | { type: "reset"; state: FontState };
+
+function fontReducer(state: FontState, action: FontAction): FontState {
+  switch (action.type) {
+    case "setFamily":
+      return action.mode === "rich"
+        ? { ...state, richFontFamily: action.value }
+        : { ...state, plainFontFamily: action.value };
+    case "setSize":
+      return action.mode === "rich"
+        ? { ...state, richFontSize: action.value }
+        : { ...state, plainFontSize: action.value };
+    case "setFallback":
+      return action.mode === "rich"
+        ? { ...state, richFontFallback: action.value }
+        : { ...state, plainFontFallback: action.value };
+    case "reset":
+      return action.state;
+  }
+}
+
+const initialFontState: FontState = {
+  richFontFamily: "",
+  richFontSize: "",
+  richFontFallback: true,
+  plainFontFamily: "",
+  plainFontSize: "",
+  plainFontFallback: true,
+};
+
+// --- Component ---
 
 export function SettingsPanel() {
   const [savedHotkey, setSavedHotkey] = useState("alt+m");
@@ -15,15 +66,8 @@ export function SettingsPanel() {
   const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [notifyOnCopy, setNotifyOnCopy] = useState<boolean>(true);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
-  const [richFontFamily, setRichFontFamily] = useState<string>("");
-  const [richFontSize, setRichFontSize] = useState<string>("");
-  const [richFontFallback, setRichFontFallback] = useState<boolean>(true);
-  const [plainFontFamily, setPlainFontFamily] = useState<string>("");
-  const [plainFontSize, setPlainFontSize] = useState<string>("");
-  const [plainFontFallback, setPlainFontFallback] = useState<boolean>(true);
+  const [fontState, dispatchFont] = useReducer(fontReducer, initialFontState);
   const [fontList, setFontList] = useState<string[]>([]);
-  const captureBoxRef = useRef<HTMLButtonElement>(null);
-  const sendCaptureBoxRef = useRef<HTMLButtonElement>(null);
 
   // Load settings on mount and whenever the settings window is shown
   useEffect(() => {
@@ -36,15 +80,20 @@ export function SettingsPanel() {
         setNotifyOnCopy(s.notify_on_copy ?? true);
         const limit = s.max_history_entries;
         setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
-        setRichFontFamily(s.rich_font_family ?? "");
-        setRichFontSize(s.rich_font_size != null ? String(s.rich_font_size) : "");
-        setRichFontFallback(s.rich_font_fallback ?? false);
-        setPlainFontFamily(s.plain_font_family ?? "");
-        setPlainFontSize(s.plain_font_size != null ? String(s.plain_font_size) : "");
-        setPlainFontFallback(s.plain_font_fallback ?? false);
         const sendShortcut = s.send_shortcut ?? "super+enter";
         setSavedSendShortcut(sendShortcut);
         setCapturedSendShortcut(sendShortcut);
+        dispatchFont({
+          type: "reset",
+          state: {
+            richFontFamily: s.rich_font_family ?? "",
+            richFontSize: s.rich_font_size != null ? String(s.rich_font_size) : "",
+            richFontFallback: s.rich_font_fallback ?? false,
+            plainFontFamily: s.plain_font_family ?? "",
+            plainFontSize: s.plain_font_size != null ? String(s.plain_font_size) : "",
+            plainFontFallback: s.plain_font_fallback ?? false,
+          },
+        });
       });
     }
 
@@ -78,70 +127,10 @@ export function SettingsPanel() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isCapturing, isCapturingSend, handleCancel]);
 
-  function startCapture() {
-    invoke("set_hotkey_capture_active", { active: true });
-    setIsCapturing(true);
-    captureBoxRef.current?.focus();
-  }
-
-  function handleCaptureKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.key === "Escape") {
-      invoke("set_hotkey_capture_active", { active: false });
-      setIsCapturing(false);
-      setCapturedHotkey(savedHotkey);
-      return;
-    }
-
-    // Ignore modifier-only presses
-    if (["Alt", "Control", "Shift", "Meta", "Super"].includes(e.key)) return;
-
-    const parts: string[] = [];
-    if (e.ctrlKey) parts.push("ctrl");
-    if (e.altKey) parts.push("alt");
-    if (e.shiftKey) parts.push("shift");
-    if (e.metaKey) parts.push("super");
-    parts.push(codeToHotkeySegment(e.code));
-
-    setCapturedHotkey(parts.join("+"));
-    invoke("set_hotkey_capture_active", { active: false });
-    setIsCapturing(false);
-  }
-
-  function startCaptureSend() {
-    setIsCapturingSend(true);
-    sendCaptureBoxRef.current?.focus();
-  }
-
-  function handleSendCaptureKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.key === "Escape") {
-      setIsCapturingSend(false);
-      setCapturedSendShortcut(savedSendShortcut);
-      return;
-    }
-
-    if (["Alt", "Control", "Shift", "Meta", "Super"].includes(e.key)) return;
-
-    const parts: string[] = [];
-    if (e.ctrlKey) parts.push("ctrl");
-    if (e.altKey) parts.push("alt");
-    if (e.shiftKey) parts.push("shift");
-    if (e.metaKey) parts.push("super");
-    parts.push(codeToHotkeySegment(e.code));
-
-    setCapturedSendShortcut(parts.join("+"));
-    setIsCapturingSend(false);
-  }
-
   async function handleSave() {
     const parsedLimit = Number.parseInt(maxHistoryEntries, 10);
-    const parsedRichSize = Number.parseFloat(richFontSize);
-    const parsedPlainSize = Number.parseFloat(plainFontSize);
+    const parsedRichSize = Number.parseFloat(fontState.richFontSize);
+    const parsedPlainSize = Number.parseFloat(fontState.plainFontSize);
     await invoke("save_settings", {
       settings: {
         hotkey: capturedHotkey,
@@ -149,13 +138,14 @@ export function SettingsPanel() {
         copy_as_rich_text: copyAsRichText,
         max_history_entries:
           maxHistoryEntries.trim() !== "" && parsedLimit > 0 ? parsedLimit : null,
-        rich_font_family: richFontFamily.trim() || null,
-        rich_font_size: richFontSize.trim() !== "" && parsedRichSize > 0 ? parsedRichSize : null,
-        rich_font_fallback: richFontFallback,
-        plain_font_family: plainFontFamily.trim() || null,
+        rich_font_family: fontState.richFontFamily.trim() || null,
+        rich_font_size:
+          fontState.richFontSize.trim() !== "" && parsedRichSize > 0 ? parsedRichSize : null,
+        rich_font_fallback: fontState.richFontFallback,
+        plain_font_family: fontState.plainFontFamily.trim() || null,
         plain_font_size:
-          plainFontSize.trim() !== "" && parsedPlainSize > 0 ? parsedPlainSize : null,
-        plain_font_fallback: plainFontFallback,
+          fontState.plainFontSize.trim() !== "" && parsedPlainSize > 0 ? parsedPlainSize : null,
+        plain_font_fallback: fontState.plainFontFallback,
         send_shortcut: capturedSendShortcut,
         notify_on_copy: notifyOnCopy,
       },
@@ -171,101 +161,70 @@ export function SettingsPanel() {
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Settings</h2>
 
         {/* Global shortcut */}
-        <div className="flex items-center justify-between gap-4 mb-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
-            Global Shortcut
-          </span>
-          {/* Hotkey capture box: a <button> that turns into a capture target when clicked */}
-          <button
-            ref={captureBoxRef}
-            type="button"
-            data-capture-box
-            className={[
-              "w-44 px-3 py-1.5 border rounded text-center font-mono text-sm select-none cursor-pointer",
-              isCapturing
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500",
-            ].join(" ")}
-            onClick={isCapturing ? undefined : startCapture}
-            onKeyDown={isCapturing ? handleCaptureKeyDown : undefined}
-            aria-label={
-              isCapturing
-                ? "Press the desired key combination"
-                : `Current shortcut: ${capturedHotkey}`
-            }
-          >
-            {isCapturing ? "Press shortcut…" : formatHotkey(capturedHotkey)}
-          </button>
+        <div className="mb-3">
+          <HotkeyCapture
+            label="Global Shortcut"
+            captured={capturedHotkey}
+            isCapturing={isCapturing}
+            useSystemCapture
+            onStartCapture={() => setIsCapturing(true)}
+            onCaptured={(hotkey) => {
+              setCapturedHotkey(hotkey);
+              setIsCapturing(false);
+            }}
+            onCancelCapture={() => {
+              setIsCapturing(false);
+              setCapturedHotkey(savedHotkey);
+            }}
+          />
         </div>
 
         {/* Send to Clipboard Shortcut */}
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">
-            Send to Clipboard Shortcut
-          </span>
-          <button
-            ref={sendCaptureBoxRef}
-            type="button"
-            data-capture-box
-            className={[
-              "w-44 px-3 py-1.5 border rounded text-center font-mono text-sm select-none cursor-pointer",
-              isCapturingSend
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500",
-            ].join(" ")}
-            onClick={isCapturingSend ? undefined : startCaptureSend}
-            onKeyDown={isCapturingSend ? handleSendCaptureKeyDown : undefined}
-            aria-label={
-              isCapturingSend
-                ? "Press the desired key combination"
-                : `Current shortcut: ${capturedSendShortcut}`
-            }
-          >
-            {isCapturingSend ? "Press shortcut…" : formatHotkey(capturedSendShortcut)}
-          </button>
+        <div className="mb-4">
+          <HotkeyCapture
+            label="Send to Clipboard Shortcut"
+            captured={capturedSendShortcut}
+            isCapturing={isCapturingSend}
+            onStartCapture={() => setIsCapturingSend(true)}
+            onCaptured={(hotkey) => {
+              setCapturedSendShortcut(hotkey);
+              setIsCapturingSend(false);
+            }}
+            onCancelCapture={() => {
+              setIsCapturingSend(false);
+              setCapturedSendShortcut(savedSendShortcut);
+            }}
+          />
         </div>
 
         {/* Launch at login */}
-        <div className="mb-3">
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={launchAtLogin}
-              onChange={(e) => setLaunchAtLogin(e.target.checked)}
-              className="w-4 h-4 accent-blue-500"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Launch at login</span>
-          </label>
-        </div>
+        <CheckboxSetting
+          checked={launchAtLogin}
+          onChange={setLaunchAtLogin}
+          label="Launch at login"
+          className="mb-3"
+        />
 
         {/* Copy as Rich Text */}
-        <div className="mb-3">
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={copyAsRichText}
-              onChange={(e) => setCopyAsRichText(e.target.checked)}
-              className="w-4 h-4 accent-blue-500"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
+        <CheckboxSetting
+          checked={copyAsRichText}
+          onChange={setCopyAsRichText}
+          label={
+            <>
               Copy as Rich Text{" "}
               <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
-            </span>
-          </label>
-        </div>
+            </>
+          }
+          className="mb-3"
+        />
 
         {/* Notify on copy */}
-        <div className="mb-4">
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={notifyOnCopy}
-              onChange={(e) => setNotifyOnCopy(e.target.checked)}
-              className="w-4 h-4 accent-blue-500"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Notify on copy</span>
-          </label>
-        </div>
+        <CheckboxSetting
+          checked={notifyOnCopy}
+          onChange={setNotifyOnCopy}
+          label="Notify on copy"
+          className="mb-4"
+        />
 
         {/* Max history entries */}
         <div className="mb-4">
@@ -287,87 +246,30 @@ export function SettingsPanel() {
 
         {/* Font settings: Rich | Plain in 2 columns */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          {/* Rich Mode Font */}
-          <div>
-            <datalist id="rich-font-family-list">
-              {fontList.map((f) => (
-                <option key={f} value={f} />
-              ))}
-            </datalist>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Rich Mode Font
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <input
-                type="text"
-                list="rich-font-family-list"
-                value={richFontFamily}
-                onChange={(e) => setRichFontFamily(e.target.value)}
-                placeholder="Family…"
-                className="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-              />
-              <input
-                type="number"
-                min="1"
-                value={richFontSize}
-                onChange={(e) => setRichFontSize(e.target.value)}
-                placeholder="px"
-                className="w-14 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-              />
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={richFontFallback}
-                onChange={(e) => setRichFontFallback(e.target.checked)}
-                className="w-4 h-4 accent-blue-500"
-              />
-              <span className="text-xs text-gray-600 dark:text-gray-400">
-                Append fallback fonts
-              </span>
-            </label>
-          </div>
-
-          {/* Plain Mode Font */}
-          <div>
-            <datalist id="plain-font-family-list">
-              {fontList.map((f) => (
-                <option key={f} value={f} />
-              ))}
-            </datalist>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Plain Mode Font
-            </p>
-            <div className="flex items-center gap-2 mb-2">
-              <input
-                type="text"
-                list="plain-font-family-list"
-                value={plainFontFamily}
-                onChange={(e) => setPlainFontFamily(e.target.value)}
-                placeholder="Family…"
-                className="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-              />
-              <input
-                type="number"
-                min="1"
-                value={plainFontSize}
-                onChange={(e) => setPlainFontSize(e.target.value)}
-                placeholder="px"
-                className="w-14 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
-              />
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={plainFontFallback}
-                onChange={(e) => setPlainFontFallback(e.target.checked)}
-                className="w-4 h-4 accent-blue-500"
-              />
-              <span className="text-xs text-gray-600 dark:text-gray-400">
-                Append fallback fonts
-              </span>
-            </label>
-          </div>
+          <FontSettings
+            mode="rich"
+            fontFamily={fontState.richFontFamily}
+            fontSize={fontState.richFontSize}
+            fontFallback={fontState.richFontFallback}
+            fontList={fontList}
+            onFontFamilyChange={(v) => dispatchFont({ type: "setFamily", mode: "rich", value: v })}
+            onFontSizeChange={(v) => dispatchFont({ type: "setSize", mode: "rich", value: v })}
+            onFontFallbackChange={(v) =>
+              dispatchFont({ type: "setFallback", mode: "rich", value: v })
+            }
+          />
+          <FontSettings
+            mode="plain"
+            fontFamily={fontState.plainFontFamily}
+            fontSize={fontState.plainFontSize}
+            fontFallback={fontState.plainFontFallback}
+            fontList={fontList}
+            onFontFamilyChange={(v) => dispatchFont({ type: "setFamily", mode: "plain", value: v })}
+            onFontSizeChange={(v) => dispatchFont({ type: "setSize", mode: "plain", value: v })}
+            onFontFallbackChange={(v) =>
+              dispatchFont({ type: "setFallback", mode: "plain", value: v })
+            }
+          />
         </div>
       </div>
 
