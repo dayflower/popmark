@@ -22,6 +22,7 @@ export function useMenuEvent<T = unknown>(
   handler: EventCallback<T>,
   deps: React.DependencyList = [],
 ): void {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handler is intentionally omitted; callers control re-subscription via `deps`
   useEffect(() => {
     let unlisten: UnlistenFn | undefined;
     listen<T>(event, handler).then((fn) => {
@@ -30,8 +31,5 @@ export function useMenuEvent<T = unknown>(
     return () => {
       unlisten?.();
     };
-    // handler is intentionally omitted from deps; callers use `deps` to control
-    // re-subscription, mirroring the original per-effect pattern.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event, ...deps]);
 }
