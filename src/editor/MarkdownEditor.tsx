@@ -25,6 +25,7 @@ import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import { useEditorDraftSync } from "../hooks/useEditorDraftSync";
 import { useHistory } from "../hooks/useHistory";
 import { useMenuEventListeners } from "../hooks/useMenuEventListeners";
+import type { EditorMode } from "../types/settings";
 import { matchesSendShortcut } from "../utils/hotkey";
 import { EDITOR_NODES } from "./nodes";
 import { CodeEnterPlugin } from "./plugins/CodeEnterPlugin";
@@ -64,8 +65,8 @@ interface EditorPluginsProps {
   onPendingConsumed: () => void;
   newDocTrigger: number;
   onNew: () => void;
-  editorMode: "rich" | "plain";
-  onModeChange: (mode: "rich" | "plain") => void;
+  editorMode: EditorMode;
+  onModeChange: (mode: EditorMode) => void;
   plainContent: string;
   setPlainContent: (c: string) => void;
   modeToggleFnRef: React.MutableRefObject<(() => void) | null>;
@@ -267,8 +268,8 @@ function EditorPlugins({
 }
 
 interface MarkdownEditorProps {
-  editorMode: "rich" | "plain";
-  onModeChange: (mode: "rich" | "plain") => void;
+  editorMode: EditorMode;
+  onModeChange: (mode: EditorMode) => void;
   richFontFamily?: string | null;
   richFontSize?: number | null;
   plainFontFamily?: string | null;

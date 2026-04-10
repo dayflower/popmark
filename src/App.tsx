@@ -2,24 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 import { MarkdownEditor } from "./editor/MarkdownEditor";
-import type { Settings } from "./types/settings";
-
-type EditorMode = "rich" | "plain";
-
-const RICH_FALLBACK_STACK = "Inter, Avenir, Helvetica, Arial, sans-serif";
-const PLAIN_FALLBACK_STACK =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
-
-function composeFontFamily(
-  userFont: string | null | undefined,
-  appendFallback: boolean | undefined,
-  fallbackStack: string,
-): string | null {
-  const trimmed = userFont?.trim() ?? "";
-  if (!appendFallback) return trimmed || null;
-  if (trimmed) return `"${trimmed}", ${fallbackStack}`;
-  return fallbackStack;
-}
+import type { EditorMode, Settings } from "./types/settings";
+import { composeFontFamily, PLAIN_FALLBACK_STACK, RICH_FALLBACK_STACK } from "./utils/font";
 
 function App() {
   const [editorMode, setEditorMode] = useState<EditorMode>("rich");

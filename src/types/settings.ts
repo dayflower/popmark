@@ -1,3 +1,5 @@
+export type EditorMode = "rich" | "plain";
+
 export interface Settings {
   hotkey: string;
   launch_at_login: boolean;
