@@ -36,6 +36,9 @@ echo "Bumping to v${NEW_VERSION} ..."
 # (dependency versions use inline `{ version = "..." }` syntax, not standalone lines)
 sed -i '' "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" src-tauri/Cargo.toml
 
+# --- Update src-tauri/Cargo.lock ---
+cargo update --manifest-path src-tauri/Cargo.toml --package popmark
+
 # --- Update src-tauri/tauri.conf.json ---
 jq --arg v "$NEW_VERSION" '.version = $v' src-tauri/tauri.conf.json \
   > src-tauri/tauri.conf.json.tmp \
@@ -57,7 +60,7 @@ fi
 BRANCH="release/v${NEW_VERSION}"
 git checkout -b "$BRANCH"
 
-git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock
 git commit -m "chore: bump version to ${NEW_VERSION}
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
@@ -76,6 +79,7 @@ Automated version bump via \`scripts/bump-version.sh ${LEVEL}\`.
 - \`package.json\`
 - \`package-lock.json\`
 - \`src-tauri/Cargo.toml\`
+- \`src-tauri/Cargo.lock\`
 - \`src-tauri/tauri.conf.json\`
 
 ### Next step
