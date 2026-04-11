@@ -81,7 +81,7 @@ pub fn run() {
                         .state::<AppState>()
                         .current_hotkey_str
                         .lock()
-                        .unwrap()
+                        .expect("mutex poisoned: current_hotkey_str")
                         .clone();
                     if !hotkey.is_empty() {
                         let _ = commands::re_register_shortcut(app, &hotkey);
@@ -218,8 +218,11 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         false,
         Some("cmd+r"),
     )?;
-    *app.state::<AppState>().recall_last_item.lock().unwrap() =
-        Some(menu_recall_last_item.clone());
+    *app
+        .state::<AppState>()
+        .recall_last_item
+        .lock()
+        .expect("mutex poisoned: recall_last_item") = Some(menu_recall_last_item.clone());
     let menu_clear_all_item = MenuItem::with_id(
         app,
         "menu-clear-all",
@@ -305,12 +308,21 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         ],
     )?;
     app.set_menu(menu)?;
-    *app.state::<AppState>().history_menu_item.lock().unwrap() =
-        Some(menu_toggle_history_item);
-    *app.state::<AppState>().editor_mode_rich_item.lock().unwrap() =
-        Some(menu_editor_mode_rich_item);
-    *app.state::<AppState>().editor_mode_plain_item.lock().unwrap() =
-        Some(menu_editor_mode_plain_item);
+    *app
+        .state::<AppState>()
+        .history_menu_item
+        .lock()
+        .expect("mutex poisoned: history_menu_item") = Some(menu_toggle_history_item);
+    *app
+        .state::<AppState>()
+        .editor_mode_rich_item
+        .lock()
+        .expect("mutex poisoned: editor_mode_rich_item") = Some(menu_editor_mode_rich_item);
+    *app
+        .state::<AppState>()
+        .editor_mode_plain_item
+        .lock()
+        .expect("mutex poisoned: editor_mode_plain_item") = Some(menu_editor_mode_plain_item);
     app.on_menu_event(|app, event| match event.id().as_ref() {
         "menu-toggle-history" => {
             emit_to_main_window(app, "menu-toggle-history", ());
@@ -352,10 +364,20 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         "menu-set-editor-mode-rich" => {
             // Immediately correct checkmarks; macOS auto-toggles on click
             let state = app.state::<AppState>();
-            if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+            if let Some(item) = state
+                .editor_mode_rich_item
+                .lock()
+                .expect("mutex poisoned: editor_mode_rich_item")
+                .as_ref()
+            {
                 let _ = item.set_checked(true);
             }
-            if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+            if let Some(item) = state
+                .editor_mode_plain_item
+                .lock()
+                .expect("mutex poisoned: editor_mode_plain_item")
+                .as_ref()
+            {
                 let _ = item.set_checked(false);
             }
             emit_to_main_window(app, "menu-set-editor-mode", "rich");
@@ -363,10 +385,20 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         "menu-set-editor-mode-plain" => {
             // Immediately correct checkmarks; macOS auto-toggles on click
             let state = app.state::<AppState>();
-            if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+            if let Some(item) = state
+                .editor_mode_rich_item
+                .lock()
+                .expect("mutex poisoned: editor_mode_rich_item")
+                .as_ref()
+            {
                 let _ = item.set_checked(false);
             }
-            if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+            if let Some(item) = state
+                .editor_mode_plain_item
+                .lock()
+                .expect("mutex poisoned: editor_mode_plain_item")
+                .as_ref()
+            {
                 let _ = item.set_checked(true);
             }
             emit_to_main_window(app, "menu-set-editor-mode", "plain");
