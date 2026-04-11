@@ -9,9 +9,14 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "gen-icons": "bash scripts/gen-icons.sh",
-    "lint": "biome check --write src/ vite.config.ts",
-    "check": "biome check src/ vite.config.ts",
-    "check:ci": "biome check --reporter=github src/ vite.config.ts"
+    "check:js": "biome check src/ vite.config.ts",
+    "fix:js": "biome check --write src/ vite.config.ts",
+    "check:rust": "cargo fmt --check --manifest-path src-tauri/Cargo.toml && cargo clippy --manifest-path src-tauri/Cargo.toml",
+    "fix:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml && cargo clippy --fix --allow-dirty --manifest-path src-tauri/Cargo.toml",
+    "check": "npm run check:js && npm run check:rust",
+    "fix": "npm run fix:js && npm run fix:rust",
+    "check:ci:js": "biome check --reporter=github src/ vite.config.ts",
+    "check:ci": "npm run check:ci:js && npm run check:rust"
   },
   "dependencies": {
     "@lexical/code": "^0.42.0",

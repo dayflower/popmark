@@ -229,7 +229,7 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
     }
 
     app.global_shortcut()
-        .on_shortcut(shortcut.clone(), move |app, _shortcut, event| {
+        .on_shortcut(shortcut, move |app, _shortcut, event| {
             if event.state == KeyPressState::Pressed {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
@@ -325,7 +325,7 @@ fn save_history_entry(app: &AppHandle, content: &str) -> Result<(), String> {
     let title_preview = extract_title_preview(content);
 
     let history = history_dir(app)?;
-    fs::write(&history_file_path(&history, &id), content).map_err(|e| e.to_string())?;
+    fs::write(history_file_path(&history, &id), content).map_err(|e| e.to_string())?;
 
     let index_path = history.join("index.json");
     let mut entries = load_history_entries(app).unwrap_or_default();

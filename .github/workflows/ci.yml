@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
 
       - name: Lint
-        run: npm run check:ci
+        run: npm run check:ci:js
 
       - name: Build
         run: npm run build
@@ -30,11 +30,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - run: npm ci
+
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
 
       - name: Check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        run: npm run check:rust
