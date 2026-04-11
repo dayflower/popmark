@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Popmark",
   "version": "0.1.0",
-  "identifier": "com.dayflower.popmark",
+  "identifier": "com.eula.dayflower.popmark",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -37,6 +37,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Productivity",
+    "copyright": "Copyright © 2026 dayflower",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

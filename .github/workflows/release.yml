@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  check-version:
+    name: Check version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify versions match tag
+        run: |
+          TAG_VER="${GITHUB_REF_NAME#v}"
+
+          PKG_VER=$(jq -r .version package.json)
+          CARGO_VER=$(grep '^version' src-tauri/Cargo.toml | head -1 | cut -d'"' -f2)
+          TAURI_VER=$(jq -r .version src-tauri/tauri.conf.json)
+
+          FAILED=0
+          if [ "$PKG_VER" != "$TAG_VER" ]; then
+            echo "::error::package.json version ($PKG_VER) does not match tag ($TAG_VER)"
+            FAILED=1
+          fi
+          if [ "$CARGO_VER" != "$TAG_VER" ]; then
+            echo "::error::Cargo.toml version ($CARGO_VER) does not match tag ($TAG_VER)"
+            FAILED=1
+          fi
+          if [ "$TAURI_VER" != "$TAG_VER" ]; then
+            echo "::error::tauri.conf.json version ($TAURI_VER) does not match tag ($TAG_VER)"
+            FAILED=1
+          fi
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
+          echo "All versions match tag: $TAG_VER"
+
+  build-and-release:
+    name: Build and release
+    runs-on: macos-latest
+    needs: check-version
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app (ad-hoc signing)
+        env:
+          APPLE_SIGNING_IDENTITY: "-"
+        run: npm run tauri build
+
+      - name: Archive App Bundle as zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd src-tauri/target/release/bundle/macos
+          zip -r "$GITHUB_WORKSPACE/popmark-${VERSION}-macos.zip" Popmark.app
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2.6.1
+        with:
+          files: |
+            popmark-*-macos.zip
+            src-tauri/target/release/bundle/dmg/*.dmg
+
+      - name: Update Homebrew tap
+        uses: dayflower/brew-up@v0.1.1
+        with:
+          release-tag: ${{ github.ref_name }}
+          template-path: .github/homebrew/popmark.rb.mustache
+          output-path: Casks/popmark.rb
+          asset-map: |
+            default=Popmark_{{version}}_*.dmg
+          target-repo: dayflower/homebrew-tap
+          target-branch: main
+          target-repo-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+          publish-mode: pr
