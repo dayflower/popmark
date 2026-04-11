@@ -15,7 +15,8 @@
     "check": "npm run check:js && npm run check:rust",
     "fix": "npm run fix:js && npm run fix:rust",
     "check:ci:js": "biome check --reporter=github src/ vite.config.ts",
-    "check:ci": "npm run check:ci:js && npm run check:rust"
+    "check:ci": "npm run check:ci:js && npm run check:rust",
+    "bump": "bash scripts/bump-version.sh"
   },
   "dependencies": {
     "@lexical/code": "^0.42.0",
