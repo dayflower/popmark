@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, Manager};
 use tauri::menu::{CheckMenuItem, MenuItem};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
-use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState as KeyPressState};
+use tauri_plugin_notification::NotificationExt;
 
 // ---------------------------------------------------------------------------
 // App state: tracks the currently registered global shortcut and menu items
@@ -143,10 +143,7 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn extract_title_preview(content: &str) -> String {
-    let first_line = content
-        .lines()
-        .find(|l| !l.trim().is_empty())
-        .unwrap_or("");
+    let first_line = content.lines().find(|l| !l.trim().is_empty()).unwrap_or("");
     // Strip leading Markdown heading markers
     let stripped = first_line.trim_start_matches('#').trim();
     if stripped.is_empty() {
@@ -220,10 +217,7 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
         .map_err(|e| format!("Invalid hotkey '{hotkey}': {e}"))?;
 
     let state = app.state::<AppState>();
-    let mut sc = state
-        .shortcut
-        .lock()
-        .expect("mutex poisoned: shortcut");
+    let mut sc = state.shortcut.lock().expect("mutex poisoned: shortcut");
     if let Some(old) = sc.shortcut.take() {
         let _ = app.global_shortcut().unregister(old);
     }
@@ -293,12 +287,8 @@ pub fn save_settings(app: AppHandle, mut settings: Settings) -> Result<(), Strin
 
 #[tauri::command]
 pub fn list_fonts() -> Result<Vec<String>, String> {
-    let collection = font_enumeration::Collection::new()
-        .map_err(|e| e.to_string())?;
-    let mut families: Vec<String> = collection
-        .all()
-        .map(|f| f.family_name.clone())
-        .collect();
+    let collection = font_enumeration::Collection::new().map_err(|e| e.to_string())?;
+    let mut families: Vec<String> = collection.all().map(|f| f.family_name.clone()).collect();
     families.sort_unstable();
     families.dedup();
     Ok(families)
@@ -414,7 +404,8 @@ pub fn copy_to_clipboard(
     // 6. Notify user (best-effort; silently ignored if permission denied or DND)
     let settings = load_settings_from_disk(&app).unwrap_or_default();
     if settings.notify_on_copy {
-        let _ = app.notification()
+        let _ = app
+            .notification()
             .builder()
             .title("Popmark")
             .body("Copied to clipboard")
@@ -565,10 +556,7 @@ pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
 pub fn show_settings_window(app: AppHandle) -> Result<(), String> {
     // Unregister global shortcut while settings window is open
     let state = app.state::<AppState>();
-    let mut sc = state
-        .shortcut
-        .lock()
-        .expect("mutex poisoned: shortcut");
+    let mut sc = state.shortcut.lock().expect("mutex poisoned: shortcut");
     if let Some(old) = sc.shortcut.take() {
         let _ = app.global_shortcut().unregister(old);
     }
@@ -606,10 +594,7 @@ pub fn set_hotkey_capture_active(app: AppHandle, active: bool) -> Result<(), Str
     let state = app.state::<AppState>();
     if active {
         // Unregister while user is capturing a new hotkey
-        let mut sc = state
-            .shortcut
-            .lock()
-            .expect("mutex poisoned: shortcut");
+        let mut sc = state.shortcut.lock().expect("mutex poisoned: shortcut");
         if let Some(old) = sc.shortcut.take() {
             let _ = app.global_shortcut().unregister(old);
         }

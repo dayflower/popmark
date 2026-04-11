@@ -167,13 +167,8 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         true,
         Some("cmd+n"),
     )?;
-    let menu_export_item = MenuItem::with_id(
-        app,
-        "menu-export",
-        "Export\u{2026}",
-        true,
-        Some("cmd+s"),
-    )?;
+    let menu_export_item =
+        MenuItem::with_id(app, "menu-export", "Export\u{2026}", true, Some("cmd+s"))?;
     let menu_show_history_folder_item = MenuItem::with_id(
         app,
         "menu-show-history-folder",
@@ -195,13 +190,7 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         true,
         None::<&str>,
     )?;
-    let menu_help_item = MenuItem::with_id(
-        app,
-        "menu-help",
-        "Popmark Help",
-        true,
-        Some("cmd+?"),
-    )?;
+    let menu_help_item = MenuItem::with_id(app, "menu-help", "Popmark Help", true, Some("cmd+?"))?;
     let menu_paste_and_match_style_item = MenuItem::with_id(
         app,
         "menu-paste-and-match-style",
@@ -216,15 +205,9 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         true,
         None::<&str>,
     )?;
-    let menu_recall_last_item = MenuItem::with_id(
-        app,
-        "menu-recall-last",
-        "Recall Last",
-        false,
-        Some("cmd+r"),
-    )?;
-    app
-        .state::<AppState>()
+    let menu_recall_last_item =
+        MenuItem::with_id(app, "menu-recall-last", "Recall Last", false, Some("cmd+r"))?;
+    app.state::<AppState>()
         .menu
         .lock()
         .expect("mutex poisoned: menu")
@@ -305,12 +288,7 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     &menu_move_to_center_item,
                 ],
             )?,
-            &Submenu::with_items(
-                app,
-                "Help",
-                true,
-                &[&menu_help_item],
-            )?,
+            &Submenu::with_items(app, "Help", true, &[&menu_help_item])?,
         ],
     )?;
     app.set_menu(menu)?;
@@ -353,8 +331,7 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     let x = work_area.position.x
                         + (work_area.size.width as i32 - window_size.width as i32) / 2;
                     let y = work_area.position.y
-                        + (work_area.size.height as i32 - window_size.height as i32)
-                            / 2;
+                        + (work_area.size.height as i32 - window_size.height as i32) / 2;
                     let _ = window.set_position(PhysicalPosition::new(x, y));
                 }
             }
@@ -411,14 +388,12 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let show_item =
-        MenuItem::with_id(app, "show-editor", "Show Editor", true, None::<&str>)?;
+    let show_item = MenuItem::with_id(app, "show-editor", "Show Editor", true, None::<&str>)?;
     let history_item =
         MenuItem::with_id(app, "open-history", "History\u{2026}", true, None::<&str>)?;
     let settings_item =
         MenuItem::with_id(app, "open-settings", "Settings\u{2026}", true, None::<&str>)?;
-    let quit_item =
-        MenuItem::with_id(app, "quit-popmark", "Quit Popmark", true, None::<&str>)?;
+    let quit_item = MenuItem::with_id(app, "quit-popmark", "Quit Popmark", true, None::<&str>)?;
     let tray_menu = Menu::with_items(
         app,
         &[
@@ -429,24 +404,25 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             &quit_item,
         ],
     )?;
-    let mut builder = TrayIconBuilder::new()
-        .menu(&tray_menu)
-        .on_menu_event(|app, event| match event.id().as_ref() {
-            "show-editor" => {
-                show_and_focus_main_window(app);
-            }
-            "open-history" => {
-                show_and_focus_main_window(app);
-                emit_to_main_window(app, "open-history-panel", ());
-            }
-            "open-settings" => {
-                let _ = commands::show_settings_window(app.clone());
-            }
-            "quit-popmark" => {
-                app.exit(0);
-            }
-            _ => {}
-        });
+    let mut builder =
+        TrayIconBuilder::new()
+            .menu(&tray_menu)
+            .on_menu_event(|app, event| match event.id().as_ref() {
+                "show-editor" => {
+                    show_and_focus_main_window(app);
+                }
+                "open-history" => {
+                    show_and_focus_main_window(app);
+                    emit_to_main_window(app, "open-history-panel", ());
+                }
+                "open-settings" => {
+                    let _ = commands::show_settings_window(app.clone());
+                }
+                "quit-popmark" => {
+                    app.exit(0);
+                }
+                _ => {}
+            });
     #[cfg(target_os = "macos")]
     {
         const TRAY_ICON_PNG: &[u8] = include_bytes!("../icons/tray-icon.png");
