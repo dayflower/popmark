@@ -55,20 +55,25 @@ pub struct Settings {
     pub notify_on_copy: bool,
 }
 
+const DEFAULT_EDITOR_MODE: &str = "rich";
+const DEFAULT_SEND_SHORTCUT: &str = "super+enter";
+const DEFAULT_FONT_FALLBACK: bool = true;
+const DEFAULT_NOTIFY_ON_COPY: bool = true;
+
 fn default_editor_mode() -> String {
-    "rich".to_string()
+    DEFAULT_EDITOR_MODE.to_string()
 }
 
 fn default_font_fallback() -> bool {
-    true
+    DEFAULT_FONT_FALLBACK
 }
 
 fn default_send_shortcut() -> String {
-    "super+enter".to_string()
+    DEFAULT_SEND_SHORTCUT.to_string()
 }
 
 fn default_notify_on_copy() -> bool {
-    true
+    DEFAULT_NOTIFY_ON_COPY
 }
 
 impl Default for Settings {
@@ -76,17 +81,17 @@ impl Default for Settings {
         Settings {
             hotkey: "alt+m".to_string(),
             launch_at_login: false,
-            editor_mode: "rich".to_string(),
+            editor_mode: DEFAULT_EDITOR_MODE.to_string(),
             copy_as_rich_text: false,
             max_history_entries: None,
             rich_font_family: None,
             rich_font_size: None,
             plain_font_family: None,
             plain_font_size: None,
-            rich_font_fallback: true,
-            plain_font_fallback: true,
-            send_shortcut: "super+enter".to_string(),
-            notify_on_copy: true,
+            rich_font_fallback: DEFAULT_FONT_FALLBACK,
+            plain_font_fallback: DEFAULT_FONT_FALLBACK,
+            send_shortcut: DEFAULT_SEND_SHORTCUT.to_string(),
+            notify_on_copy: DEFAULT_NOTIFY_ON_COPY,
         }
     }
 }
@@ -207,7 +212,10 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
         .map_err(|e| format!("Invalid hotkey '{hotkey}': {e}"))?;
 
     let state = app.state::<AppState>();
-    let mut current = state.current_shortcut.lock().unwrap();
+    let mut current = state
+        .current_shortcut
+        .lock()
+        .expect("mutex poisoned: current_shortcut");
     if let Some(old) = current.take() {
         let _ = app.global_shortcut().unregister(old);
     }
@@ -236,7 +244,11 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
 
     *current = Some(shortcut);
     // Save hotkey string for re-registration after Settings panel closes
-    *app.state::<AppState>().current_hotkey_str.lock().unwrap() = hotkey.to_string();
+    *app
+        .state::<AppState>()
+        .current_hotkey_str
+        .lock()
+        .expect("mutex poisoned: current_hotkey_str") = hotkey.to_string();
     Ok(())
 }
 
@@ -492,7 +504,12 @@ pub fn recall_last_history(app: AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 pub fn set_recall_last_enabled(state: tauri::State<'_, AppState>, enabled: bool) {
-    if let Some(item) = state.recall_last_item.lock().unwrap().as_ref() {
+    if let Some(item) = state
+        .recall_last_item
+        .lock()
+        .expect("mutex poisoned: recall_last_item")
+        .as_ref()
+    {
         let _ = item.set_enabled(enabled);
     }
 }
@@ -528,17 +545,32 @@ pub async fn export_file(
 #[tauri::command]
 pub fn set_editor_mode_menu(state: tauri::State<'_, AppState>, mode: String) {
     let is_rich = mode == "rich";
-    if let Some(item) = state.editor_mode_rich_item.lock().unwrap().as_ref() {
+    if let Some(item) = state
+        .editor_mode_rich_item
+        .lock()
+        .expect("mutex poisoned: editor_mode_rich_item")
+        .as_ref()
+    {
         let _ = item.set_checked(is_rich);
     }
-    if let Some(item) = state.editor_mode_plain_item.lock().unwrap().as_ref() {
+    if let Some(item) = state
+        .editor_mode_plain_item
+        .lock()
+        .expect("mutex poisoned: editor_mode_plain_item")
+        .as_ref()
+    {
         let _ = item.set_checked(!is_rich);
     }
 }
 
 #[tauri::command]
 pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
-    if let Some(item) = state.history_menu_item.lock().unwrap().as_ref() {
+    if let Some(item) = state
+        .history_menu_item
+        .lock()
+        .expect("mutex poisoned: history_menu_item")
+        .as_ref()
+    {
         let _ = item.set_checked(open);
     }
 }
@@ -547,7 +579,10 @@ pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
 pub fn show_settings_window(app: AppHandle) -> Result<(), String> {
     // Unregister global shortcut while settings window is open
     let state = app.state::<AppState>();
-    let mut current = state.current_shortcut.lock().unwrap();
+    let mut current = state
+        .current_shortcut
+        .lock()
+        .expect("mutex poisoned: current_shortcut");
     if let Some(old) = current.take() {
         let _ = app.global_shortcut().unregister(old);
     }
@@ -570,7 +605,7 @@ pub fn hide_settings_window(app: AppHandle) -> Result<(), String> {
         .state::<AppState>()
         .current_hotkey_str
         .lock()
-        .unwrap()
+        .expect("mutex poisoned: current_hotkey_str")
         .clone();
     if !hotkey.is_empty() {
         re_register_shortcut(&app, &hotkey)?;
@@ -583,13 +618,20 @@ pub fn set_hotkey_capture_active(app: AppHandle, active: bool) -> Result<(), Str
     let state = app.state::<AppState>();
     if active {
         // Unregister while user is capturing a new hotkey
-        let mut current = state.current_shortcut.lock().unwrap();
+        let mut current = state
+            .current_shortcut
+            .lock()
+            .expect("mutex poisoned: current_shortcut");
         if let Some(old) = current.take() {
             let _ = app.global_shortcut().unregister(old);
         }
     } else {
         // Re-register with the stored hotkey
-        let hotkey = state.current_hotkey_str.lock().unwrap().clone();
+        let hotkey = state
+            .current_hotkey_str
+            .lock()
+            .expect("mutex poisoned: current_hotkey_str")
+            .clone();
         if !hotkey.is_empty() {
             re_register_shortcut(&app, &hotkey)?;
         }

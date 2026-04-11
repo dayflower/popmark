@@ -10,7 +10,6 @@
     "tauri": "tauri",
     "gen-icons": "bash scripts/gen-icons.sh",
     "lint": "biome check --write src/ vite.config.ts",
-    "format": "biome format --write src/ vite.config.ts",
     "check": "biome check src/ vite.config.ts",
     "check:ci": "biome check --reporter=github src/ vite.config.ts"
   },
