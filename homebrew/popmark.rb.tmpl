@@ -1,0 +1,22 @@
+cask "popmark" do
+  version "{{version}}"
+  sha256 "{{artifacts.default.sha256}}"
+
+  url "{{artifacts.default.url}}"
+  name "Popmark"
+  desc "Markdown scratch-pad with global hotkey"
+  homepage "https://github.com/dayflower/popmark"
+
+  app "Popmark.app"
+
+  caveats <<~EOS
+    This application is signed with ad-hoc signature.
+    You need to run 'xattr -dr com.apple.quarantine Popmark.app'
+    after installation to open it."
+  EOS
+
+  zap trash: [
+    "~/Library/Application Support/com.eula.dayflower.popmark",
+    "~/Library/Preferences/com.eula.dayflower.popmark.plist",
+  ]
+end
