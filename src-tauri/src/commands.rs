@@ -8,19 +8,27 @@ use tauri::menu::{CheckMenuItem, MenuItem};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_dialog::{DialogExt, FilePath};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState as KeyPressState};
 
 // ---------------------------------------------------------------------------
 // App state: tracks the currently registered global shortcut and menu items
 // ---------------------------------------------------------------------------
 
+pub struct MenuState {
+    pub history_item: Option<CheckMenuItem<tauri::Wry>>,
+    pub editor_mode_rich: Option<CheckMenuItem<tauri::Wry>>,
+    pub editor_mode_plain: Option<CheckMenuItem<tauri::Wry>>,
+    pub recall_last: Option<MenuItem<tauri::Wry>>,
+}
+
+pub struct ShortcutState {
+    pub shortcut: Option<Shortcut>,
+    pub hotkey_str: String,
+}
+
 pub struct AppState {
-    pub current_shortcut: Mutex<Option<Shortcut>>,
-    pub current_hotkey_str: Mutex<String>,
-    pub history_menu_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
-    pub editor_mode_rich_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
-    pub editor_mode_plain_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
-    pub recall_last_item: Mutex<Option<MenuItem<tauri::Wry>>>,
+    pub shortcut: Mutex<ShortcutState>,
+    pub menu: Mutex<MenuState>,
 }
 
 // ---------------------------------------------------------------------------
@@ -212,17 +220,17 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
         .map_err(|e| format!("Invalid hotkey '{hotkey}': {e}"))?;
 
     let state = app.state::<AppState>();
-    let mut current = state
-        .current_shortcut
+    let mut sc = state
+        .shortcut
         .lock()
-        .expect("mutex poisoned: current_shortcut");
-    if let Some(old) = current.take() {
+        .expect("mutex poisoned: shortcut");
+    if let Some(old) = sc.shortcut.take() {
         let _ = app.global_shortcut().unregister(old);
     }
 
     app.global_shortcut()
         .on_shortcut(shortcut.clone(), move |app, _shortcut, event| {
-            if event.state == ShortcutState::Pressed {
+            if event.state == KeyPressState::Pressed {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
@@ -242,13 +250,8 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
         })
         .map_err(|e| e.to_string())?;
 
-    *current = Some(shortcut);
-    // Save hotkey string for re-registration after Settings panel closes
-    *app
-        .state::<AppState>()
-        .current_hotkey_str
-        .lock()
-        .expect("mutex poisoned: current_hotkey_str") = hotkey.to_string();
+    sc.shortcut = Some(shortcut);
+    sc.hotkey_str = hotkey.to_string();
     Ok(())
 }
 
@@ -504,12 +507,8 @@ pub fn recall_last_history(app: AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 pub fn set_recall_last_enabled(state: tauri::State<'_, AppState>, enabled: bool) {
-    if let Some(item) = state
-        .recall_last_item
-        .lock()
-        .expect("mutex poisoned: recall_last_item")
-        .as_ref()
-    {
+    let menu = state.menu.lock().expect("mutex poisoned: menu");
+    if let Some(item) = menu.recall_last.as_ref() {
         let _ = item.set_enabled(enabled);
     }
 }
@@ -545,32 +544,19 @@ pub async fn export_file(
 #[tauri::command]
 pub fn set_editor_mode_menu(state: tauri::State<'_, AppState>, mode: String) {
     let is_rich = mode == "rich";
-    if let Some(item) = state
-        .editor_mode_rich_item
-        .lock()
-        .expect("mutex poisoned: editor_mode_rich_item")
-        .as_ref()
-    {
+    let menu = state.menu.lock().expect("mutex poisoned: menu");
+    if let Some(item) = menu.editor_mode_rich.as_ref() {
         let _ = item.set_checked(is_rich);
     }
-    if let Some(item) = state
-        .editor_mode_plain_item
-        .lock()
-        .expect("mutex poisoned: editor_mode_plain_item")
-        .as_ref()
-    {
+    if let Some(item) = menu.editor_mode_plain.as_ref() {
         let _ = item.set_checked(!is_rich);
     }
 }
 
 #[tauri::command]
 pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
-    if let Some(item) = state
-        .history_menu_item
-        .lock()
-        .expect("mutex poisoned: history_menu_item")
-        .as_ref()
-    {
+    let menu = state.menu.lock().expect("mutex poisoned: menu");
+    if let Some(item) = menu.history_item.as_ref() {
         let _ = item.set_checked(open);
     }
 }
@@ -579,13 +565,14 @@ pub fn set_history_panel_open(state: tauri::State<'_, AppState>, open: bool) {
 pub fn show_settings_window(app: AppHandle) -> Result<(), String> {
     // Unregister global shortcut while settings window is open
     let state = app.state::<AppState>();
-    let mut current = state
-        .current_shortcut
+    let mut sc = state
+        .shortcut
         .lock()
-        .expect("mutex poisoned: current_shortcut");
-    if let Some(old) = current.take() {
+        .expect("mutex poisoned: shortcut");
+    if let Some(old) = sc.shortcut.take() {
         let _ = app.global_shortcut().unregister(old);
     }
+    drop(sc);
 
     if let Some(window) = app.get_webview_window("settings") {
         window.show().map_err(|e| e.to_string())?;
@@ -603,9 +590,10 @@ pub fn hide_settings_window(app: AppHandle) -> Result<(), String> {
     // Re-register global shortcut
     let hotkey = app
         .state::<AppState>()
-        .current_hotkey_str
+        .shortcut
         .lock()
-        .expect("mutex poisoned: current_hotkey_str")
+        .expect("mutex poisoned: shortcut")
+        .hotkey_str
         .clone();
     if !hotkey.is_empty() {
         re_register_shortcut(&app, &hotkey)?;
@@ -618,19 +606,20 @@ pub fn set_hotkey_capture_active(app: AppHandle, active: bool) -> Result<(), Str
     let state = app.state::<AppState>();
     if active {
         // Unregister while user is capturing a new hotkey
-        let mut current = state
-            .current_shortcut
+        let mut sc = state
+            .shortcut
             .lock()
-            .expect("mutex poisoned: current_shortcut");
-        if let Some(old) = current.take() {
+            .expect("mutex poisoned: shortcut");
+        if let Some(old) = sc.shortcut.take() {
             let _ = app.global_shortcut().unregister(old);
         }
     } else {
         // Re-register with the stored hotkey
         let hotkey = state
-            .current_hotkey_str
+            .shortcut
             .lock()
-            .expect("mutex poisoned: current_hotkey_str")
+            .expect("mutex poisoned: shortcut")
+            .hotkey_str
             .clone();
         if !hotkey.is_empty() {
             re_register_shortcut(&app, &hotkey)?;
