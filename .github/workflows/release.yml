@@ -66,7 +66,9 @@ jobs:
       - name: Build Tauri app (ad-hoc signing)
         env:
           APPLE_SIGNING_IDENTITY: "-"
-        run: npm run tauri build
+        run: |
+          npm run tauri build -- --no-bundle
+          npm run tauri bundle -- --bundles app,dmg
 
       - name: Archive App Bundle as zip
         run: |
@@ -85,10 +87,10 @@ jobs:
         uses: dayflower/brew-up@v0.1.1
         with:
           release-tag: ${{ github.ref_name }}
-          template-path: .github/homebrew/popmark.rb.mustache
+          template-path: homebrew/popmark.rb.tmpl
           output-path: Casks/popmark.rb
           asset-map: |
-            default=Popmark_{{version}}_*.dmg
+            default=popmark-{{version}}-macos.zip
           target-repo: dayflower/homebrew-tap
           target-branch: main
           target-repo-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
