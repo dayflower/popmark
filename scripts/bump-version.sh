@@ -97,7 +97,7 @@ EOF
 echo "PR created: $PR_URL"
 
 # Enable auto-merge (squash) — requires auto-merge to be enabled in repo settings
-gh pr merge --auto --squash "$PR_URL"
+gh pr merge --auto --merge "$PR_URL"
 
 echo ""
 echo "Done! Auto-merge enabled on $PR_URL"
