@@ -79,6 +79,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2.6.1
         with:
+          # Use a PAT instead of GITHUB_TOKEN so that the release event triggers
+          # other workflows (e.g. homebrew-tap). Events fired by GITHUB_TOKEN do
+          # not trigger subsequent workflow runs by design.
+          token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
           files: |
             popmark-*-macos.zip
             src-tauri/target/release/bundle/dmg/*.dmg
