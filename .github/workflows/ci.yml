@@ -41,7 +41,7 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - uses: swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
 

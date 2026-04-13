@@ -9,10 +9,10 @@ jobs:
     name: Update Homebrew tap
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Update Homebrew tap
-        uses: dayflower/brew-up@v0.1.1
+        uses: dayflower/brew-up@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
