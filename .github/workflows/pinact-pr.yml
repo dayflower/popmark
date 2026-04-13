@@ -1,0 +1,23 @@
+name: pinact (PR)
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/*.yml
+      - .github/workflows/*.yaml
+
+jobs:
+  pinact:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.head_ref }}
+
+      - uses: suzuki-shunsuke/pinact-action@v2.0.0
+        with:
+          app_id: ${{ vars.ACTIONS_APP_ID }}
+          app_private_key: ${{ secrets.ACTIONS_APP_PRIVATE_KEY }}
