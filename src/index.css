@@ -130,6 +130,13 @@ li[role="checkbox"][aria-checked="true"] > span {
   font-style: italic;
 }
 
+/* Inline marker decoration: inline code (`code`) */
+.prose :where(code):not(:where([class~="not-prose"] *))::before,
+.prose :where(code):not(:where([class~="not-prose"] *))::after {
+  font-size: 0.9em;
+  opacity: 0.55;
+}
+
 /* Inline marker decoration: bold (**text**) */
 .prose :where(strong):not(:where([class~="not-prose"] *))::before,
 .prose :where(strong):not(:where([class~="not-prose"] *))::after {
