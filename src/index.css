@@ -14,6 +14,20 @@
   margin-bottom: 0.2em;
 }
 
+/* Inline marker decoration: headings (#, ##, ...) */
+.prose :where(h1):not(:where([class~="not-prose"] *))::before { content: "#"; }
+.prose :where(h2):not(:where([class~="not-prose"] *))::before { content: "##"; }
+.prose :where(h3):not(:where([class~="not-prose"] *))::before { content: "###"; }
+.prose :where(h4):not(:where([class~="not-prose"] *))::before { content: "####"; }
+.prose :where(h5):not(:where([class~="not-prose"] *))::before { content: "#####"; }
+.prose :where(h6):not(:where([class~="not-prose"] *))::before { content: "######"; }
+.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *))::before {
+  font-weight: normal;
+  font-size: 0.75em;
+  opacity: 0.4;
+  margin-right: 0.15em;
+}
+
 /* Compact spacing: blockquotes */
 .prose :where(blockquote):not(:where([class~="not-prose"] *)) {
   margin-top: 0.5em;
