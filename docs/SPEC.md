@@ -64,7 +64,7 @@ The editor supports two modes, toggled via the toolbar button (**⌘⇧R** for R
 
 - **Rich mode** (default): **source-visible WYSIWYG** (Obsidian style) — Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible in the editor while visual styling is applied at the same time (font size, weight, color, etc.). The user can edit the raw markers directly, and the styling updates live.
 
-Inline syntax markers for bold (`**`), italic (`*`), bold+italic (`***`), and strikethrough (`~~`) are rendered as CSS pseudo-elements (`::before` / `::after`) in a dimmed, slightly smaller style. This is purely visual: the markers are not part of the DOM text content and do not appear in clipboard output.
+Inline syntax markers for bold (`**`), italic (`*`), bold+italic (`***`), strikethrough (`~~`), inline code (`` ` ``), and headings (`#`–`######`) are rendered as CSS pseudo-elements (`::before` / `::after`) in a dimmed, slightly smaller style. This is purely visual: the markers are not part of the DOM text content and do not appear in clipboard output. Visibility is controlled by the `rich_show_syntax_markers` setting: when `true`, the `.show-syntax-markers` class is applied to the `ContentEditable` element, activating the marker CSS rules; when `false`, the class is absent and no markers are shown.
 - **Plain text mode**: a plain `<textarea>` displays the raw Markdown source. `spellCheck` is disabled and all Lexical formatting plugins are inactive.
 
 Switching **rich → plain** converts the Lexical state to Markdown via `$convertToMarkdownString(CUSTOM_TRANSFORMERS)` and loads it into the textarea. Switching **plain → rich** parses the textarea content back via `$convertFromMarkdownString`. The selected mode is persisted in `settings.json` as `editor_mode` and restored on next launch.
@@ -298,6 +298,7 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Copy as Rich Text    | Off                | When enabled (Rich mode only), "Send to Clipboard" copies HTML + plain Markdown so rich formatting is preserved in apps that support it |
 | Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
 | Notify on copy       | On                 | When enabled, an OS notification is sent after "Send to Clipboard". Stored as `notify_on_copy` in `settings.json`. |
+| Show syntax markers  | On                 | When enabled (Rich mode only), displays Markdown syntax markers as CSS pseudo-elements. Applies the `.show-syntax-markers` class to the `ContentEditable`. Stored as `rich_show_syntax_markers` in `settings.json`. Defaults to `true` when absent. |
 | Rich mode font family | null (browser default) | Custom `font-family` applied to the Rich mode `ContentEditable` via inline style |
 | Rich mode font size  | null (default)     | Custom `font-size` (px) applied to the Rich mode `ContentEditable` via inline style |
 | Plain mode font family | null (browser default) | Custom `font-family` applied to the Plain mode `<textarea>` via inline style |
@@ -317,11 +318,12 @@ After the user saves, the backend emits a `settings-changed` event to the main w
   "plain_font_family": null,
   "plain_font_size": null,
   "send_shortcut": "super+enter",
-  "notify_on_copy": true
+  "notify_on_copy": true,
+  "rich_show_syntax_markers": true
 }
 ```
 
-All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`).
+All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`). `rich_show_syntax_markers` defaults to `true` when absent (`#[serde(default = "default_rich_show_syntax_markers")]`).
 
 ---
 

@@ -22,7 +22,7 @@ Popmark is an application with a tray icon and standard menu bar, providing a qu
   - **Plain text mode**: displays the raw Markdown source in a monospaced textarea; no visual formatting is applied.
 - The selected mode is persisted and restored on next launch.
 - Supported Markdown elements: headings H1–H6, bold, italic, bold+italic, strikethrough, inline code, fenced code blocks (with optional language tag), blockquotes, unordered and ordered lists, checkbox (task) lists, horizontal rules, and links.
-- Inline syntax markers remain visible in the editor for inline code (`` ` ``), bold (`**`), italic (`*`), bold+italic (`***`), and strikethrough (`~~`), rendered in a dimmed, smaller style alongside the formatted text. These markers are CSS-only and do not appear in the clipboard output.
+- Inline syntax markers for inline code (`` ` ``), bold (`**`), italic (`*`), bold+italic (`***`), and strikethrough (`~~`) are rendered in a dimmed, smaller style alongside the formatted text. These markers are CSS-only and do not appear in the clipboard output. Their visibility can be toggled via the **"Show syntax markers"** setting (default: on).
 - Checkbox lists use `- [ ]` (unchecked) and `- [x]` (checked) syntax.
 - Standard Markdown syntax is used (`#` for H1, `##` for H2, etc.).
 - Pressing Enter on a blank list item exits list mode and returns to normal paragraph mode.
@@ -117,6 +117,7 @@ The next time the editor is opened it shows a blank document.
 | Rich mode font size | Custom font size (in px) for the Rich mode editor. When empty, the default size is used. |
 | Plain mode font family | Custom font family for the Plain mode textarea. When empty, the default monospace font is used. |
 | Plain mode font size | Custom font size (in px) for the Plain mode textarea. When empty, the default size is used. |
+| Show syntax markers | When enabled (Rich mode only), displays Markdown syntax markers (`**`, `*`, `~~`, `` ` ``, `#`–`######`) as CSS decorations alongside the formatted text (default: on). |
 
 ---
 

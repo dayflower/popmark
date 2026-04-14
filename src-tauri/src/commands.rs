@@ -61,12 +61,15 @@ pub struct Settings {
     pub send_shortcut: String,
     #[serde(default = "default_notify_on_copy")]
     pub notify_on_copy: bool,
+    #[serde(default = "default_rich_show_syntax_markers")]
+    pub rich_show_syntax_markers: bool,
 }
 
 const DEFAULT_EDITOR_MODE: &str = "rich";
 const DEFAULT_SEND_SHORTCUT: &str = "super+enter";
 const DEFAULT_FONT_FALLBACK: bool = true;
 const DEFAULT_NOTIFY_ON_COPY: bool = true;
+const DEFAULT_RICH_SHOW_SYNTAX_MARKERS: bool = true;
 
 fn default_editor_mode() -> String {
     DEFAULT_EDITOR_MODE.to_string()
@@ -82,6 +85,10 @@ fn default_send_shortcut() -> String {
 
 fn default_notify_on_copy() -> bool {
     DEFAULT_NOTIFY_ON_COPY
+}
+
+fn default_rich_show_syntax_markers() -> bool {
+    DEFAULT_RICH_SHOW_SYNTAX_MARKERS
 }
 
 impl Default for Settings {
@@ -100,6 +107,7 @@ impl Default for Settings {
             plain_font_fallback: DEFAULT_FONT_FALLBACK,
             send_shortcut: DEFAULT_SEND_SHORTCUT.to_string(),
             notify_on_copy: DEFAULT_NOTIFY_ON_COPY,
+            rich_show_syntax_markers: DEFAULT_RICH_SHOW_SYNTAX_MARKERS,
         }
     }
 }

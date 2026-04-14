@@ -65,6 +65,7 @@ export function SettingsPanel() {
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [notifyOnCopy, setNotifyOnCopy] = useState<boolean>(true);
+  const [richShowSyntaxMarkers, setRichShowSyntaxMarkers] = useState<boolean>(true);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
   const [fontState, dispatchFont] = useReducer(fontReducer, initialFontState);
   const [fontList, setFontList] = useState<string[]>([]);
@@ -78,6 +79,7 @@ export function SettingsPanel() {
         setLaunchAtLogin(s.launch_at_login);
         setCopyAsRichText(s.copy_as_rich_text);
         setNotifyOnCopy(s.notify_on_copy ?? true);
+        setRichShowSyntaxMarkers(s.rich_show_syntax_markers ?? true);
         const limit = s.max_history_entries;
         setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
         const sendShortcut = s.send_shortcut ?? "super+enter";
@@ -148,6 +150,7 @@ export function SettingsPanel() {
         plain_font_fallback: fontState.plainFontFallback,
         send_shortcut: capturedSendShortcut,
         notify_on_copy: notifyOnCopy,
+        rich_show_syntax_markers: richShowSyntaxMarkers,
       },
     });
     setSavedHotkey(capturedHotkey);
@@ -243,6 +246,19 @@ export function SettingsPanel() {
             />
           </label>
         </div>
+
+        {/* Show syntax markers in Rich Editor */}
+        <CheckboxSetting
+          checked={richShowSyntaxMarkers}
+          onChange={setRichShowSyntaxMarkers}
+          label={
+            <>
+              Show syntax markers{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
+            </>
+          }
+          className="mb-4"
+        />
 
         {/* Font settings: Rich | Plain in 2 columns */}
         <div className="grid grid-cols-2 gap-4 mb-6">
