@@ -63,6 +63,8 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 The editor supports two modes, toggled via the toolbar button (**⌘⇧R** for Rich, **⌘⇧P** for Plain):
 
 - **Rich mode** (default): **source-visible WYSIWYG** (Obsidian style) — Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible in the editor while visual styling is applied at the same time (font size, weight, color, etc.). The user can edit the raw markers directly, and the styling updates live.
+
+Inline syntax markers for bold (`**`), italic (`*`), bold+italic (`***`), and strikethrough (`~~`) are rendered as CSS pseudo-elements (`::before` / `::after`) in a dimmed, slightly smaller style. This is purely visual: the markers are not part of the DOM text content and do not appear in clipboard output.
 - **Plain text mode**: a plain `<textarea>` displays the raw Markdown source. `spellCheck` is disabled and all Lexical formatting plugins are inactive.
 
 Switching **rich → plain** converts the Lexical state to Markdown via `$convertToMarkdownString(CUSTOM_TRANSFORMERS)` and loads it into the textarea. Switching **plain → rich** parses the textarea content back via `$convertFromMarkdownString`. The selected mode is persisted in `settings.json` as `editor_mode` and restored on next launch.

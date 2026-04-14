@@ -115,6 +115,34 @@ li[role="checkbox"][aria-checked="true"] > span {
   font-style: italic;
 }
 
+/* Inline marker decoration: bold (**text**) */
+.prose :where(strong):not(:where([class~="not-prose"] *))::before,
+.prose :where(strong):not(:where([class~="not-prose"] *))::after {
+  content: "**";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 0.9em;
+  opacity: 0.55;
+}
+
+/* Inline marker decoration: italic (*text*) */
+.prose .editor-italic::before,
+.prose .editor-italic::after {
+  content: "*";
+  font-style: normal;
+  font-size: 0.9em;
+  opacity: 0.55;
+}
+
+/* Inline marker decoration: strikethrough (~~text~~) */
+.prose .editor-strikethrough::before,
+.prose .editor-strikethrough::after {
+  content: "~~";
+  text-decoration: none;
+  font-size: 0.9em;
+  opacity: 0.55;
+}
+
 @media (prefers-color-scheme: dark) {
   li[role="checkbox"]::before {
     border-color: #6b7280;
