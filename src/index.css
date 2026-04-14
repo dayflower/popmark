@@ -15,13 +15,13 @@
 }
 
 /* Inline marker decoration: headings (#, ##, ...) */
-.prose :where(h1):not(:where([class~="not-prose"] *))::before { content: "#"; }
-.prose :where(h2):not(:where([class~="not-prose"] *))::before { content: "##"; }
-.prose :where(h3):not(:where([class~="not-prose"] *))::before { content: "###"; }
-.prose :where(h4):not(:where([class~="not-prose"] *))::before { content: "####"; }
-.prose :where(h5):not(:where([class~="not-prose"] *))::before { content: "#####"; }
-.prose :where(h6):not(:where([class~="not-prose"] *))::before { content: "######"; }
-.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *))::before {
+.show-syntax-markers.prose :where(h1):not(:where([class~="not-prose"] *))::before { content: "#"; }
+.show-syntax-markers.prose :where(h2):not(:where([class~="not-prose"] *))::before { content: "##"; }
+.show-syntax-markers.prose :where(h3):not(:where([class~="not-prose"] *))::before { content: "###"; }
+.show-syntax-markers.prose :where(h4):not(:where([class~="not-prose"] *))::before { content: "####"; }
+.show-syntax-markers.prose :where(h5):not(:where([class~="not-prose"] *))::before { content: "#####"; }
+.show-syntax-markers.prose :where(h6):not(:where([class~="not-prose"] *))::before { content: "######"; }
+.show-syntax-markers.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *))::before {
   font-weight: normal;
   font-size: 0.75em;
   opacity: 0.4;
@@ -131,15 +131,15 @@ li[role="checkbox"][aria-checked="true"] > span {
 }
 
 /* Inline marker decoration: inline code (`code`) */
-.prose :where(code):not(:where([class~="not-prose"] *))::before,
-.prose :where(code):not(:where([class~="not-prose"] *))::after {
+.show-syntax-markers.prose :where(code):not(:where([class~="not-prose"] *))::before,
+.show-syntax-markers.prose :where(code):not(:where([class~="not-prose"] *))::after {
   font-size: 0.9em;
   opacity: 0.55;
 }
 
 /* Inline marker decoration: bold (**text**) */
-.prose :where(strong):not(:where([class~="not-prose"] *))::before,
-.prose :where(strong):not(:where([class~="not-prose"] *))::after {
+.show-syntax-markers.prose :where(strong):not(:where([class~="not-prose"] *))::before,
+.show-syntax-markers.prose :where(strong):not(:where([class~="not-prose"] *))::after {
   content: "**";
   font-weight: normal;
   font-style: normal;
@@ -148,8 +148,8 @@ li[role="checkbox"][aria-checked="true"] > span {
 }
 
 /* Inline marker decoration: italic (*text*) */
-.prose .editor-italic::before,
-.prose .editor-italic::after {
+.show-syntax-markers.prose .editor-italic::before,
+.show-syntax-markers.prose .editor-italic::after {
   content: "*";
   font-style: normal;
   font-size: 0.9em;
@@ -157,8 +157,8 @@ li[role="checkbox"][aria-checked="true"] > span {
 }
 
 /* Inline marker decoration: strikethrough (~~text~~) */
-.prose .editor-strikethrough::before,
-.prose .editor-strikethrough::after {
+.show-syntax-markers.prose .editor-strikethrough::before,
+.show-syntax-markers.prose .editor-strikethrough::after {
   content: "~~";
   text-decoration: none;
   font-size: 0.9em;

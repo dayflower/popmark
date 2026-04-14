@@ -274,6 +274,7 @@ interface MarkdownEditorProps {
   richFontSize?: number | null;
   plainFontFamily?: string | null;
   plainFontSize?: number | null;
+  richShowSyntaxMarkers?: boolean;
 }
 
 export function MarkdownEditor({
@@ -283,6 +284,7 @@ export function MarkdownEditor({
   richFontSize,
   plainFontFamily,
   plainFontSize,
+  richShowSyntaxMarkers = true,
 }: MarkdownEditorProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [pendingContent, setPendingContent] = useState<string | null>(null);
@@ -459,7 +461,7 @@ export function MarkdownEditor({
               <RichTextPlugin
                 contentEditable={
                   <ContentEditable
-                    className="h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none"
+                    className={`h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none${richShowSyntaxMarkers ? " show-syntax-markers" : ""}`}
                     style={{
                       fontFamily: richFontFamily ?? undefined,
                       fontSize: richFontSize ? `${richFontSize}px` : undefined,
