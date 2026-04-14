@@ -131,8 +131,14 @@ li[role="checkbox"][aria-checked="true"] > span {
 }
 
 /* Inline marker decoration: inline code (`code`) */
+/* Reset Tailwind Typography default backtick content unconditionally */
+.prose :where(code):not(:where([class~="not-prose"] *))::before,
+.prose :where(code):not(:where([class~="not-prose"] *))::after {
+  content: none;
+}
 .show-syntax-markers.prose :where(code):not(:where([class~="not-prose"] *))::before,
 .show-syntax-markers.prose :where(code):not(:where([class~="not-prose"] *))::after {
+  content: "`";
   font-size: 0.9em;
   opacity: 0.55;
 }
