@@ -192,13 +192,8 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let menu_help_item = MenuItem::with_id(app, "menu-help", "Popmark Help", true, Some("cmd+?"))?;
     #[cfg(debug_assertions)]
-    let menu_devtools_item = MenuItem::with_id(
-        app,
-        "menu-devtools",
-        "Developer Tools",
-        true,
-        None::<&str>,
-    )?;
+    let menu_devtools_item =
+        MenuItem::with_id(app, "menu-devtools", "Developer Tools", true, None::<&str>)?;
     let menu_paste_and_match_style_item = MenuItem::with_id(
         app,
         "menu-paste-and-match-style",
