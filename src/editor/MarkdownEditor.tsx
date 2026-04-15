@@ -461,10 +461,11 @@ export function MarkdownEditor({
               <RichTextPlugin
                 contentEditable={
                   <ContentEditable
-                    className={`h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert max-w-none${richShowSyntaxMarkers ? " show-syntax-markers" : ""}`}
+                    className={`w-full h-full overflow-y-auto p-4 outline-none prose prose-sm dark:prose-invert${richShowSyntaxMarkers ? " show-syntax-markers" : ""}`}
                     style={{
                       fontFamily: richFontFamily ?? undefined,
                       fontSize: richFontSize ? `${richFontSize}px` : undefined,
+                      maxWidth: "none",
                     }}
                   />
                 }
