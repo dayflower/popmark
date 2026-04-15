@@ -191,6 +191,9 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         None::<&str>,
     )?;
     let menu_help_item = MenuItem::with_id(app, "menu-help", "Popmark Help", true, Some("cmd+?"))?;
+    #[cfg(debug_assertions)]
+    let menu_devtools_item =
+        MenuItem::with_id(app, "menu-devtools", "Developer Tools", true, None::<&str>)?;
     let menu_paste_and_match_style_item = MenuItem::with_id(
         app,
         "menu-paste-and-match-style",
@@ -219,6 +222,19 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         true,
         Some("cmd+shift+backspace"),
     )?;
+    #[cfg(debug_assertions)]
+    let help_submenu = Submenu::with_items(
+        app,
+        "Help",
+        true,
+        &[
+            &menu_help_item,
+            &PredefinedMenuItem::separator(app)?,
+            &menu_devtools_item,
+        ],
+    )?;
+    #[cfg(not(debug_assertions))]
+    let help_submenu = Submenu::with_items(app, "Help", true, &[&menu_help_item])?;
     let menu = Menu::with_items(
         app,
         &[
@@ -288,7 +304,7 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     &menu_move_to_center_item,
                 ],
             )?,
-            &Submenu::with_items(app, "Help", true, &[&menu_help_item])?,
+            &help_submenu,
         ],
     )?;
     app.set_menu(menu)?;
@@ -381,6 +397,12 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         }
         "menu-help" => {
             // stub: no help documentation yet
+        }
+        #[cfg(debug_assertions)]
+        "menu-devtools" => {
+            if let Some(window) = app.get_webview_window("main") {
+                window.open_devtools();
+            }
         }
         _ => {}
     });

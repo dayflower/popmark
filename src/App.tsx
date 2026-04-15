@@ -48,6 +48,17 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      // Allow context menu inside the editor (contenteditable for rich, textarea for plain)
+      if (target?.closest("[contenteditable]") || target?.closest("textarea")) return;
+      e.preventDefault();
+    };
+    document.addEventListener("contextmenu", handler);
+    return () => document.removeEventListener("contextmenu", handler);
+  }, []);
+
   const handleModeChange = useCallback((mode: EditorMode) => {
     setEditorMode(mode);
     invoke("save_editor_mode", { mode });
