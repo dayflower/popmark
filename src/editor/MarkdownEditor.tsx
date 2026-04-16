@@ -1,6 +1,5 @@
 import { $convertFromMarkdownString, $convertToMarkdownString } from "@lexical/markdown";
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
-import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -32,6 +31,7 @@ import { CodeEnterPlugin } from "./plugins/CodeEnterPlugin";
 import { CodeExitPlugin } from "./plugins/CodeExitPlugin";
 import { InlineCodeEscapePlugin } from "./plugins/InlineCodeEscapePlugin";
 import { InlineCodeFormatResetPlugin } from "./plugins/InlineCodeFormatResetPlugin";
+import { LinkPopoverPlugin } from "./plugins/LinkPopoverPlugin";
 import { ListShiftTabExitPlugin } from "./plugins/ListShiftTabExitPlugin";
 import { CUSTOM_TRANSFORMERS } from "./transformers";
 
@@ -482,7 +482,7 @@ export function MarkdownEditor({
               <ListPlugin />
               <CheckListPlugin />
               <TabIndentationPlugin />
-              <ClickableLinkPlugin newTab={false} />
+              <LinkPopoverPlugin />
               <CodeEnterPlugin />
               <CodeExitPlugin />
               <ListShiftTabExitPlugin />
