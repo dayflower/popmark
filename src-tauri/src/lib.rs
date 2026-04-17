@@ -4,7 +4,8 @@ use commands::{AppState, MenuState, ShortcutState};
 use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{
-    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
+    image::Image,
+    menu::{AboutMetadata, CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
     AppHandle, Emitter, Manager, PhysicalPosition,
 };
@@ -243,7 +244,17 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 "Popmark",
                 true,
                 &[
-                    &PredefinedMenuItem::about(app, None, None)?,
+                    &PredefinedMenuItem::about(
+                        app,
+                        None,
+                        Some(AboutMetadata {
+                            icon: Image::from_bytes(include_bytes!(
+                                "../icons/icon.png"
+                            ))
+                            .ok(),
+                            ..Default::default()
+                        }),
+                    )?,
                     &PredefinedMenuItem::separator(app)?,
                     &menu_settings_item,
                     &PredefinedMenuItem::separator(app)?,
@@ -396,7 +407,10 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             emit_to_main_window(app, "menu-clear-all", ());
         }
         "menu-help" => {
-            // stub: no help documentation yet
+            let _ = tauri_plugin_opener::open_url(
+                "https://github.com/dayflower/popmark",
+                None::<&str>,
+            );
         }
         #[cfg(debug_assertions)]
         "menu-devtools" => {
