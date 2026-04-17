@@ -1,6 +1,6 @@
 [package]
 name = "popmark"
-version = "0.3.1"
+version = "0.3.2"
 description = "A popup Markdown editor triggered by a global shortcut"
 authors = []
 edition = "2021"
