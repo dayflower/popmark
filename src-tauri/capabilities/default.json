@@ -10,6 +10,8 @@
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-write-html",
     "clipboard-manager:allow-read-text",
-    "dialog:allow-confirm"
+    "dialog:allow-confirm",
+    "opener:allow-open-url",
+    "opener:allow-default-urls"
   ]
 }

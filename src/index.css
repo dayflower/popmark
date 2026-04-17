@@ -122,6 +122,51 @@ li[role="checkbox"][aria-checked="true"] > span {
   color: #9ca3af;
 }
 
+/* Link: blue color and pointer cursor */
+.prose :where(a):not(:where([class~="not-prose"] *)) {
+  color: #2563eb;
+  cursor: pointer;
+}
+@media (prefers-color-scheme: dark) {
+  .prose :where(a):not(:where([class~="not-prose"] *)) {
+    color: #60a5fa;
+  }
+}
+
+/* Inline marker decoration: links ([text]) */
+.show-syntax-markers.prose :where(a):not(:where([class~="not-prose"] *))::before {
+  content: "[";
+  font-size: 0.9em;
+  opacity: 0.55;
+  font-weight: normal;
+  font-style: normal;
+}
+.show-syntax-markers.prose :where(a):not(:where([class~="not-prose"] *))::after {
+  content: "]";
+  font-size: 0.9em;
+  opacity: 0.55;
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Inline marker decoration: link external icon (syntax markers OFF) */
+/* stylelint-disable-next-line */
+.prose:not(.show-syntax-markers) :where(a):not(:where([class~="not-prose"] *))::after {
+  content: "";
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: 0.18em;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  vertical-align: -0.1em;
+}
+
 /* Lexical text format: strikethrough (~~text~~) and italic when combined with bold (***text***) */
 .editor-strikethrough {
   text-decoration: line-through;
