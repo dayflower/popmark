@@ -4,8 +4,12 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   $findMatchingParent,
   $getNearestNodeFromDOMNode,
+  $getNodeByKey,
+  $getSelection,
+  $isRangeSelection,
+  CLICK_COMMAND,
+  COMMAND_PRIORITY_LOW,
 } from "lexical";
-import { $getNodeByKey, $getSelection, $isRangeSelection } from "lexical";
 import { ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -20,9 +24,10 @@ interface LinkPopoverProps {
   position: { top: number; left: number };
   onSave: (nodeKey: string, url: string) => void;
   onClose: () => void;
+  popoverRef: React.RefObject<HTMLDivElement | null>;
 }
 
-function LinkPopover({ state, position, onSave, onClose }: LinkPopoverProps) {
+function LinkPopover({ state, position, onSave, onClose, popoverRef }: LinkPopoverProps) {
   const [editingUrl, setEditingUrl] = useState(state.url);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -63,10 +68,9 @@ function LinkPopover({ state, position, onSave, onClose }: LinkPopoverProps) {
 
   return createPortal(
     <div
+      ref={popoverRef}
       style={{ position: "fixed", top, left, zIndex: 9999 }}
       className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg p-1"
-      // Prevent native mousedown from reaching the window close-on-outside handler
-      onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
     >
       <input
         ref={inputRef}
@@ -93,6 +97,7 @@ export function LinkPopoverPlugin() {
   const [editor] = useLexicalComposerContext();
   const [popoverState, setPopoverState] = useState<PopoverState | null>(null);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
+  const popoverRef = useRef<HTMLDivElement | null>(null);
 
   const closePopover = useCallback(() => {
     setPopoverState(null);
@@ -156,57 +161,54 @@ export function LinkPopoverPlugin() {
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [editor, openPopoverForElement]);
 
-  // Link click: prevent in-app navigation and open popover
+  // Link click: open popover. Use Lexical's CLICK_COMMAND so we don't depend
+  // on manual root-element wiring or event-listener ordering.
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const anchorElement = target.closest("a[href]");
-      if (!anchorElement) return;
-      e.preventDefault();
-      e.stopPropagation();
+    return editor.registerCommand(
+      CLICK_COMMAND,
+      (event) => {
+        const target = event.target as HTMLElement | null;
+        const anchorElement = target?.closest("a[href]");
+        if (!anchorElement) return false;
 
-      let foundKey: string | null = null;
-      let foundUrl = "";
+        let foundKey: string | null = null;
+        let foundUrl = "";
 
-      editor.getEditorState().read(() => {
-        // Walk up from the clicked DOM node to find the Lexical LinkNode
-        const lexicalNode = $getNearestNodeFromDOMNode(target);
-        if (!lexicalNode) return;
-        const linkNode = $isLinkNode(lexicalNode)
-          ? lexicalNode
-          : $findMatchingParent(lexicalNode, $isLinkNode);
-        if ($isLinkNode(linkNode)) {
-          foundKey = linkNode.getKey();
-          foundUrl = linkNode.getURL();
+        const lexicalNode = $getNearestNodeFromDOMNode(anchorElement);
+        if (lexicalNode) {
+          const linkNode = $isLinkNode(lexicalNode)
+            ? lexicalNode
+            : $findMatchingParent(lexicalNode, $isLinkNode);
+          if ($isLinkNode(linkNode)) {
+            foundKey = linkNode.getKey();
+            foundUrl = linkNode.getURL();
+          }
         }
-      });
 
-      if (!foundKey) {
-        // Fallback: read URL from DOM when Lexical lookup fails
-        foundUrl = (anchorElement as HTMLAnchorElement).getAttribute("href") ?? "";
-      }
+        if (!foundKey) {
+          foundUrl = (anchorElement as HTMLAnchorElement).getAttribute("href") ?? "";
+        }
 
-      openPopoverForElement(
-        foundKey ?? "",
-        foundUrl,
-        anchorElement,
-      );
-    };
-
-    const root = editor.getRootElement();
-    if (!root) return;
-    root.addEventListener("click", handleClick, { capture: true });
-    return () => root.removeEventListener("click", handleClick, { capture: true });
+        event.preventDefault();
+        openPopoverForElement(foundKey ?? "", foundUrl, anchorElement);
+        return true;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
   }, [editor, openPopoverForElement]);
 
-  // Close popover when clicking outside
+  // Close popover when clicking outside. Use capture phase so we can decide
+  // before any other listener, and check containment so clicks on the popover
+  // itself (e.g. the "open in browser" icon) don't dismiss it before their
+  // own click handler runs.
   useEffect(() => {
     if (!popoverState) return;
-    const handleOutsideMouseDown = () => {
+    const handleOutsideMouseDown = (e: MouseEvent) => {
+      if (popoverRef.current?.contains(e.target as Node)) return;
       setPopoverState(null);
     };
-    window.addEventListener("mousedown", handleOutsideMouseDown);
-    return () => window.removeEventListener("mousedown", handleOutsideMouseDown);
+    window.addEventListener("mousedown", handleOutsideMouseDown, { capture: true });
+    return () => window.removeEventListener("mousedown", handleOutsideMouseDown, { capture: true });
   }, [popoverState]);
 
   if (!popoverState) return null;
@@ -217,6 +219,7 @@ export function LinkPopoverPlugin() {
       position={popoverPosition}
       onSave={saveUrl}
       onClose={closePopover}
+      popoverRef={popoverRef}
     />
   );
 }
