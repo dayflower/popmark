@@ -10,7 +10,7 @@ import {
   CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
 } from "lexical";
-import { ExternalLink } from "lucide-react";
+import { Check, ExternalLink, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -62,6 +62,10 @@ function LinkPopover({ state, position, onSave, onClose, popoverRef }: LinkPopov
     }
   }, [editingUrl]);
 
+  const handleSave = useCallback(() => {
+    onSave(state.nodeKey, editingUrl);
+  }, [state.nodeKey, editingUrl, onSave]);
+
   // Clamp to viewport so the popover doesn't clip at screen edges
   const top = Math.min(position.top + 4, window.innerHeight - 48);
   const left = Math.min(position.left, window.innerWidth - 320);
@@ -72,6 +76,14 @@ function LinkPopover({ state, position, onSave, onClose, popoverRef }: LinkPopov
       style={{ position: "fixed", top, left, zIndex: 9999 }}
       className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg p-1"
     >
+      <button
+        type="button"
+        onClick={handleOpenInBrowser}
+        className="p-1 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded"
+        title="Open in browser"
+      >
+        <ExternalLink size={14} />
+      </button>
       <input
         ref={inputRef}
         type="text"
@@ -82,11 +94,19 @@ function LinkPopover({ state, position, onSave, onClose, popoverRef }: LinkPopov
       />
       <button
         type="button"
-        onClick={handleOpenInBrowser}
-        className="p-1 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 rounded"
-        title="Open in browser"
+        onClick={handleSave}
+        className="p-1 text-gray-500 hover:text-green-500 dark:text-gray-400 dark:hover:text-green-400 rounded"
+        title="Save"
       >
-        <ExternalLink size={14} />
+        <Check size={14} />
+      </button>
+      <button
+        type="button"
+        onClick={onClose}
+        className="p-1 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 rounded"
+        title="Cancel"
+      >
+        <X size={14} />
       </button>
     </div>,
     document.body,
