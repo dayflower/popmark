@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Update Homebrew tap
-        uses: dayflower/brew-up@6e8d33719deafd3c1225d184bb5c1ef4bf6b1cdb # v0.1.4
+        uses: dayflower/brew-up@3f2a9919dd8b749fef56f762e911d42df31435d4 # v0.1.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -26,4 +26,5 @@ jobs:
           target-repo: dayflower/homebrew-tap
           target-branch: main
           target-repo-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
-          publish-mode: pr
+          publish-mode: pr-auto-merge
+          merge-method: SQUASH
