@@ -27,4 +27,4 @@ jobs:
           target-branch: main
           target-repo-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
           publish-mode: pr-auto-merge
-          auto-merge-method: SQUASH
+          auto-merge-method: squash
