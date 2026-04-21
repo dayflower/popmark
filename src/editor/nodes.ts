@@ -1,8 +1,8 @@
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
-import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { MarkdownLinkLabelNode, MarkdownLinkNode, MarkdownLinkUrlNode } from "./MarkdownLinkNode";
 
 export const EDITOR_NODES = [
   HeadingNode,
@@ -11,7 +11,8 @@ export const EDITOR_NODES = [
   CodeHighlightNode,
   ListNode,
   ListItemNode,
-  LinkNode,
-  AutoLinkNode,
+  MarkdownLinkNode,
+  MarkdownLinkUrlNode,
+  MarkdownLinkLabelNode,
   HorizontalRuleNode,
 ];
