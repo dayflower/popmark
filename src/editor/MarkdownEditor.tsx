@@ -31,8 +31,8 @@ import { CodeEnterPlugin } from "./plugins/CodeEnterPlugin";
 import { CodeExitPlugin } from "./plugins/CodeExitPlugin";
 import { InlineCodeEscapePlugin } from "./plugins/InlineCodeEscapePlugin";
 import { InlineCodeFormatResetPlugin } from "./plugins/InlineCodeFormatResetPlugin";
-import { LinkPopoverPlugin } from "./plugins/LinkPopoverPlugin";
 import { ListShiftTabExitPlugin } from "./plugins/ListShiftTabExitPlugin";
+import MarkdownLinkPlugin from "./plugins/MarkdownLinkPlugin";
 import { CUSTOM_TRANSFORMERS } from "./transformers";
 
 const initialConfig = {
@@ -482,7 +482,7 @@ export function MarkdownEditor({
               <ListPlugin />
               <CheckListPlugin />
               <TabIndentationPlugin />
-              <LinkPopoverPlugin />
+              <MarkdownLinkPlugin />
               <CodeEnterPlugin />
               <CodeExitPlugin />
               <ListShiftTabExitPlugin />

@@ -122,36 +122,24 @@ li[role="checkbox"][aria-checked="true"] > span {
   color: #9ca3af;
 }
 
-/* Link: blue color and pointer cursor */
-.prose :where(a):not(:where([class~="not-prose"] *)) {
+/* Markdown link node: base color */
+.markdown-link {
   color: #2563eb;
-  cursor: pointer;
 }
 @media (prefers-color-scheme: dark) {
-  .prose :where(a):not(:where([class~="not-prose"] *)) {
+  .markdown-link {
     color: #60a5fa;
   }
 }
 
-/* Inline marker decoration: links ([text]) */
-.show-syntax-markers.prose :where(a):not(:where([class~="not-prose"] *))::before {
-  content: "[";
-  font-size: 0.9em;
-  opacity: 0.55;
-  font-weight: normal;
-  font-style: normal;
-}
-.show-syntax-markers.prose :where(a):not(:where([class~="not-prose"] *))::after {
-  content: "]";
-  font-size: 0.9em;
-  opacity: 0.55;
-  font-weight: normal;
-  font-style: normal;
+/* Focused (source editing) mode: URL portion is clickable to open */
+.markdown-link.is-focused .markdown-link-url {
+  cursor: pointer;
+  text-decoration: underline;
 }
 
-/* Inline marker decoration: link external icon (syntax markers OFF) */
-/* stylelint-disable-next-line */
-.prose:not(.show-syntax-markers) :where(a):not(:where([class~="not-prose"] *))::after {
+/* Focused mode: external icon (dimmed) */
+.markdown-link.is-focused::after {
   content: "";
   display: inline-block;
   width: 0.72em;
@@ -165,6 +153,66 @@ li[role="checkbox"][aria-checked="true"] > span {
   mask-size: contain;
   mask-repeat: no-repeat;
   vertical-align: -0.1em;
+  opacity: 0.4;
+}
+
+/* Unfocused (display) mode: collapse raw markdown syntax to zero size */
+.markdown-link:not(.is-focused) {
+  font-size: 0;
+  line-height: 0;
+}
+
+/* Unfocused mode: show only the label, styled as a link */
+.markdown-link:not(.is-focused) .markdown-link-label {
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) {
+  .markdown-link:not(.is-focused) .markdown-link-label {
+    color: #60a5fa;
+  }
+}
+
+/* Unfocused mode: external link icon */
+.markdown-link:not(.is-focused)::after {
+  content: "";
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  font-size: 1rem;
+  line-height: 1;
+  margin-left: 0.18em;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  vertical-align: -0.1em;
+  color: #2563eb;
+}
+@media (prefers-color-scheme: dark) {
+  .markdown-link:not(.is-focused)::after {
+    color: #60a5fa;
+  }
+}
+
+/* Inline marker decoration: links ([text]) when syntax markers enabled */
+.show-syntax-markers .markdown-link:not(.is-focused) .markdown-link-label::before {
+  content: "[";
+  font-size: 0.9em;
+  opacity: 0.55;
+  text-decoration: none;
+}
+.show-syntax-markers .markdown-link:not(.is-focused) .markdown-link-label::after {
+  content: "]";
+  font-size: 0.9em;
+  opacity: 0.55;
+  text-decoration: none;
 }
 
 /* Lexical text format: strikethrough (~~text~~) and italic when combined with bold (***text***) */
