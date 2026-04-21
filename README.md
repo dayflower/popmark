@@ -2,7 +2,7 @@
 
 Press a hotkey, write your Markdown, send to clipboard, done.
 
-![Popmark screenshot](docs/screenshot.png)
+<img src="docs/screenshot.png" width="572" alt="">
 
 ## Background
 
