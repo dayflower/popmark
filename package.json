@@ -19,7 +19,7 @@
     "bump": "bash scripts/bump-version.sh"
   },
   "dependencies": {
-    "@lexical/code": "^0.43.0",
+    "@lexical/code": "^0.44.0",
     "@lexical/history": "^0.43.0",
     "@lexical/html": "^0.43.0",
     "@lexical/link": "^0.43.0",
