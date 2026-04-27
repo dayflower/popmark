@@ -26,7 +26,7 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 ## 3. App Lifecycle
 
-- The app runs as a standard application: Dock icon is visible, appears in Cmd+Tab, and the standard menu bar is active when the editor window is focused.
+- By default, the app runs as a standard application: Dock icon is visible, appears in Cmd+Tab, and the standard menu bar is active when the editor window is focused. This is controlled by the `show_dock_icon` setting (default: `true`), which sets the macOS `NSApplicationActivationPolicy` to `Regular`. When `show_dock_icon` is `false`, the policy is set to `Accessory`, hiding the app from the Dock, Cmd+Tab, and the menu bar; the tray icon and global hotkey remain the access points.
 - A tray icon also appears in the status bar for quick access.
 - The process starts at login (user-configurable via Settings).
 - The app never quits unless the user explicitly selects "Quit Popmark" from the tray menu or presses Cmd+Q.
@@ -299,6 +299,7 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
 | Notify on copy       | On                 | When enabled, an OS notification is sent after "Send to Clipboard". Stored as `notify_on_copy` in `settings.json`. |
 | Show syntax markers  | On                 | When enabled (Rich mode only), displays Markdown syntax markers as CSS pseudo-elements. Applies the `.show-syntax-markers` class to the `ContentEditable`. Stored as `rich_show_syntax_markers` in `settings.json`. Defaults to `true` when absent. |
+| Show Dock icon       | On                 | When enabled, sets macOS activation policy to `Regular` (Dock + Cmd+Tab + menu bar). When disabled, sets policy to `Accessory` (hidden from Dock, Cmd+Tab, and menu bar; tray and global hotkey remain). Stored as `show_dock_icon` in `settings.json`. Defaults to `true` when absent. Applied at startup and immediately on save. |
 | Rich mode font family | null (browser default) | Custom `font-family` applied to the Rich mode `ContentEditable` via inline style |
 | Rich mode font size  | null (default)     | Custom `font-size` (px) applied to the Rich mode `ContentEditable` via inline style |
 | Plain mode font family | null (browser default) | Custom `font-family` applied to the Plain mode `<textarea>` via inline style |
@@ -319,11 +320,12 @@ After the user saves, the backend emits a `settings-changed` event to the main w
   "plain_font_size": null,
   "send_shortcut": "super+enter",
   "notify_on_copy": true,
-  "rich_show_syntax_markers": true
+  "rich_show_syntax_markers": true,
+  "show_dock_icon": true
 }
 ```
 
-All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`). `rich_show_syntax_markers` defaults to `true` when absent (`#[serde(default = "default_rich_show_syntax_markers")]`).
+All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`). `rich_show_syntax_markers` defaults to `true` when absent (`#[serde(default = "default_rich_show_syntax_markers")]`). `show_dock_icon` defaults to `true` when absent (`#[serde(default = "default_show_dock_icon")]`).
 
 ---
 

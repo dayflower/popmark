@@ -43,11 +43,11 @@ pub fn run() {
 
             setup_tray(handle)?;
 
-            // Read saved hotkey from settings and register global shortcut
-            let hotkey = commands::get_settings(handle.clone())
-                .unwrap_or_default()
-                .hotkey;
-            commands::re_register_shortcut(handle, &hotkey)?;
+            // Read saved settings and register global shortcut
+            let settings = commands::get_settings(handle.clone()).unwrap_or_default();
+            commands::re_register_shortcut(handle, &settings.hotkey)?;
+            #[cfg(target_os = "macos")]
+            commands::apply_dock_icon_policy(settings.show_dock_icon);
 
             Ok(())
         })

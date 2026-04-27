@@ -63,6 +63,7 @@ export function SettingsPanel() {
   const [capturedSendShortcut, setCapturedSendShortcut] = useState("super+enter");
   const [isCapturingSend, setIsCapturingSend] = useState(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
+  const [showDockIcon, setShowDockIcon] = useState<boolean>(true);
   const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [notifyOnCopy, setNotifyOnCopy] = useState<boolean>(true);
   const [richShowSyntaxMarkers, setRichShowSyntaxMarkers] = useState<boolean>(true);
@@ -77,6 +78,7 @@ export function SettingsPanel() {
         setSavedHotkey(s.hotkey);
         setCapturedHotkey(s.hotkey);
         setLaunchAtLogin(s.launch_at_login);
+        setShowDockIcon(s.show_dock_icon ?? true);
         setCopyAsRichText(s.copy_as_rich_text);
         setNotifyOnCopy(s.notify_on_copy ?? true);
         setRichShowSyntaxMarkers(s.rich_show_syntax_markers ?? true);
@@ -137,6 +139,7 @@ export function SettingsPanel() {
       settings: {
         hotkey: capturedHotkey,
         launch_at_login: launchAtLogin,
+        show_dock_icon: showDockIcon,
         copy_as_rich_text: copyAsRichText,
         max_history_entries:
           maxHistoryEntries.trim() !== "" && parsedLimit > 0 ? parsedLimit : null,
@@ -205,6 +208,14 @@ export function SettingsPanel() {
           checked={launchAtLogin}
           onChange={setLaunchAtLogin}
           label="Launch at login"
+          className="mb-3"
+        />
+
+        {/* Show Dock icon */}
+        <CheckboxSetting
+          checked={showDockIcon}
+          onChange={setShowDockIcon}
+          label="Show Dock icon"
           className="mb-3"
         />
 
