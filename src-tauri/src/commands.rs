@@ -63,6 +63,8 @@ pub struct Settings {
     pub notify_on_copy: bool,
     #[serde(default = "default_rich_show_syntax_markers")]
     pub rich_show_syntax_markers: bool,
+    #[serde(default = "default_show_dock_icon")]
+    pub show_dock_icon: bool,
 }
 
 const DEFAULT_EDITOR_MODE: &str = "rich";
@@ -70,6 +72,7 @@ const DEFAULT_SEND_SHORTCUT: &str = "super+enter";
 const DEFAULT_FONT_FALLBACK: bool = true;
 const DEFAULT_NOTIFY_ON_COPY: bool = true;
 const DEFAULT_RICH_SHOW_SYNTAX_MARKERS: bool = true;
+const DEFAULT_SHOW_DOCK_ICON: bool = true;
 
 fn default_editor_mode() -> String {
     DEFAULT_EDITOR_MODE.to_string()
@@ -91,6 +94,10 @@ fn default_rich_show_syntax_markers() -> bool {
     DEFAULT_RICH_SHOW_SYNTAX_MARKERS
 }
 
+fn default_show_dock_icon() -> bool {
+    DEFAULT_SHOW_DOCK_ICON
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
@@ -108,6 +115,7 @@ impl Default for Settings {
             send_shortcut: DEFAULT_SEND_SHORTCUT.to_string(),
             notify_on_copy: DEFAULT_NOTIFY_ON_COPY,
             rich_show_syntax_markers: DEFAULT_RICH_SHOW_SYNTAX_MARKERS,
+            show_dock_icon: DEFAULT_SHOW_DOCK_ICON,
         }
     }
 }
@@ -258,6 +266,32 @@ pub fn re_register_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), String>
 }
 
 // ---------------------------------------------------------------------------
+// Dock icon policy
+// ---------------------------------------------------------------------------
+
+#[cfg(target_os = "macos")]
+pub fn apply_dock_icon_policy(show: bool) {
+    use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
+    use objc2_foundation::MainThreadMarker;
+    unsafe {
+        let mtm = MainThreadMarker::new_unchecked();
+        let ns_app = NSApplication::sharedApplication(mtm);
+        let policy = if show {
+            NSApplicationActivationPolicy::Regular
+        } else {
+            NSApplicationActivationPolicy::Accessory
+        };
+        let _ = ns_app.setActivationPolicy(policy);
+        // Re-set the app icon after restoring Dock visibility; without this,
+        // macOS shows a generic "exec" terminal icon instead of the bundle icon.
+        if show {
+            let icon = ns_app.applicationIconImage();
+            ns_app.setApplicationIconImage(icon.as_deref());
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // IPC commands: settings
 // ---------------------------------------------------------------------------
 
@@ -283,6 +317,16 @@ pub fn save_settings(app: AppHandle, mut settings: Settings) -> Result<(), Strin
         app.autolaunch().enable().map_err(|e| e.to_string())?;
     } else {
         app.autolaunch().disable().map_err(|e| e.to_string())?;
+    }
+
+    // Apply Dock icon visibility
+    #[cfg(target_os = "macos")]
+    {
+        let show = settings.show_dock_icon;
+        app.run_on_main_thread(move || {
+            apply_dock_icon_policy(show);
+        })
+        .map_err(|e| e.to_string())?;
     }
 
     // Notify main window that settings changed

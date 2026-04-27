@@ -93,7 +93,8 @@ The next time the editor is opened it shows a blank document.
 
 ## 8. App Lifecycle & Menu Bar
 
-- The app runs as a standard application: a Dock icon is visible, and the standard menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Show History Folder in Finder, Send to Clipboard), an Edit menu, a Window menu, a Help menu, and access to History and Settings from the app menu. A tray icon also appears in the status bar for quick access.
+- By default, the app runs as a standard application: a Dock icon is visible, and the standard menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Show History Folder in Finder, Send to Clipboard), an Edit menu, a Window menu, a Help menu, and access to History and Settings from the app menu. A tray icon also appears in the status bar for quick access.
+- When the "Show Dock icon" setting is disabled, the app hides from the Dock, Cmd+Tab, and the menu bar (macOS Accessory activation policy). The system tray icon and global hotkey remain the access points in this mode.
 - The app starts at login (user-configurable).
 - The app **never quits** unless the user explicitly selects "Quit" from the tray menu or presses Cmd+Q. Closing the editor window hides it; it does not terminate the process.
 - The editor window is hidden by default and appears only when triggered by the global hotkey or via the tray menu.
@@ -118,6 +119,7 @@ The next time the editor is opened it shows a blank document.
 | Plain mode font family | Custom font family for the Plain mode textarea. When empty, the default monospace font is used. |
 | Plain mode font size | Custom font size (in px) for the Plain mode textarea. When empty, the default size is used. |
 | Show syntax markers | When enabled (Rich mode only), displays Markdown syntax markers (`**`, `*`, `~~`, `` ` ``, `#`–`######`) as CSS decorations alongside the formatted text (default: on). |
+| Show Dock icon | When enabled (default), the app appears in the macOS Dock, Cmd+Tab, and menu bar. When disabled, the app is accessible only via the system tray icon and global hotkey (macOS Accessory activation policy). |
 
 ---
 
