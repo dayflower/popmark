@@ -4,6 +4,7 @@
   "version": "0.4.0",
   "type": "module",
   "scripts": {
+    "clean": "rm -rf dist dist-ssr src-tauri/target src-tauri/gen/schemas",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
