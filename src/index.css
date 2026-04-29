@@ -1,6 +1,26 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Disable rubber-band overscroll on both main and settings windows */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* macOS unified-toolbar layout: keep popmark's editor background color and
+   the bottom border (from Tailwind utilities) — only reserve space for the
+   traffic-light cluster on the left and a slightly wider right gutter. */
+[data-platform="macos"] .popmark-toolbar {
+  height: 52px;
+  padding: 0 16px 0 96px;
+}
+
+/* Match the footer height to the toolbar so top/bottom chrome bands feel balanced. */
+[data-platform="macos"] .popmark-footer {
+  height: 52px;
+  padding: 0 16px;
+}
+
 /* Compact spacing: paragraphs */
 .prose :where(p):not(:where([class~="not-prose"] *)) {
   margin-top: 0.1em;

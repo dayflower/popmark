@@ -16,7 +16,10 @@ export function Toolbar({
   onModeToggle,
 }: ToolbarProps) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 select-none bg-white dark:bg-gray-900">
+    <div
+      data-tauri-drag-region
+      className="popmark-toolbar flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 select-none bg-white dark:bg-gray-900"
+    >
       <button
         type="button"
         onClick={onToggleHistory}
@@ -38,7 +41,10 @@ export function Toolbar({
       >
         <FilePlus size={16} />
       </button>
-      <div className="flex ml-auto rounded overflow-hidden border border-gray-300 dark:border-gray-600">
+      <div
+        data-tauri-drag-region
+        className="flex ml-auto rounded overflow-hidden border border-gray-300 dark:border-gray-600"
+      >
         {(
           [
             { mode: "rich", Icon: SquarePilcrow, title: "Rich text mode (⌘⇧R)" },

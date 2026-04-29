@@ -10,20 +10,25 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "Popmark",
         "width": 700,
         "height": 500,
         "decorations": true,
-        "visible": false
+        "visible": false,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true,
+        "trafficLightPosition": { "x": 20, "y": 28 }
       },
       {
         "label": "settings",
         "title": "Popmark Settings",
         "url": "index.html#settings",
         "width": 540,
-        "height": 550,
+        "height": 640,
         "resizable": false,
         "visible": false,
         "decorations": true,

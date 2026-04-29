@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "core:window:allow-hide",
+    "core:window:allow-start-dragging",
     "global-shortcut:allow-register",
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-write-html",

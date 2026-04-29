@@ -67,7 +67,7 @@ function App() {
   if (!settingsLoaded) return null;
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-white dark:bg-gray-900">
+    <div className="h-screen w-screen flex flex-col">
       <MarkdownEditor
         editorMode={editorMode}
         onModeChange={handleModeChange}
