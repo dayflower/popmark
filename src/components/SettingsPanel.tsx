@@ -162,8 +162,8 @@ export function SettingsPanel() {
   }
 
   return (
-    <div className="p-6 flex flex-col h-full">
-      <div className="flex-1">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-6">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Settings</h2>
 
         {/* Global shortcut */}
@@ -301,7 +301,7 @@ export function SettingsPanel() {
       </div>
 
       {/* Action buttons */}
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 px-6 pt-3 pb-6">
         <button
           type="button"
           onClick={handleCancel}

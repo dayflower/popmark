@@ -2,7 +2,7 @@
 
 Press a hotkey, write your Markdown, send to clipboard, done.
 
-<img src="docs/screenshot.png" width="572" alt="">
+<img src="docs/screenshot.png" width="560" alt="">
 
 ## Background
 

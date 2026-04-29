@@ -43,6 +43,22 @@ pub fn run() {
 
             setup_tray(handle)?;
 
+            #[cfg(target_os = "macos")]
+            {
+                use window_vibrancy::{
+                    apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState,
+                };
+                if let Some(window) = handle.get_webview_window("main") {
+                    apply_vibrancy(
+                        &window,
+                        NSVisualEffectMaterial::HeaderView,
+                        Some(NSVisualEffectState::Active),
+                        None,
+                    )
+                    .expect("apply_vibrancy failed for main window");
+                }
+            }
+
             // Read saved settings and register global shortcut
             let settings = commands::get_settings(handle.clone()).unwrap_or_default();
             commands::re_register_shortcut(handle, &settings.hotkey)?;
