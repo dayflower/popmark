@@ -70,6 +70,7 @@ interface EditorPluginsProps {
   plainContent: string;
   setPlainContent: (c: string) => void;
   modeToggleFnRef: React.MutableRefObject<(() => void) | null>;
+  exportFnRef: React.MutableRefObject<(() => void) | null>;
   onFocusPlain: () => void;
   copyAsRichText: boolean;
   setCopyAsRichText: (v: boolean) => void;
@@ -93,6 +94,7 @@ function EditorPlugins({
   plainContent,
   setPlainContent,
   modeToggleFnRef,
+  exportFnRef,
   onFocusPlain,
   copyAsRichText,
   setCopyAsRichText,
@@ -153,6 +155,17 @@ function EditorPlugins({
     }
   }, [editor, editorMode, textareaRef]);
 
+  const handleExport = useCallback(() => {
+    if (editorMode === "plain") {
+      invoke("export_file", { content: plainContent, defaultName: "note.md" });
+    } else {
+      editor.getEditorState().read(() => {
+        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
+        invoke("export_file", { content, defaultName: "note.md" });
+      });
+    }
+  }, [editor, editorMode, plainContent]);
+
   useMenuEventListeners({
     editorMode,
     plainContent,
@@ -163,15 +176,20 @@ function EditorPlugins({
     onToggleHistory,
     onClearHistory,
     onNew,
+    onExport: handleExport,
     onPastePlainText,
     handleModeToggle,
     handleClearAll,
   });
 
-  // Keep the ref in sync so Toolbar and textarea keydown can call it
+  // Keep the refs in sync so Toolbar and textarea keydown can call them
   useEffect(() => {
     modeToggleFnRef.current = handleModeToggle;
   }, [handleModeToggle, modeToggleFnRef]);
+
+  useEffect(() => {
+    exportFnRef.current = handleExport;
+  }, [handleExport, exportFnRef]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -294,6 +312,7 @@ export function MarkdownEditor({
   const [sendShortcut, setSendShortcut] = useState("super+enter");
   const { entries, loading, loadHistory, getEntry, deleteEntry, clearHistory } = useHistory();
   const modeToggleFnRef = useRef<(() => void) | null>(null);
+  const exportFnRef = useRef<(() => void) | null>(null);
   const plainDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<LexicalEditor | null>(null);
@@ -434,6 +453,7 @@ export function MarkdownEditor({
       <Toolbar
         isHistoryOpen={isHistoryOpen}
         onNew={handleNew}
+        onExport={() => exportFnRef.current?.()}
         onToggleHistory={() => setIsHistoryOpen((v) => !v)}
         editorMode={editorMode}
         onModeToggle={() => modeToggleFnRef.current?.()}
@@ -504,6 +524,7 @@ export function MarkdownEditor({
             plainContent={plainContent}
             setPlainContent={setPlainContent}
             modeToggleFnRef={modeToggleFnRef}
+            exportFnRef={exportFnRef}
             onFocusPlain={handleFocusPlain}
             copyAsRichText={copyAsRichText}
             setCopyAsRichText={setCopyAsRichText}

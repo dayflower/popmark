@@ -99,9 +99,10 @@ A minimal toolbar appears at the top of the editor window:
 |-------------------|-------------------------------|
 | History           | Open/close the history panel (leftmost; shows pressed state when panel is open) |
 | New               | Auto-save draft to history (if non-empty), clear draft, start new document |
+| Export            | Save the current editor content as a `.md` file via a native save dialog (**⌘S**); same behavior as the File menu Export item |
 | Rich / Plain      | Dual-button toggle group at the far right: clicking the inactive button switches the editor mode (**⌘⇧R** for Rich, **⌘⇧P** for Plain); clicking the already-active button is a no-op |
 
-Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses text labels. Export is not available in the toolbar; it is accessible via the File menu (⌘S).
+Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses text labels. Export is also accessible via the File menu (⌘S).
 
 ### 6.4 Send to Clipboard Button
 
