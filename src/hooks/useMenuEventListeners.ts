@@ -1,4 +1,4 @@
-import { $convertFromMarkdownString, $convertToMarkdownString } from "@lexical/markdown";
+import { $convertFromMarkdownString } from "@lexical/markdown";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -24,6 +24,7 @@ interface UseMenuEventListenersOptions {
   onToggleHistory: () => void;
   onClearHistory: () => void;
   onNew: () => void;
+  onExport: () => void;
   onPastePlainText: (text: string) => void;
   handleModeToggle: () => void;
   handleClearAll: () => void;
@@ -39,6 +40,7 @@ export function useMenuEventListeners({
   onToggleHistory,
   onClearHistory,
   onNew,
+  onExport,
   onPastePlainText,
   handleModeToggle,
   handleClearAll,
@@ -55,16 +57,7 @@ export function useMenuEventListeners({
 
   useMenuEvent("menu-clear-all", handleClearAll, [handleClearAll]);
 
-  useMenuEvent("menu-export", () => {
-    if (editorMode === "plain") {
-      invoke("export_file", { content: plainContent, defaultName: "note.md" });
-    } else {
-      editor.getEditorState().read(() => {
-        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-        invoke("export_file", { content, defaultName: "note.md" });
-      });
-    }
-  }, [editor, editorMode, plainContent]);
+  useMenuEvent("menu-export", onExport, [onExport]);
 
   useMenuEvent("menu-send-to-clipboard", copyToClipboard, [copyToClipboard]);
 

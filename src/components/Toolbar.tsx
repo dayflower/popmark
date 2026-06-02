@@ -1,8 +1,9 @@
-import { FilePlus, PanelLeft, SquareMenu, SquarePilcrow } from "lucide-react";
+import { FilePlus, PanelLeft, Save, SquareMenu, SquarePilcrow } from "lucide-react";
 
 interface ToolbarProps {
   isHistoryOpen: boolean;
   onNew: () => void;
+  onExport: () => void;
   onToggleHistory: () => void;
   editorMode: "rich" | "plain";
   onModeToggle: () => void;
@@ -11,6 +12,7 @@ interface ToolbarProps {
 export function Toolbar({
   isHistoryOpen,
   onNew,
+  onExport,
   onToggleHistory,
   editorMode,
   onModeToggle,
@@ -33,6 +35,7 @@ export function Toolbar({
       >
         <PanelLeft size={16} />
       </button>
+      <div className="relative top-px w-px h-5 bg-gray-300 dark:bg-gray-600" />
       <button
         type="button"
         onClick={onNew}
@@ -40,6 +43,14 @@ export function Toolbar({
         title="New document (⌘N)"
       >
         <FilePlus size={16} />
+      </button>
+      <button
+        type="button"
+        onClick={onExport}
+        className="p-1.5 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 cursor-default"
+        title="Export (⌘S)"
+      >
+        <Save size={16} />
       </button>
       <div
         data-tauri-drag-region
