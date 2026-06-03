@@ -19,7 +19,7 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 |----------|-----------------|--------------------------------------------------------|
 | Shell    | Tauri 2.x (Rust)| Menu bar agent, global hotkey, clipboard, file I/O     |
 | UI       | React 19 + Vite | Editor window, toolbar, history panel                  |
-| Editor   | Lexical         | WYSIWYG Markdown rendering                             |
+| Editor   | Lexical (vendored `LexicalMarkdownEditor`) | WYSIWYG Markdown rendering, Prism code highlighting |
 | Styling  | Tailwind CSS    | UI layout and theming (dark mode support)              |
 
 ---
@@ -58,16 +58,25 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 ## 6. WYSIWYG Editor (Lexical)
 
-### 6.1 Rendering Style
+The rich editor is built on the **vendored `LexicalMarkdownEditor` component** (`src/lexical-markdown/`, copied from the sibling [`etude-lexical-markdown`](https://github.com/dayflower/etude-lexical-markdown) project). It is a controlled Markdown component: it takes a `value` (Markdown string) and emits `onChange(markdown)`; Markdown↔Lexical conversion, the custom link/code-block nodes, blockquote/list/task-list behavior, and Prism-based code highlighting all live inside it. popmark applies two local patches to the vendored copy (both commented `popmark patch`): an `editorRef` prop that exposes the live `LexicalEditor` (used for HTML clipboard export and focus control), and link opening routed through the Tauri opener plugin instead of `window.open`.
 
-The editor supports two modes, toggled via the toolbar button (**⌘⇧R** for Rich, **⌘⇧P** for Plain):
+### 6.0 Single Markdown String Architecture
+
+`MarkdownEditor` (`src/editor/MarkdownEditor.tsx`) holds **one `content` Markdown string** as the single source of truth, shared by both editor modes:
+
+- **Rich mode** renders `<LexicalMarkdownEditor value={content} onChange={setContent} editorRef={…} />`.
+- **Plain mode** renders a `<textarea>` bound to the same `content`.
+
+Because both modes read and write the same string, **switching modes requires no Markdown conversion** — it is a pure state change. Draft save, export, clipboard, clear, and history load are all plain string operations. The selected mode is persisted in `settings.json` as `editor_mode` and restored on next launch.
+
+### 6.1 Rendering Style
 
 - **Rich mode** (default): **source-visible WYSIWYG** (Obsidian style) — Markdown syntax markers (`#`, `**`, `` ` ``, etc.) remain visible in the editor while visual styling is applied at the same time (font size, weight, color, etc.). The user can edit the raw markers directly, and the styling updates live.
 
-Inline syntax markers for bold (`**`), italic (`*`), bold+italic (`***`), strikethrough (`~~`), inline code (`` ` ``), and headings (`#`–`######`) are rendered as CSS pseudo-elements (`::before` / `::after`) in a dimmed, slightly smaller style. This is purely visual: the markers are not part of the DOM text content and do not appear in clipboard output. Visibility is controlled by the `rich_show_syntax_markers` setting: when `true`, the `.show-syntax-markers` class is applied to the `ContentEditable` element, activating the marker CSS rules; when `false`, the class is absent and no markers are shown.
-- **Plain text mode**: a plain `<textarea>` displays the raw Markdown source. `spellCheck` is disabled and all Lexical formatting plugins are inactive.
+Typography, lists, and inline formats are styled via Tailwind utility classes supplied through the component's `classNames` prop (`src/editor/markdownTheme.ts`); the markdown link, code block, task-list checkbox, horizontal rule, and syntax markers are styled in `src/index.css` against the stable `md-*` hook classes and the library's `data-markdown-*` / `data-focused` attributes.
 
-Switching **rich → plain** converts the Lexical state to Markdown via `$convertToMarkdownString(CUSTOM_TRANSFORMERS)` and loads it into the textarea. Switching **plain → rich** parses the textarea content back via `$convertFromMarkdownString`. The selected mode is persisted in `settings.json` as `editor_mode` and restored on next launch.
+Inline syntax markers for bold (`**`), italic (`*`), bold+italic (`***`), strikethrough (`~~`), inline code (`` ` ``), and headings (`#`–`######`) are rendered as CSS pseudo-elements (`::before` / `::after`) in a dimmed, slightly smaller style ("markup mode"). This is purely visual: the markers are not part of the DOM text content and do not appear in clipboard output. Visibility is controlled by the `rich_show_syntax_markers` setting: when `true`, the `data-markdown-markup-mode` attribute is set on the editor wrapper element, activating the marker CSS rules; when `false`, the attribute is absent and no markers are shown.
+- **Plain text mode**: a plain `<textarea>` displays the raw Markdown source. `spellCheck` is disabled and the rich editor is not mounted.
 
 ### 6.2 Supported Markdown Elements
 
@@ -106,13 +115,11 @@ Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses tex
 
 ### 6.4 Send to Clipboard Button
 
-A prominent primary-action button is anchored to the **bottom-right of the editor pane** (inside the `<LexicalComposer>` context, outside the `ContentEditable`):
+A prominent primary-action button sits in the **footer bar at the bottom of the editor pane**. It is a presentational component (`SendToClipboardButton`) that receives an `onSend` callback and the `sendShortcut`, decoupled from the editor internals:
 
 - **Label:** `Send to clipboard (⌘↵)` — the shortcut hint is rendered dynamically using `formatHotkey(sendShortcut)` from the current `send_shortcut` setting
-- **Position:** `absolute bottom-4 right-4` within the `relative`-positioned editor container
 - **Style:** `bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm`
 - **Behavior:** same as the configured keyboard shortcut (default `⌘Return`) — copy Markdown (and optionally HTML) to clipboard, save to history, clear draft, hide window
-- The scrollable editor area has bottom padding (`pb-16`) to prevent content from being obscured by the button when scrolled to the bottom
 
 ---
 
@@ -135,7 +142,7 @@ Triggered by the "Send to clipboard" button anchored to the bottom-right of the 
 
 **Steps executed in order:**
 
-1. Serialize the current Lexical editor state to plain Markdown text. If "Copy as Rich Text" is enabled in Settings (Rich mode only), also generate HTML from the Lexical state via `@lexical/html`.
+1. Read the current Markdown from the live editor (`$convertToMarkdownString`). If "Copy as Rich Text" is enabled in Settings (Rich mode only), generate clean semantic HTML from that Markdown via a throwaway editor seeded with the **standard** Lexical nodes and `@lexical/html` (`src/editor/markdownToHtml.ts`). HTML is derived from the Markdown — not from the live editor's source-visible custom nodes — so links/code/lists export as proper `<a>` / `<pre>` / `<ul>` rather than raw Markdown markers.
 2. Write the Markdown text to the system clipboard. If "Copy as Rich Text" is enabled, write both HTML and plain Markdown via `write_html(html, fallback_text)` so that apps supporting rich paste receive formatted content.
 3. Save the document to history with the current timestamp (skipped if the content is empty or whitespace-only).
 4. Clear `draft.md` (reset to empty).

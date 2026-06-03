@@ -1,3 +1,4 @@
+import { $generateNodesFromDOM } from "@lexical/html";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -12,9 +13,13 @@ import {
   KEY_ESCAPE_COMMAND,
   type LexicalEditor,
   type LexicalNode,
+  type NodeKey,
+  PASTE_COMMAND,
   TextNode,
 } from "lexical";
 import { useEffect } from "react";
+import { DATA_ATTR } from "../constants";
+import { registerFocusClassListener } from "../hooks/registerFocusClassListener";
 import {
   $createMarkdownLinkLabelNode,
   $createMarkdownLinkNode,
@@ -22,11 +27,10 @@ import {
   $isMarkdownLinkLabelNode,
   $isMarkdownLinkNode,
   $isMarkdownLinkUrlNode,
-  MARKDOWN_LINK_CSS_CLASSES,
   MarkdownLinkLabelNode,
   MarkdownLinkNode,
   MarkdownLinkUrlNode,
-} from "../MarkdownLinkNode";
+} from "../nodes/MarkdownLinkNode";
 
 const FULL_MATCH_REGEX = /^\[([^\]]*)\]\(([^)]*)\)$/;
 const MATCH_REGEX = /\[([^\]]*)\]\(([^)]+)\)/;
@@ -70,7 +74,9 @@ function createChildNodeValidator<T extends TextNode>(): (node: T) => void {
   };
 }
 
-function $findNearestMarkdownLinkNode(node: LexicalNode | null): MarkdownLinkNode | null {
+function $findNearestMarkdownLinkNode(
+  node: LexicalNode | null,
+): MarkdownLinkNode | null {
   if ($isMarkdownLinkNode(node)) return node;
   if ($isTextNode(node)) {
     const parent = node.getParent();
@@ -80,11 +86,11 @@ function $findNearestMarkdownLinkNode(node: LexicalNode | null): MarkdownLinkNod
 }
 
 function isLinkFocused(linkEl: HTMLElement): boolean {
-  return linkEl.classList.contains(MARKDOWN_LINK_CSS_CLASSES.FOCUSED);
+  return linkEl.hasAttribute(DATA_ATTR.FOCUSED);
 }
 
 function isUrlClickTarget(target: HTMLElement): boolean {
-  return !!target.closest(`.${MARKDOWN_LINK_CSS_CLASSES.URL}`);
+  return !!target.closest(`[${DATA_ATTR.LINK_URL}]`);
 }
 
 function handleFocusedLinkClick(linkEl: HTMLElement, e: MouseEvent): void {
@@ -92,11 +98,17 @@ function handleFocusedLinkClick(linkEl: HTMLElement, e: MouseEvent): void {
   const url = linkEl.getAttribute("data-url");
   if (url) {
     e.preventDefault();
+    // popmark patch: open in the OS browser via the Tauri opener plugin
+    // instead of window.open (which is unavailable in the Tauri webview).
     invoke("plugin:opener|open_url", { url });
   }
 }
 
-function handleUnfocusedLinkClick(linkEl: HTMLElement, editor: LexicalEditor, e: MouseEvent): void {
+function handleUnfocusedLinkClick(
+  linkEl: HTMLElement,
+  editor: LexicalEditor,
+  e: MouseEvent,
+): void {
   e.preventDefault();
   editor.update(() => {
     const node = $getNearestNodeFromDOMNode(linkEl);
@@ -177,38 +189,30 @@ function useNodeTransforms(editor: LexicalEditor): void {
   }, [editor]);
 }
 
+function $collectFocusedLinkKeys(): Set<NodeKey> {
+  const keys = new Set<NodeKey>();
+  const selection = $getSelection();
+  if (!$isRangeSelection(selection)) return keys;
+  for (const n of selection.getNodes()) {
+    if ($isMarkdownLinkNode(n)) {
+      keys.add(n.getKey());
+    } else if ($isTextNode(n)) {
+      const parent = n.getParent();
+      if ($isMarkdownLinkNode(parent)) {
+        keys.add(parent.getKey());
+      }
+    }
+  }
+  return keys;
+}
+
 function useSelectionFocusTracking(editor: LexicalEditor): void {
   useEffect(() => {
-    const removeUpdateListener = editor.registerUpdateListener(({ editorState }) => {
-      editorState.read(() => {
-        const doms = document.querySelectorAll(`.${MARKDOWN_LINK_CSS_CLASSES.LINK}`);
-        doms.forEach((dom) => {
-          dom.classList.remove(MARKDOWN_LINK_CSS_CLASSES.FOCUSED);
-        });
-
-        const selection = $getSelection();
-        if (!$isRangeSelection(selection)) return;
-
-        const focusedKeys = new Set<string>();
-        for (const n of selection.getNodes()) {
-          if ($isMarkdownLinkNode(n)) {
-            focusedKeys.add(n.getKey());
-          } else if ($isTextNode(n)) {
-            const parent = n.getParent();
-            if ($isMarkdownLinkNode(parent)) {
-              focusedKeys.add(parent.getKey());
-            }
-          }
-        }
-        focusedKeys.forEach((key) => {
-          editor.getElementByKey(key)?.classList.add(MARKDOWN_LINK_CSS_CLASSES.FOCUSED);
-        });
-      });
-    });
-
-    return () => {
-      removeUpdateListener();
-    };
+    return registerFocusClassListener(
+      editor,
+      `[${DATA_ATTR.LINK}]`,
+      $collectFocusedLinkKeys,
+    );
   }, [editor]);
 }
 
@@ -217,11 +221,13 @@ function useTextInsertionBehavior(editor: LexicalEditor): void {
     const removeCommandListener = editor.registerCommand(
       CONTROLLED_TEXT_INSERTION_COMMAND,
       (payload) => {
-        const text = typeof payload === "string" ? payload : (payload as InputEvent).data;
+        const text =
+          typeof payload === "string" ? payload : (payload as InputEvent).data;
         if (!text) return false;
 
         const selection = $getSelection();
-        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        if (!$isRangeSelection(selection) || !selection.isCollapsed())
+          return false;
 
         const anchor = selection.anchor;
         const anchorNode = anchor.getNode();
@@ -258,14 +264,14 @@ function useEscapeKeyBehavior(editor: LexicalEditor): void {
       KEY_ESCAPE_COMMAND,
       (event) => {
         const selection = $getSelection();
-        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+        if (!$isRangeSelection(selection) || !selection.isCollapsed())
+          return false;
 
         const anchorNode = selection.anchor.getNode();
         const linkNode = $findNearestMarkdownLinkNode(anchorNode);
         if (!linkNode) return false;
 
         event?.preventDefault();
-        event?.stopPropagation();
 
         const nextSibling = linkNode.getNextSibling();
         if ($isTextNode(nextSibling)) {
@@ -291,7 +297,9 @@ function useClickHandling(editor: LexicalEditor): void {
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const linkEl = target.closest(`.${MARKDOWN_LINK_CSS_CLASSES.LINK}`) as HTMLElement | null;
+      const linkEl = target.closest(
+        `[${DATA_ATTR.LINK}]`,
+      ) as HTMLElement | null;
       if (!linkEl) return;
 
       if (isLinkFocused(linkEl)) {
@@ -302,10 +310,12 @@ function useClickHandling(editor: LexicalEditor): void {
       handleUnfocusedLinkClick(linkEl, editor, e);
     };
 
-    const removeRootListener = editor.registerRootListener((rootElement, prevRootElement) => {
-      prevRootElement?.removeEventListener("click", handleClick);
-      rootElement?.addEventListener("click", handleClick);
-    });
+    const removeRootListener = editor.registerRootListener(
+      (rootElement, prevRootElement) => {
+        prevRootElement?.removeEventListener("click", handleClick);
+        rootElement?.addEventListener("click", handleClick);
+      },
+    );
 
     return () => {
       removeRootListener();
@@ -313,12 +323,60 @@ function useClickHandling(editor: LexicalEditor): void {
   }, [editor]);
 }
 
-export default function MarkdownLinkPlugin() {
+function $convertAnchorsToMarkdownText(doc: Document): boolean {
+  const anchors = doc.querySelectorAll("a[href]");
+  if (anchors.length === 0) return false;
+  anchors.forEach((a) => {
+    const href = a.getAttribute("href") ?? "";
+    const label = a.textContent ?? "";
+    const replacement = href
+      ? `[${label.length > 0 ? label : href}](${href})`
+      : label;
+    a.replaceWith(doc.createTextNode(replacement));
+  });
+  return true;
+}
+
+function usePastedLinkConversion(editor: LexicalEditor): void {
+  useEffect(() => {
+    const removePasteListener = editor.registerCommand(
+      PASTE_COMMAND,
+      (event) => {
+        if (!(event instanceof ClipboardEvent)) return false;
+        const clipboardData = event.clipboardData;
+        if (!clipboardData) return false;
+
+        const html = clipboardData.getData("text/html");
+        if (!html) return false;
+
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        if (!$convertAnchorsToMarkdownText(doc)) return false;
+
+        event.preventDefault();
+        editor.update(() => {
+          const selection = $getSelection();
+          if (!$isRangeSelection(selection)) return;
+          const nodes = $generateNodesFromDOM(editor, doc);
+          selection.insertNodes(nodes);
+        });
+        return true;
+      },
+      COMMAND_PRIORITY_HIGH,
+    );
+
+    return () => {
+      removePasteListener();
+    };
+  }, [editor]);
+}
+
+export default function MarkdownLinkPlugin(): null {
   const [editor] = useLexicalComposerContext();
   useNodeTransforms(editor);
   useSelectionFocusTracking(editor);
   useTextInsertionBehavior(editor);
   useEscapeKeyBehavior(editor);
   useClickHandling(editor);
+  usePastedLinkConversion(editor);
   return null;
 }

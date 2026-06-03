@@ -1,91 +1,80 @@
-import { $convertFromMarkdownString, $convertToMarkdownString } from "@lexical/markdown";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { EditorState } from "lexical";
-import { useCallback, useEffect, useRef } from "react";
-import { CUSTOM_TRANSFORMERS } from "../editor/transformers";
+import type { LexicalEditor } from "lexical";
+import { type RefObject, useCallback, useEffect, useRef } from "react";
+import type { EditorMode } from "../types/settings";
 
 interface UseEditorDraftSyncOptions {
-  editorMode: "rich" | "plain";
-  plainContent: string;
-  setPlainContent: (c: string) => void;
+  editorMode: EditorMode;
+  content: string;
+  setContent: (c: string) => void;
   newDocTrigger: number;
-  onFocusPlain: () => void;
+  editorRef: RefObject<LexicalEditor | null>;
+  focusPlain: () => void;
 }
 
+/**
+ * Keeps the single `content` markdown string in sync with the backend draft:
+ * loads it on mount / after new-document / when the window is shown, and
+ * debounce-saves changes. `lastSyncedRef` records the value last loaded from or
+ * saved to the backend so neither the initial empty render nor a freshly loaded
+ * value is written straight back.
+ */
 export function useEditorDraftSync({
   editorMode,
-  plainContent,
-  setPlainContent,
+  content,
+  setContent,
   newDocTrigger,
-  onFocusPlain,
+  editorRef,
+  focusPlain,
 }: UseEditorDraftSyncOptions) {
-  const [editor] = useLexicalComposerContext();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevEditorModeRef = useRef(editorMode);
+  const lastSyncedRef = useRef<string>("");
 
-  const loadDraftForMode = useCallback(
-    (mode: "rich" | "plain") => {
-      invoke<string>("get_draft").then((content) => {
-        if (mode === "plain") {
-          setPlainContent(content ?? "");
-        } else {
-          editor.update(() => {
-            $convertFromMarkdownString(content ?? "", CUSTOM_TRANSFORMERS);
-          });
-        }
-      });
-    },
-    [editor, setPlainContent],
-  );
+  const loadDraft = useCallback(() => {
+    invoke<string>("get_draft").then((draft) => {
+      const value = draft ?? "";
+      lastSyncedRef.current = value;
+      setContent(value);
+    });
+  }, [setContent]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs only on mount
   useEffect(() => {
-    loadDraftForMode(editorMode);
+    loadDraft();
   }, []);
 
-  // Reload editor after new_document IPC clears the draft
+  // Reload after the new_document IPC clears the draft
   useEffect(() => {
     if (newDocTrigger === 0) return;
-    loadDraftForMode(editorMode);
-  }, [newDocTrigger, loadDraftForMode, editorMode]);
+    loadDraft();
+  }, [newDocTrigger, loadDraft]);
 
-  // Reload draft and auto-focus editor when the window is shown via global shortcut or tray
+  // Reload and re-focus when the window is shown via global shortcut or tray
   useEffect(() => {
     const unlisten = listen("window-shown", () => {
-      loadDraftForMode(editorMode);
+      loadDraft();
       if (editorMode === "rich") {
-        editor.focus();
+        editorRef.current?.focus();
       } else {
-        onFocusPlain();
+        focusPlain();
       }
     });
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [editor, editorMode, loadDraftForMode, onFocusPlain]);
+  }, [editorMode, loadDraft, editorRef, focusPlain]);
 
-  // Load plainContent into editor when switching plain → rich
+  // Debounced save whenever content diverges from the last synced value
   useEffect(() => {
-    if (prevEditorModeRef.current === "plain" && editorMode === "rich") {
-      editor.update(() => {
-        $convertFromMarkdownString(plainContent, CUSTOM_TRANSFORMERS);
-      });
-    }
-    prevEditorModeRef.current = editorMode;
-  }, [editorMode, editor, plainContent]);
-
-  function handleChange(editorState: EditorState) {
-    if (editorMode === "plain") return;
+    if (content === lastSyncedRef.current) return;
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
-      editorState.read(() => {
-        const content = $convertToMarkdownString(CUSTOM_TRANSFORMERS);
-        invoke("save_draft", { content });
-      });
+      lastSyncedRef.current = content;
+      invoke("save_draft", { content });
     }, 500);
-  }
-
-  return { loadDraftForMode, handleChange };
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [content]);
 }

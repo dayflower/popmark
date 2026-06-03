@@ -1,5 +1,4 @@
 import { $convertFromMarkdownString } from "@lexical/markdown";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { invoke } from "@tauri-apps/api/core";
 import {
   $getSelection,
@@ -7,17 +6,17 @@ import {
   $isRangeSelection,
   $parseSerializedNode,
   createEditor,
+  type LexicalEditor,
 } from "lexical";
-import { EDITOR_NODES } from "../editor/nodes";
-import { CUSTOM_TRANSFORMERS } from "../editor/transformers";
-import type { Settings } from "../types/settings";
-import { useCopyToClipboard } from "./useCopyToClipboard";
+import type { RefObject } from "react";
+import { POPMARK_NODES, POPMARK_TRANSFORMERS } from "../editor/markdownTheme";
+import type { EditorMode, Settings } from "../types/settings";
 import { useMenuEvent } from "./useMenuEvent";
 
 interface UseMenuEventListenersOptions {
-  editorMode: "rich" | "plain";
-  plainContent: string;
-  copyAsRichText: boolean;
+  editorMode: EditorMode;
+  editorRef: RefObject<LexicalEditor | null>;
+  copyToClipboard: () => void;
   setCopyAsRichText: (v: boolean) => void;
   setSendShortcut: (v: string) => void;
   setIsHistoryOpen: (open: boolean) => void;
@@ -32,8 +31,8 @@ interface UseMenuEventListenersOptions {
 
 export function useMenuEventListeners({
   editorMode,
-  plainContent,
-  copyAsRichText,
+  editorRef,
+  copyToClipboard,
   setCopyAsRichText,
   setSendShortcut,
   setIsHistoryOpen,
@@ -45,14 +44,6 @@ export function useMenuEventListeners({
   handleModeToggle,
   handleClearAll,
 }: UseMenuEventListenersOptions) {
-  const [editor] = useLexicalComposerContext();
-  const { copyToClipboard } = useCopyToClipboard({
-    editorMode,
-    plainContent,
-    copyAsRichText,
-    editor,
-  });
-
   useMenuEvent("menu-new-document", onNew, [onNew]);
 
   useMenuEvent("menu-clear-all", handleClearAll, [handleClearAll]);
@@ -67,37 +58,41 @@ export function useMenuEventListeners({
     if (editorMode === "plain") {
       onPastePlainText(text);
     } else {
-      editor.update(() => {
+      editorRef.current?.update(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
           selection.insertText(text);
         }
       });
     }
-  }, [editor, editorMode, onPastePlainText]);
+  }, [editorRef, editorMode, onPastePlainText]);
 
   useMenuEvent("menu-paste-from-markdown", async () => {
     const text = await invoke<string>("read_clipboard_text").catch(() => null);
     if (!text) return;
     if (editorMode === "plain") {
       onPastePlainText(text);
-    } else {
-      const tempEditor = createEditor({ nodes: EDITOR_NODES });
-      await new Promise<void>((resolve) => {
-        tempEditor.update(
-          () => {
-            $convertFromMarkdownString(text, CUSTOM_TRANSFORMERS);
-          },
-          { onUpdate: resolve },
-        );
-      });
-      const { root } = tempEditor.getEditorState().toJSON();
-      const serializedNodes = root.children;
-      editor.update(() => {
-        $insertNodes(serializedNodes.map((json) => $parseSerializedNode(json)));
-      });
+      return;
     }
-  }, [editor, editorMode, onPastePlainText]);
+    const editor = editorRef.current;
+    if (!editor) return;
+    // Parse the markdown in a throwaway editor, then splice the resulting
+    // nodes into the live editor at the cursor.
+    const tempEditor = createEditor({ nodes: POPMARK_NODES });
+    await new Promise<void>((resolve) => {
+      tempEditor.update(
+        () => {
+          $convertFromMarkdownString(text, POPMARK_TRANSFORMERS);
+        },
+        { onUpdate: resolve },
+      );
+    });
+    const { root } = tempEditor.getEditorState().toJSON();
+    const serializedNodes = root.children;
+    editor.update(() => {
+      $insertNodes(serializedNodes.map((json) => $parseSerializedNode(json)));
+    });
+  }, [editorRef, editorMode, onPastePlainText]);
 
   useMenuEvent("open-history-panel", () => setIsHistoryOpen(true), [setIsHistoryOpen]);
 
@@ -106,7 +101,7 @@ export function useMenuEventListeners({
   useMenuEvent<string>(
     "menu-set-editor-mode",
     (event) => {
-      const targetMode = event.payload as "rich" | "plain";
+      const targetMode = event.payload as EditorMode;
       if (targetMode === editorMode) return;
       handleModeToggle();
     },

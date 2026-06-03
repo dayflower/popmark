@@ -154,4 +154,4 @@ These technology choices are fixed:
 |-------|-----------|
 | Native shell | Tauri 2.x (Rust) |
 | Frontend | React 19 + Vite |
-| Rich text engine | Lexical |
+| Rich text engine | Lexical (vendored `LexicalMarkdownEditor`, based on `etude-lexical-markdown`) |
