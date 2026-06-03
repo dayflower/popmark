@@ -122,6 +122,10 @@ function deepMergeInto(
   source: Record<string, unknown>,
 ): Record<string, unknown> {
   for (const key of Object.keys(source)) {
+    // popmark patch: guard against prototype pollution (CodeQL).
+    if (key === "__proto__" || key === "constructor" || key === "prototype") {
+      continue;
+    }
     const sourceValue = source[key];
     if (sourceValue === undefined) continue;
     if (isPlainObject(sourceValue)) {
