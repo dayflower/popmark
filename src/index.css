@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
 
 /* Disable rubber-band overscroll on both main and settings windows */
 html,
@@ -21,98 +20,159 @@ body {
   padding: 0 16px;
 }
 
-/* Compact spacing: paragraphs */
-.prose :where(p):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.1em;
-  margin-bottom: 0.1em;
-  line-height: 1.45;
+/* ===========================================================================
+   Editor (vendored LexicalMarkdownEditor) styling.
+
+   Typography, spacing, lists, and inline formats are supplied as Tailwind
+   utility classes via the `classNames` prop (see src/editor/markdownTheme.ts).
+   The rules below cover what reads better as CSS: the markdown link, the code
+   block, the task-list checkbox, the horizontal rule, and "markup mode"
+   (syntax markers). They target the stable `md-*` hook classes and the
+   library's `data-markdown-*` / `data-focused` attributes.
+   =========================================================================== */
+
+/* ---------- inline code ---------- */
+.md-code {
+  background: #f1f5f9;
+  border-radius: 0.2rem;
+  padding: 0.05em 0.3em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+@media (prefers-color-scheme: dark) {
+  .md-code {
+    background: #374151;
+  }
 }
 
-/* Compact spacing: headings */
-.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.3em;
-  margin-bottom: 0.2em;
+/* ---------- markdown link ---------- */
+.md-link {
+  color: #2563eb;
+  cursor: text;
+}
+@media (prefers-color-scheme: dark) {
+  .md-link {
+    color: #60a5fa;
+  }
 }
 
-/* Inline marker decoration: headings (#, ##, ...) */
-.show-syntax-markers.prose :where(h1):not(:where([class~="not-prose"] *))::before { content: "#"; }
-.show-syntax-markers.prose :where(h2):not(:where([class~="not-prose"] *))::before { content: "##"; }
-.show-syntax-markers.prose :where(h3):not(:where([class~="not-prose"] *))::before { content: "###"; }
-.show-syntax-markers.prose :where(h4):not(:where([class~="not-prose"] *))::before { content: "####"; }
-.show-syntax-markers.prose :where(h5):not(:where([class~="not-prose"] *))::before { content: "#####"; }
-.show-syntax-markers.prose :where(h6):not(:where([class~="not-prose"] *))::before { content: "######"; }
-.show-syntax-markers.prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *))::before {
-  font-weight: normal;
-  font-size: 0.75em;
-  opacity: 0.4;
-  margin-right: 0.15em;
+.md-link[data-focused] .md-link-url {
+  cursor: pointer;
+  text-decoration: underline;
 }
 
-/* Compact spacing: blockquotes */
-.prose :where(blockquote):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-  font-style: normal;
+/* Unfocused (display) mode: collapse the raw markdown syntax to zero size … */
+.md-link:not([data-focused]) {
+  font-size: 0;
+  line-height: 0;
 }
 
-/* Compact spacing: code blocks */
-.prose :where(pre):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
+/* … and show only the label, styled as a link. */
+.md-link:not([data-focused]) .md-link-label {
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-decoration: underline;
+}
+@media (prefers-color-scheme: dark) {
+  .md-link:not([data-focused]) .md-link-label {
+    color: #60a5fa;
+  }
 }
 
-/* Compact spacing: top-level lists (keeps existing indent override) */
-.prose :where(ul, ol):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
-  padding-inline-start: 1.25em;
+/* External-link icon (focused: dimmed, unfocused: full) */
+.md-link::after {
+  content: "";
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: 0.18em;
+  vertical-align: -0.1em;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+}
+.md-link:not([data-focused])::after {
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.8;
+}
+.md-link[data-focused]::after {
+  opacity: 0.5;
 }
 
-/* Compact spacing: nested lists */
-.prose :where(ul ul, ul ol, ol ul, ol ol):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.1em;
-  margin-bottom: 0.1em;
+/* ---------- code block ---------- */
+.md-code-block {
+  display: block;
+  position: relative;
+  isolation: isolate;
+  border-radius: 0.2rem;
+  padding: 0.75em 1em;
+  margin: 0.5em 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+.md-code-block::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: #f1f5f9;
+}
+@media (prefers-color-scheme: dark) {
+  .md-code-block::before {
+    background: #1f2937;
+  }
+}
+/* Unfocused: shrink the backdrop past the (hidden) fence lines. */
+.md-code-block:not([data-focused])::before {
+  top: 1.3125em;
+  bottom: 1.3125em;
+}
+.md-code-fence {
+  color: #94a3b8;
+}
+.md-code-block:not([data-focused]) .md-code-fence {
+  color: transparent;
+}
+/* Prism tokens render their own colors; keep the surrounding spans transparent. */
+.lexical-md__content .md-code-block code,
+.lexical-md__content .md-code-block span {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
-/* Compact spacing: horizontal rules */
-.prose :where(hr):not(:where([class~="not-prose"] *)) {
-  margin-top: 1em;
-  margin-bottom: 1em;
+/* ---------- horizontal rule ---------- */
+.lexical-md__content hr {
+  border: 0;
+  border-top: 1px solid #d1d5db;
+  margin: 1em 0;
+}
+@media (prefers-color-scheme: dark) {
+  .lexical-md__content hr {
+    border-top-color: #4b5563;
+  }
 }
 
-/* Fix: Remove gap between bullet/marker and text; tighten list item margins.
-   prose-sm sets padding-inline-start on both li and ul>li/ol>li separately;
-   zero both to eliminate the gap while keeping list indentation from ul/ol. */
-.prose :where(li):not(:where([class~="not-prose"] *)) {
-  margin-top: 0.1em;
-  margin-bottom: 0.1em;
-  padding-inline-start: 0;
-  line-height: 1.4;
-}
-.prose :where(ul > li, ol > li):not(:where([class~="not-prose"] *)) {
-  padding-inline-start: 0;
-}
-
-/* Fix: Suppress double bullet on Lexical nested list wrapper <li>.
-   Lexical renders indented items as <li><ul><li>text</li></ul></li>;
-   the outer empty li shows an unwanted extra marker.
-   :has() is supported in macOS WKWebView (Safari 16.4+).
-   Checklist li[role="checkbox"] never contains child ul/ol, so unaffected. */
-.prose li:has(> ul):not(:where([class~="not-prose"] *)),
-.prose li:has(> ol):not(:where([class~="not-prose"] *)) {
-  list-style: none;
-}
-
-/* Checklist (task list) styles for Lexical CheckListPlugin */
-li[role="checkbox"] {
+/* ---------- task list ---------- */
+.md-task {
   list-style: none;
   position: relative;
   padding-left: 1.75em;
   outline: none;
   cursor: text;
 }
-
-li[role="checkbox"]::before {
+.md-task::before {
   content: "";
   display: inline-block;
   position: absolute;
@@ -125,10 +185,8 @@ li[role="checkbox"]::before {
   background: #fff;
   cursor: pointer;
   vertical-align: middle;
-  flex-shrink: 0;
 }
-
-li[role="checkbox"][aria-checked="true"]::before {
+.md-task-checked::before {
   background: #3b82f6;
   border-color: #3b82f6;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 6l3 3 5-5'/%3E%3C/svg%3E");
@@ -136,166 +194,114 @@ li[role="checkbox"][aria-checked="true"]::before {
   background-position: center;
   background-size: 0.7em;
 }
-
-li[role="checkbox"][aria-checked="true"] > span {
+.md-task-checked {
   text-decoration: line-through;
   color: #9ca3af;
 }
-
-/* Markdown link node: base color */
-.markdown-link {
-  color: #2563eb;
-}
-@media (prefers-color-scheme: dark) {
-  .markdown-link {
-    color: #60a5fa;
-  }
-}
-
-/* Focused (source editing) mode: URL portion is clickable to open */
-.markdown-link.is-focused .markdown-link-url {
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-/* Focused mode: external icon (dimmed) */
-.markdown-link.is-focused::after {
-  content: "";
-  display: inline-block;
-  width: 0.72em;
-  height: 0.72em;
-  margin-left: 0.18em;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
-  -webkit-mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  vertical-align: -0.1em;
-  opacity: 0.4;
-}
-
-/* Unfocused (display) mode: collapse raw markdown syntax to zero size */
-.markdown-link:not(.is-focused) {
-  font-size: 0;
-  line-height: 0;
-}
-
-/* Unfocused mode: show only the label, styled as a link */
-.markdown-link:not(.is-focused) .markdown-link-label {
-  color: #2563eb;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1.5;
-  text-decoration: underline;
-}
-@media (prefers-color-scheme: dark) {
-  .markdown-link:not(.is-focused) .markdown-link-label {
-    color: #60a5fa;
-  }
-}
-
-/* Unfocused mode: external link icon */
-.markdown-link:not(.is-focused)::after {
-  content: "";
-  display: inline-block;
-  width: 0.72em;
-  height: 0.72em;
-  font-size: 1rem;
-  line-height: 1;
-  margin-left: 0.18em;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
-  -webkit-mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'/%3E%3Cpath d='m21 3-9 9'/%3E%3Cpath d='M15 3h6v6'/%3E%3C%2Fsvg%3E");
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  vertical-align: -0.1em;
-  color: #2563eb;
-}
-@media (prefers-color-scheme: dark) {
-  .markdown-link:not(.is-focused)::after {
-    color: #60a5fa;
-  }
-}
-
-/* Inline marker decoration: links ([text]) when syntax markers enabled */
-.show-syntax-markers .markdown-link:not(.is-focused) .markdown-link-label::before {
-  content: "[";
-  font-size: 0.9em;
-  opacity: 0.55;
+/* A wrapper <li> that only hosts a nested list is tagged checked/unchecked too;
+   suppress its checkbox so each nested child shows a single box. */
+.md-task.md-nested {
+  padding-left: 0;
   text-decoration: none;
+  color: inherit;
 }
-.show-syntax-markers .markdown-link:not(.is-focused) .markdown-link-label::after {
-  content: "]";
-  font-size: 0.9em;
-  opacity: 0.55;
-  text-decoration: none;
-}
-
-/* Lexical text format: strikethrough (~~text~~) and italic when combined with bold (***text***) */
-.editor-strikethrough {
-  text-decoration: line-through;
-}
-.editor-italic {
-  font-style: italic;
-}
-
-/* Inline marker decoration: inline code (`code`) */
-/* Reset Tailwind Typography default backtick content unconditionally */
-.prose :where(code):not(:where([class~="not-prose"] *))::before,
-.prose :where(code):not(:where([class~="not-prose"] *))::after {
+.md-task.md-nested::before {
   content: none;
 }
-.show-syntax-markers.prose :where(code):not(:where([class~="not-prose"] *))::before,
-.show-syntax-markers.prose :where(code):not(:where([class~="not-prose"] *))::after {
-  content: "`";
-  font-size: 0.9em;
-  opacity: 0.55;
-}
-
-/* Inline marker decoration: bold (**text**) */
-.show-syntax-markers.prose :where(strong):not(:where([class~="not-prose"] *))::before,
-.show-syntax-markers.prose :where(strong):not(:where([class~="not-prose"] *))::after {
-  content: "**";
-  font-weight: normal;
-  font-style: normal;
-  font-size: 0.9em;
-  opacity: 0.55;
-}
-
-/* Inline marker decoration: italic (*text*) */
-.show-syntax-markers.prose .editor-italic::before,
-.show-syntax-markers.prose .editor-italic::after {
-  content: "*";
-  font-style: normal;
-  font-size: 0.9em;
-  opacity: 0.55;
-}
-
-/* Inline marker decoration: strikethrough (~~text~~) */
-.show-syntax-markers.prose .editor-strikethrough::before,
-.show-syntax-markers.prose .editor-strikethrough::after {
-  content: "~~";
-  text-decoration: none;
-  font-size: 0.9em;
-  opacity: 0.55;
-}
-
 @media (prefers-color-scheme: dark) {
-  li[role="checkbox"]::before {
+  .md-task::before {
     border-color: #6b7280;
     background: #1f2937;
   }
-
-  li[role="checkbox"][aria-checked="true"]::before {
+  .md-task-checked::before {
     background: #3b82f6;
     border-color: #3b82f6;
   }
-
-  li[role="checkbox"][aria-checked="true"] > span {
+  .md-task-checked {
     color: #6b7280;
   }
+}
+
+/* ===========================================================================
+   Markup mode: reveal the markdown syntax markers. The host sets
+   `data-markdown-markup-mode` on the editor wrapper (see MarkdownEditor.tsx);
+   these decorations key off it.
+   =========================================================================== */
+[data-markdown-markup-mode] h1::before { content: "# "; }
+[data-markdown-markup-mode] h2::before { content: "## "; }
+[data-markdown-markup-mode] h3::before { content: "### "; }
+[data-markdown-markup-mode] h4::before { content: "#### "; }
+[data-markdown-markup-mode] h5::before { content: "##### "; }
+[data-markdown-markup-mode] h6::before { content: "###### "; }
+[data-markdown-markup-mode] :where(h1, h2, h3, h4, h5, h6)::before {
+  font-weight: normal;
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+
+[data-markdown-markup-mode] strong::before,
+[data-markdown-markup-mode] strong::after {
+  content: "**";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+[data-markdown-markup-mode] em::before,
+[data-markdown-markup-mode] em::after {
+  content: "*";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+[data-markdown-markup-mode] .md-strike::before,
+[data-markdown-markup-mode] .md-strike::after {
+  content: "~~";
+  text-decoration: none;
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+[data-markdown-markup-mode] .md-code::before,
+[data-markdown-markup-mode] .md-code::after {
+  content: "`";
+  font-size: 0.8em;
+  opacity: 0.5;
+}
+
+[data-markdown-markup-mode] blockquote {
+  position: relative;
+}
+[data-markdown-markup-mode] blockquote::before {
+  content: ">";
+  position: absolute;
+  left: -0.4em;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Link: reveal the literal [label](url) (rich mode hides it to a label). */
+[data-markdown-markup-mode] .md-link {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+[data-markdown-markup-mode] .md-link .md-link-label {
+  text-decoration: none;
+  cursor: text;
+}
+[data-markdown-markup-mode] .md-link .md-link-url {
+  text-decoration: underline;
+  cursor: pointer;
+}
+[data-markdown-markup-mode] .md-link::after {
+  opacity: 0.5;
+}
+
+/* Code block: reveal the fences and keep the backdrop covering the whole block. */
+[data-markdown-markup-mode] .md-code-block .md-code-fence {
+  color: #94a3b8;
+}
+[data-markdown-markup-mode] .md-code-block::before {
+  top: 0;
+  bottom: 0;
 }
