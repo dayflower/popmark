@@ -64,7 +64,6 @@ export function SettingsPanel() {
   const [isCapturingSend, setIsCapturingSend] = useState(false);
   const [launchAtLogin, setLaunchAtLogin] = useState(false);
   const [showDockIcon, setShowDockIcon] = useState<boolean>(true);
-  const [copyAsRichText, setCopyAsRichText] = useState(false);
   const [notifyOnCopy, setNotifyOnCopy] = useState<boolean>(true);
   const [richShowSyntaxMarkers, setRichShowSyntaxMarkers] = useState<boolean>(true);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
@@ -79,7 +78,6 @@ export function SettingsPanel() {
         setCapturedHotkey(s.hotkey);
         setLaunchAtLogin(s.launch_at_login);
         setShowDockIcon(s.show_dock_icon ?? true);
-        setCopyAsRichText(s.copy_as_rich_text);
         setNotifyOnCopy(s.notify_on_copy ?? true);
         setRichShowSyntaxMarkers(s.rich_show_syntax_markers ?? true);
         const limit = s.max_history_entries;
@@ -140,7 +138,6 @@ export function SettingsPanel() {
         hotkey: capturedHotkey,
         launch_at_login: launchAtLogin,
         show_dock_icon: showDockIcon,
-        copy_as_rich_text: copyAsRichText,
         max_history_entries:
           maxHistoryEntries.trim() !== "" && parsedLimit > 0 ? parsedLimit : null,
         rich_font_family: fontState.richFontFamily.trim() || null,
@@ -216,19 +213,6 @@ export function SettingsPanel() {
           checked={showDockIcon}
           onChange={setShowDockIcon}
           label="Show Dock icon"
-          className="mb-3"
-        />
-
-        {/* Copy as Rich Text */}
-        <CheckboxSetting
-          checked={copyAsRichText}
-          onChange={setCopyAsRichText}
-          label={
-            <>
-              Copy as Rich Text{" "}
-              <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
-            </>
-          }
           className="mb-3"
         />
 

@@ -85,6 +85,12 @@ export function MarkdownEditor({
     onModeChange(editorMode === "rich" ? "plain" : "rich");
   }, [editorMode, onModeChange]);
 
+  // Persist the rich/markdown copy format and reflect it in local state.
+  const applyCopyFormat = useCallback((rich: boolean) => {
+    setCopyAsRichText(rich);
+    invoke("save_copy_as_rich_text", { value: rich });
+  }, []);
+
   const handleClearAll = useCallback(() => {
     if (editorMode === "plain") {
       const textarea = textareaRef.current;
@@ -166,6 +172,7 @@ export function MarkdownEditor({
     copyToClipboard,
     setCopyAsRichText,
     setSendShortcut,
+    applyCopyFormat,
     setIsHistoryOpen,
     onToggleHistory: () => setIsHistoryOpen((v) => !v),
     onClearHistory: handleClearHistory,
@@ -209,6 +216,12 @@ export function MarkdownEditor({
     invoke("set_editor_mode_menu", { mode: editorMode });
   }, [editorMode]);
 
+  // Sync copy format to the Copy Format submenu (app menu + tray). Plain mode
+  // forces Markdown, so the submenu is disabled there.
+  useEffect(() => {
+    invoke("set_copy_format_menu", { rich: copyAsRichText, enabled: editorMode === "rich" });
+  }, [copyAsRichText, editorMode]);
+
   // Load history entries when the panel opens
   useEffect(() => {
     if (isHistoryOpen) {
@@ -231,6 +244,13 @@ export function MarkdownEditor({
         handleClearAll();
         return;
       }
+      // ⌘⇧M toggles the copy format (rich ⇄ markdown); markdown is forced in
+      // plain mode, so the toggle only applies in rich mode.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        if (editorMode === "rich") applyCopyFormat(!copyAsRichText);
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         getCurrentWindow().hide();
@@ -238,7 +258,7 @@ export function MarkdownEditor({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [copyToClipboard, editorMode, sendShortcut, handleClearAll]);
+  }, [copyToClipboard, editorMode, sendShortcut, handleClearAll, applyCopyFormat, copyAsRichText]);
 
   // Load a pending history entry into the editor (with confirmation if there
   // is existing content). new_document archives the current draft to history.
@@ -342,7 +362,13 @@ export function MarkdownEditor({
           />
         </div>
         <div className="popmark-footer flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">
-          <SendToClipboardButton onSend={copyToClipboard} sendShortcut={sendShortcut} />
+          <SendToClipboardButton
+            onSend={copyToClipboard}
+            sendShortcut={sendShortcut}
+            copyAsRichText={copyAsRichText}
+            editorMode={editorMode}
+            onSetCopyFormat={applyCopyFormat}
+          />
         </div>
       </div>
     </>

@@ -115,11 +115,14 @@ Buttons are icon-only (lucide-react icons). The Rich/Plain toggle group uses tex
 
 ### 6.4 Send to Clipboard Button
 
-A prominent primary-action button sits in the **footer bar at the bottom of the editor pane**. It is a presentational component (`SendToClipboardButton`) that receives an `onSend` callback and the `sendShortcut`, decoupled from the editor internals:
+A prominent primary-action **split button** sits in the **footer bar at the bottom of the editor pane**. It is a presentational component (`SendToClipboardButton`) that receives `onSend`, `sendShortcut`, `copyAsRichText`, `editorMode`, and `onSetCopyFormat`, decoupled from the editor internals:
 
-- **Label:** `Send to clipboard (⌘↵)` — the shortcut hint is rendered dynamically using `formatHotkey(sendShortcut)` from the current `send_shortcut` setting
-- **Style:** `bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm`
-- **Behavior:** same as the configured keyboard shortcut (default `⌘Return`) — copy Markdown (and optionally HTML) to clipboard, save to history, clear draft, hide window
+- **Layout:** a main button plus a ▾ dropdown (GitHub merge-button style). The dropdown lists **Rich text** / **Markdown** as a radio-style choice with a check on the current format; selecting one calls `onSetCopyFormat(rich)`.
+- **Label:** reflects the current format — `Send Rich Text to Clipboard (⌘↵)` or `Send Markdown to Clipboard (⌘↵)`. The shortcut hint is rendered dynamically via `formatHotkey(sendShortcut)`.
+- **Style:** `bg-blue-500 text-white` split into `rounded-l` (main) and `rounded-r` (dropdown) segments.
+- **Behavior:** the main button performs the copy in the current format (copy Markdown, and HTML too when Rich Text) — save to history, clear draft, hide window.
+- **Plain mode:** the format is forced to Markdown; the ▾ dropdown is disabled. Switching back to Rich mode restores the previously selected format (the saved `copy_as_rich_text` preference is preserved untouched while in Plain mode).
+- The format can also be changed from the **Copy Format** submenu (app menu + tray) and the `⌘⇧M` shortcut; all surfaces stay in sync via `set_copy_format_menu`.
 
 ---
 
@@ -142,8 +145,8 @@ Triggered by the "Send to clipboard" button anchored to the bottom-right of the 
 
 **Steps executed in order:**
 
-1. Read the current Markdown from the live editor (`$convertToMarkdownString`). If "Copy as Rich Text" is enabled in Settings (Rich mode only), generate clean semantic HTML from that Markdown via a throwaway editor seeded with the **standard** Lexical nodes and `@lexical/html` (`src/editor/markdownToHtml.ts`). HTML is derived from the Markdown — not from the live editor's source-visible custom nodes — so links/code/lists export as proper `<a>` / `<pre>` / `<ul>` rather than raw Markdown markers.
-2. Write the Markdown text to the system clipboard. If "Copy as Rich Text" is enabled, write both HTML and plain Markdown via `write_html(html, fallback_text)` so that apps supporting rich paste receive formatted content.
+1. Read the current Markdown from the live editor (`$convertToMarkdownString`). If the copy format is **Rich Text** (`copy_as_rich_text` true and Rich mode), generate clean semantic HTML from that Markdown via a throwaway editor seeded with the **standard** Lexical nodes and `@lexical/html` (`src/editor/markdownToHtml.ts`). HTML is derived from the Markdown — not from the live editor's source-visible custom nodes — so links/code/lists export as proper `<a>` / `<pre>` / `<ul>` rather than raw Markdown markers.
+2. Write the Markdown text to the system clipboard. If the format is Rich Text, write both HTML and plain Markdown via `write_html(html, fallback_text)` so that apps supporting rich paste receive formatted content.
 3. Save the document to history with the current timestamp (skipped if the content is empty or whitespace-only).
 4. Clear `draft.md` (reset to empty).
 5. Hide the editor window.
@@ -212,6 +215,10 @@ A small icon in the status bar provides a dropdown menu for quick access:
 | History…           | Show the editor window with history open   |
 | Settings…          | Open settings panel                        |
 | —                  | Separator                                  |
+| Copy Format ▶      | Submenu to select the copy format          |
+| — Rich text        | Set copy format to Rich Text (checkmark = active; disabled in Plain mode) |
+| — Markdown         | Set copy format to Markdown (checkmark = active) |
+| —                  | Separator                                  |
 | Quit Popmark       | Terminate the app                          |
 
 ---
@@ -240,6 +247,11 @@ The standard menu bar is active when the editor window is focused. It provides:
 | Show History Folder in Finder |          | Open the history directory in Finder / system file manager |
 | —                           |          | Separator                     |
 | Send to Clipboard           | (configurable, default ⌘↵) | Copy to clipboard, save to history, clear draft, hide window |
+| Copy Format ▶               |          | Submenu to select the copy format                  |
+| — Rich text                 | ⌘⇧M      | Set copy format to Rich Text (checkmark = active; disabled in Plain mode) |
+| — Markdown                  |          | Set copy format to Markdown (checkmark = active; disabled in Plain mode) |
+
+`⌘⇧M` toggles between Rich Text and Markdown (only effective in Rich mode; Plain mode is forced to Markdown).
 
 **View menu**
 
@@ -303,7 +315,6 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Send to Clipboard shortcut | `⌘↵` (`super+enter`) | Key combination to trigger "Send to Clipboard" from inside the editor. Captured via the Settings UI; stored as `send_shortcut` in `settings.json`. This is a window-local shortcut (not a system-level global shortcut). |
 | Launch at login      | Off                | Register as a login item              |
 | Editor mode          | `rich`             | `rich` = source-visible WYSIWYG; `plain` = raw Markdown textarea |
-| Copy as Rich Text    | Off                | When enabled (Rich mode only), "Send to Clipboard" copies HTML + plain Markdown so rich formatting is preserved in apps that support it |
 | Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
 | Notify on copy       | On                 | When enabled, an OS notification is sent after "Send to Clipboard". Stored as `notify_on_copy` in `settings.json`. |
 | Show syntax markers  | On                 | When enabled (Rich mode only), displays Markdown syntax markers as CSS pseudo-elements. Applies the `.show-syntax-markers` class to the `ContentEditable`. Stored as `rich_show_syntax_markers` in `settings.json`. Defaults to `true` when absent. |
@@ -312,6 +323,8 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Rich mode font size  | null (default)     | Custom `font-size` (px) applied to the Rich mode `ContentEditable` via inline style |
 | Plain mode font family | null (browser default) | Custom `font-family` applied to the Plain mode `<textarea>` via inline style |
 | Plain mode font size | null (default)     | Custom `font-size` (px) applied to the Plain mode `<textarea>` via inline style |
+
+The copy format preference (`copy_as_rich_text`) is **not** part of the Settings UI. It is still persisted in `settings.json` but is managed from the "Send to Clipboard" split button, the Copy Format menus, and `⌘⇧M` (via `save_copy_as_rich_text`). Like `editor_mode`, `save_settings` preserves the on-disk value so saving the Settings panel never clobbers the chosen format.
 
 ### 12.1 settings.json Schema
 
@@ -362,7 +375,7 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 |--------------------------|-----------------|----------------------------------------------|
 | `get_draft`              | Rust → React    | Load current draft content on window open    |
 | `save_draft`             | React → Rust    | Persist draft (debounced auto-save)          |
-| `copy_to_clipboard`      | React → Rust    | Copy to clipboard (plain Markdown + optional HTML when Copy as Rich Text is enabled), save history, clear draft |
+| `copy_to_clipboard`      | React → Rust    | Copy to clipboard (plain Markdown + optional HTML when the Rich Text format is selected), save history, clear draft |
 | `read_clipboard_text`    | React → Rust    | Read plain text from clipboard (used by Paste and Match Style) |
 | `list_history`           | Rust → React    | Return history index entries                 |
 | `get_history_entry`      | Rust → React    | Return content of a specific history file    |
@@ -371,7 +384,9 @@ All files are managed by the Tauri backend (Rust). The frontend never accesses t
 | `save_settings`          | React → Rust    | Persist settings changes; emits `settings-changed` event to the main window |
 | `new_document`           | React → Rust    | Auto-save current draft to history (if non-empty), then clear draft |
 | `save_editor_mode`       | React → Rust    | Persist the selected editor mode (`rich` or `plain`) to settings.json |
+| `save_copy_as_rich_text` | React → Rust    | Persist the copy format preference (`copy_as_rich_text`) to settings.json |
 | `set_editor_mode_menu`   | React → Rust    | Sync the View > Editor Mode submenu checkmarks to the current mode |
+| `set_copy_format_menu`   | React → Rust    | Sync the Copy Format submenu (app menu + tray) checkmarks and enabled state; Plain mode forces Markdown and disables the items |
 | `show_settings_window`   | React → Rust    | Show the settings window and unregister the global shortcut |
 | `hide_settings_window`   | React → Rust    | Hide the settings window and re-register the global shortcut |
 | `set_hotkey_capture_active` | React → Rust | Unregister (active=true) or re-register (active=false) the global shortcut during hotkey capture |

@@ -19,6 +19,7 @@ interface UseMenuEventListenersOptions {
   copyToClipboard: () => void;
   setCopyAsRichText: (v: boolean) => void;
   setSendShortcut: (v: string) => void;
+  applyCopyFormat: (rich: boolean) => void;
   setIsHistoryOpen: (open: boolean) => void;
   onToggleHistory: () => void;
   onClearHistory: () => void;
@@ -35,6 +36,7 @@ export function useMenuEventListeners({
   copyToClipboard,
   setCopyAsRichText,
   setSendShortcut,
+  applyCopyFormat,
   setIsHistoryOpen,
   onToggleHistory,
   onClearHistory,
@@ -106,6 +108,16 @@ export function useMenuEventListeners({
       handleModeToggle();
     },
     [handleModeToggle, editorMode],
+  );
+
+  useMenuEvent<string>(
+    "menu-set-copy-format",
+    (event) => {
+      // Plain mode forces Markdown; ignore format changes there.
+      if (editorMode === "plain") return;
+      applyCopyFormat(event.payload === "rich");
+    },
+    [applyCopyFormat, editorMode],
   );
 
   useMenuEvent("menu-clear-history", onClearHistory, [onClearHistory]);

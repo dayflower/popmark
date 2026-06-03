@@ -18,6 +18,10 @@ pub struct MenuState {
     pub history_item: Option<CheckMenuItem<tauri::Wry>>,
     pub editor_mode_rich: Option<CheckMenuItem<tauri::Wry>>,
     pub editor_mode_plain: Option<CheckMenuItem<tauri::Wry>>,
+    pub copy_format_rich: Option<CheckMenuItem<tauri::Wry>>,
+    pub copy_format_markdown: Option<CheckMenuItem<tauri::Wry>>,
+    pub tray_copy_format_rich: Option<CheckMenuItem<tauri::Wry>>,
+    pub tray_copy_format_markdown: Option<CheckMenuItem<tauri::Wry>>,
     pub recall_last: Option<MenuItem<tauri::Wry>>,
 }
 
@@ -302,9 +306,11 @@ pub fn get_settings(app: AppHandle) -> Result<Settings, String> {
 
 #[tauri::command]
 pub fn save_settings(app: AppHandle, mut settings: Settings) -> Result<(), String> {
-    // Preserve the current editor_mode — managed exclusively via save_editor_mode
+    // Preserve fields managed outside the settings panel: editor_mode
+    // (save_editor_mode) and copy_as_rich_text (save_copy_as_rich_text).
     if let Ok(current) = load_settings_from_disk(&app) {
         settings.editor_mode = current.editor_mode;
+        settings.copy_as_rich_text = current.copy_as_rich_text;
     }
     save_settings_to_disk(&app, &settings)?;
 
@@ -350,6 +356,13 @@ pub fn list_fonts() -> Result<Vec<String>, String> {
 pub fn save_editor_mode(app: AppHandle, mode: String) -> Result<(), String> {
     let mut settings = load_settings_from_disk(&app)?;
     settings.editor_mode = mode;
+    save_settings_to_disk(&app, &settings)
+}
+
+#[tauri::command]
+pub fn save_copy_as_rich_text(app: AppHandle, value: bool) -> Result<(), String> {
+    let mut settings = load_settings_from_disk(&app)?;
+    settings.copy_as_rich_text = value;
     save_settings_to_disk(&app, &settings)
 }
 
@@ -593,6 +606,27 @@ pub fn set_editor_mode_menu(state: tauri::State<'_, AppState>, mode: String) {
     }
     if let Some(item) = menu.editor_mode_plain.as_ref() {
         let _ = item.set_checked(!is_rich);
+    }
+}
+
+#[tauri::command]
+pub fn set_copy_format_menu(state: tauri::State<'_, AppState>, rich: bool, enabled: bool) {
+    // In plain mode (enabled == false) the copy format is forced to markdown,
+    // so reflect markdown as checked and disable both items.
+    let show_rich = rich && enabled;
+    let menu = state.menu.lock().expect("mutex poisoned: menu");
+    for (rich_item, md_item) in [
+        (&menu.copy_format_rich, &menu.copy_format_markdown),
+        (&menu.tray_copy_format_rich, &menu.tray_copy_format_markdown),
+    ] {
+        if let Some(item) = rich_item.as_ref() {
+            let _ = item.set_checked(show_rich);
+            let _ = item.set_enabled(enabled);
+        }
+        if let Some(item) = md_item.as_ref() {
+            let _ = item.set_checked(!show_rich);
+            let _ = item.set_enabled(enabled);
+        }
     }
 }
 
