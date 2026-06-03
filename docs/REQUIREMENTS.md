@@ -39,15 +39,24 @@ Popmark is an application with a tray icon and standard menu bar, providing a qu
 
 ## 5. Send to Clipboard
 
-Triggered by the "Send to clipboard" button anchored to the bottom-right of the editor pane (also available via keyboard shortcut — configurable in Settings, default `⌘↵`):
+Triggered by the "Send to Clipboard" split button anchored to the bottom-right of the editor pane (also available via keyboard shortcut — configurable in Settings, default `⌘↵`):
 
-1. Current editor content is serialized to plain Markdown and written to the system clipboard. If "Copy as Rich Text" is enabled in Settings (Rich mode only), the content is also written as HTML so that rich formatting is preserved when pasting into applications that support it.
+1. Current editor content is serialized to plain Markdown and written to the system clipboard. If the copy format is set to **Rich Text** (Rich mode only), the content is also written as HTML so that rich formatting is preserved when pasting into applications that support it.
 2. If the content is non-empty, the document is saved to history with a timestamp.
 3. The draft is cleared.
 4. The editor window is hidden.
 5. An OS notification ("Copied to clipboard") is sent as a brief confirmation, if "Notify on copy" is enabled in Settings (default: on). Requires notification permission (one-time system prompt); silenced during Focus / Do Not Disturb.
 
 The next time the editor is opened it shows a blank document.
+
+### Copy format (Rich Text / Markdown)
+
+The copy format is chosen directly at the point of copying rather than buried in Settings:
+
+- The "Send to Clipboard" button is a **split button** (like GitHub's merge button). Its ▾ dropdown lets you pick **Rich text** or **Markdown**; the main button label reflects the current choice ("Send Rich Text to Clipboard" / "Send Markdown to Clipboard").
+- The same toggle is available from the **Copy Format** submenu in the app menu bar and the tray (status bar) icon menu, and via the **`⌘⇧M`** keyboard shortcut.
+- The chosen format is persisted across launches.
+- **Plain mode always copies Markdown.** While in Plain mode the format is forced to Markdown and the toggle is disabled; switching back to Rich mode restores the previously selected format.
 
 ---
 
@@ -93,7 +102,7 @@ The next time the editor is opened it shows a blank document.
 
 ## 8. App Lifecycle & Menu Bar
 
-- By default, the app runs as a standard application: a Dock icon is visible, and the standard menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Show History Folder in Finder, Send to Clipboard), an Edit menu, a Window menu, a Help menu, and access to History and Settings from the app menu. A tray icon also appears in the status bar for quick access.
+- By default, the app runs as a standard application: a Dock icon is visible, and the standard menu bar is available when the editor window is focused. The menu bar provides a File menu (New Document, Export, Show History Folder in Finder, Send to Clipboard, Copy Format), an Edit menu, a Window menu, a Help menu, and access to History and Settings from the app menu. A tray icon also appears in the status bar for quick access (including the Copy Format toggle).
 - When the "Show Dock icon" setting is disabled, the app hides from the Dock, Cmd+Tab, and the menu bar (macOS Accessory activation policy). The system tray icon and global hotkey remain the access points in this mode.
 - The app starts at login (user-configurable).
 - The app **never quits** unless the user explicitly selects "Quit" from the tray menu or presses Cmd+Q. Closing the editor window hides it; it does not terminate the process.
@@ -112,7 +121,6 @@ The next time the editor is opened it shows a blank document.
 | Send to Clipboard shortcut | Key combination to trigger "Send to Clipboard" from inside the editor (default: `⌘↵`). Configurable independently from the global hotkey. |
 | Launch at login | Whether the app starts automatically when the user logs in |
 | Editor mode | Whether the editor opens in **Rich** (source-visible WYSIWYG) or **Plain** (raw Markdown textarea) mode |
-| Copy as Rich Text | When enabled (Rich mode only), "Send to Clipboard" copies the content as both HTML (rich text) and plain Markdown, preserving formatting in apps that support rich paste |
 | Max history entries | Maximum number of history entries to retain. Empty or 0 means unlimited. When a new entry is saved and the count exceeds the limit, the oldest entries are deleted automatically. |
 | Rich mode font family | Custom font family for the Rich mode editor. When empty, the browser default is used. |
 | Rich mode font size | Custom font size (in px) for the Rich mode editor. When empty, the default size is used. |

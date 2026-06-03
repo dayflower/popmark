@@ -32,6 +32,10 @@ pub fn run() {
                 history_item: None,
                 editor_mode_rich: None,
                 editor_mode_plain: None,
+                copy_format_rich: None,
+                copy_format_markdown: None,
+                tray_copy_format_rich: None,
+                tray_copy_format_markdown: None,
                 recall_last: None,
             }),
         })
@@ -79,9 +83,11 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::save_editor_mode,
+            commands::save_copy_as_rich_text,
             commands::list_fonts,
             commands::set_history_panel_open,
             commands::set_editor_mode_menu,
+            commands::set_copy_format_menu,
             commands::show_settings_window,
             commands::hide_settings_window,
             commands::set_hotkey_capture_active,
@@ -137,10 +143,11 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         false,
         Some("cmd+h"),
     )?;
-    let saved_mode = commands::get_settings(app.clone())
-        .unwrap_or_default()
-        .editor_mode;
-    let is_rich = saved_mode != "plain";
+    let saved_settings = commands::get_settings(app.clone()).unwrap_or_default();
+    let is_rich = saved_settings.editor_mode != "plain";
+    // Copy format is forced to markdown in plain mode; only reflect the saved
+    // rich preference when actually in rich mode.
+    let copy_as_rich = saved_settings.copy_as_rich_text && is_rich;
     let menu_editor_mode_rich_item = CheckMenuItem::with_id(
         app,
         "menu-set-editor-mode-rich",
@@ -162,6 +169,28 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         "Editor Mode",
         true,
         &[&menu_editor_mode_rich_item, &menu_editor_mode_plain_item],
+    )?;
+    let menu_copy_format_rich_item = CheckMenuItem::with_id(
+        app,
+        "menu-set-copy-format-rich",
+        "Rich text",
+        is_rich,
+        copy_as_rich,
+        Some("cmd+shift+m"),
+    )?;
+    let menu_copy_format_markdown_item = CheckMenuItem::with_id(
+        app,
+        "menu-set-copy-format-markdown",
+        "Markdown",
+        is_rich,
+        !copy_as_rich,
+        None::<&str>,
+    )?;
+    let menu_copy_format_submenu = Submenu::with_items(
+        app,
+        "Copy Format",
+        true,
+        &[&menu_copy_format_rich_item, &menu_copy_format_markdown_item],
     )?;
     let menu_clear_history_item = MenuItem::with_id(
         app,
@@ -285,6 +314,7 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                     &menu_show_history_folder_item,
                     &PredefinedMenuItem::separator(app)?,
                     &menu_send_to_clipboard_item,
+                    &menu_copy_format_submenu,
                 ],
             )?,
             &Submenu::with_items(
@@ -338,6 +368,8 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         menu_state.history_item = Some(menu_toggle_history_item);
         menu_state.editor_mode_rich = Some(menu_editor_mode_rich_item);
         menu_state.editor_mode_plain = Some(menu_editor_mode_plain_item);
+        menu_state.copy_format_rich = Some(menu_copy_format_rich_item);
+        menu_state.copy_format_markdown = Some(menu_copy_format_markdown_item);
     }
     app.on_menu_event(|app, event| match event.id().as_ref() {
         "menu-toggle-history" => {
@@ -404,6 +436,14 @@ fn setup_macos_menu(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             }
             emit_to_main_window(app, "menu-set-editor-mode", "plain");
         }
+        "menu-set-copy-format-rich" => {
+            set_copy_format_checks(app, true);
+            emit_to_main_window(app, "menu-set-copy-format", "rich");
+        }
+        "menu-set-copy-format-markdown" => {
+            set_copy_format_checks(app, false);
+            emit_to_main_window(app, "menu-set-copy-format", "markdown");
+        }
         "menu-clear-history" => {
             emit_to_main_window(app, "menu-clear-history", ());
         }
@@ -441,6 +481,31 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let settings_item =
         MenuItem::with_id(app, "open-settings", "Settings\u{2026}", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit-popmark", "Quit Popmark", true, None::<&str>)?;
+    let saved_settings = commands::get_settings(app.clone()).unwrap_or_default();
+    let is_rich = saved_settings.editor_mode != "plain";
+    let copy_as_rich = saved_settings.copy_as_rich_text && is_rich;
+    let tray_copy_format_rich_item = CheckMenuItem::with_id(
+        app,
+        "tray-set-copy-format-rich",
+        "Rich text",
+        is_rich,
+        copy_as_rich,
+        None::<&str>,
+    )?;
+    let tray_copy_format_markdown_item = CheckMenuItem::with_id(
+        app,
+        "tray-set-copy-format-markdown",
+        "Markdown",
+        is_rich,
+        !copy_as_rich,
+        None::<&str>,
+    )?;
+    let tray_copy_format_submenu = Submenu::with_items(
+        app,
+        "Copy Format",
+        true,
+        &[&tray_copy_format_rich_item, &tray_copy_format_markdown_item],
+    )?;
     let tray_menu = Menu::with_items(
         app,
         &[
@@ -448,9 +513,17 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             &history_item,
             &settings_item,
             &PredefinedMenuItem::separator(app)?,
+            &tray_copy_format_submenu,
+            &PredefinedMenuItem::separator(app)?,
             &quit_item,
         ],
     )?;
+    {
+        let app_state = app.state::<AppState>();
+        let mut menu_state = app_state.menu.lock().expect("mutex poisoned: menu");
+        menu_state.tray_copy_format_rich = Some(tray_copy_format_rich_item);
+        menu_state.tray_copy_format_markdown = Some(tray_copy_format_markdown_item);
+    }
     let mut builder =
         TrayIconBuilder::new()
             .menu(&tray_menu)
@@ -464,6 +537,14 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 }
                 "open-settings" => {
                     let _ = commands::show_settings_window(app.clone());
+                }
+                "tray-set-copy-format-rich" => {
+                    set_copy_format_checks(app, true);
+                    emit_to_main_window(app, "menu-set-copy-format", "rich");
+                }
+                "tray-set-copy-format-markdown" => {
+                    set_copy_format_checks(app, false);
+                    emit_to_main_window(app, "menu-set-copy-format", "markdown");
                 }
                 "quit-popmark" => {
                     app.exit(0);
@@ -486,6 +567,24 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     }
     builder.build(app)?;
     Ok(())
+}
+
+// Immediately correct the Copy Format checkmarks (app menu + tray); macOS
+// auto-toggles on click. The frontend re-syncs via set_copy_format_menu.
+fn set_copy_format_checks(app: &AppHandle, rich: bool) {
+    let app_state = app.state::<AppState>();
+    let menu = app_state.menu.lock().expect("mutex poisoned: menu");
+    for (rich_item, md_item) in [
+        (&menu.copy_format_rich, &menu.copy_format_markdown),
+        (&menu.tray_copy_format_rich, &menu.tray_copy_format_markdown),
+    ] {
+        if let Some(item) = rich_item.as_ref() {
+            let _ = item.set_checked(rich);
+        }
+        if let Some(item) = md_item.as_ref() {
+            let _ = item.set_checked(!rich);
+        }
+    }
 }
 
 fn emit_to_main_window(app: &AppHandle, event: &str, payload: impl Serialize + Clone) {
