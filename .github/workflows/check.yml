@@ -26,7 +26,9 @@ jobs:
         run: npm run build
 
   rust:
-    runs-on: macos-latest
+    # Match the release build's macOS SDK (see release.yml) so CI checks the
+    # same toolchain that ships.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 

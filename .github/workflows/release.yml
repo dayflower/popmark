@@ -44,7 +44,10 @@ jobs:
 
   build-and-release:
     name: Build and release
-    runs-on: macos-latest
+    # Build against the latest macOS SDK so window chrome (traffic-light
+    # positions) renders natively on each OS. Building with an older SDK than
+    # the running OS (e.g. SDK 15 on macOS 26 Tahoe) shifts the buttons down.
+    runs-on: macos-26
     needs: check-version
     permissions:
       contents: write
