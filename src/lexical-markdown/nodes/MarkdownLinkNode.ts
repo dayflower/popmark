@@ -1,4 +1,8 @@
 import {
+  $createTextNode,
+  type DOMConversionMap,
+  type DOMConversionOutput,
+  type DOMExportOutput,
   type EditorConfig,
   ElementNode,
   type LexicalNode,
@@ -55,6 +59,29 @@ export class MarkdownLinkNode extends ElementNode {
     return false;
   }
 
+  // Emit a semantic anchor for HTML export (`$generateHtmlFromNodes`). The
+  // editing children are the literal Markdown syntax (`[`, label, `](`, url,
+  // `)`), so skip them via `$getChildNodes` and build `<a>` from the stored
+  // url/label instead.
+  exportDOM(): DOMExportOutput {
+    const element = document.createElement("a");
+    element.setAttribute("href", this.__url);
+    element.textContent = this.__label;
+    return { element, $getChildNodes: () => [] };
+  }
+
+  // Counterpart to exportDOM so imported HTML round-trips. An `<a>` is converted
+  // back to the literal `[label](url)` text; the link node transform in
+  // MarkdownLinkPlugin then rebuilds the rich MarkdownLinkNode from it.
+  static importDOM(): DOMConversionMap | null {
+    return {
+      a: () => ({
+        conversion: $convertAnchorElement,
+        priority: 1,
+      }),
+    };
+  }
+
   static importJSON(
     serializedNode: SerializedMarkdownLinkNode,
   ): MarkdownLinkNode {
@@ -99,6 +126,16 @@ export function $isMarkdownLinkNode(
   node: LexicalNode | null | undefined,
 ): node is MarkdownLinkNode {
   return node instanceof MarkdownLinkNode;
+}
+
+function $convertAnchorElement(domNode: HTMLElement): DOMConversionOutput {
+  const href = domNode.getAttribute("href") ?? "";
+  const label = domNode.textContent ?? "";
+  const markdown = href
+    ? `[${label.length > 0 ? label : href}](${href})`
+    : label;
+  // Children are folded into `markdown`, so drop them to avoid duplication.
+  return { node: $createTextNode(markdown), forChild: () => null };
 }
 
 function createMarkdownLinkTextNodeClass(
