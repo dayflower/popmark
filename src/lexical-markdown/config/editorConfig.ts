@@ -112,6 +112,16 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Returns true for keys that must never be copied between objects: assigning to
+ * them would mutate `Object.prototype` (prototype pollution) instead of the
+ * target. Written as explicit `===` comparisons so static analysis (CodeQL)
+ * recognizes it as a prototype-pollution barrier.
+ */
+function isForbiddenKey(key: string): boolean {
+  return key === "__proto__" || key === "constructor" || key === "prototype";
+}
+
+/**
  * Recursively merges `source` into `target`, descending into nested plain
  * objects (e.g. `text`, `heading`, `list`) and overwriting leaf strings. Used
  * to layer the curated `classNames` and the raw `theme` override on top of the
@@ -122,10 +132,7 @@ function deepMergeInto(
   source: Record<string, unknown>,
 ): Record<string, unknown> {
   for (const key of Object.keys(source)) {
-    // popmark patch: guard against prototype pollution (CodeQL).
-    if (key === "__proto__" || key === "constructor" || key === "prototype") {
-      continue;
-    }
+    if (isForbiddenKey(key)) continue;
     const sourceValue = source[key];
     if (sourceValue === undefined) continue;
     if (isPlainObject(sourceValue)) {

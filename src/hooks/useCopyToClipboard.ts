@@ -2,8 +2,8 @@ import { $convertToMarkdownString } from "@lexical/markdown";
 import { invoke } from "@tauri-apps/api/core";
 import type { LexicalEditor } from "lexical";
 import { type RefObject, useCallback } from "react";
-import { POPMARK_TRANSFORMERS } from "../editor/markdownTheme";
-import { markdownToHtml } from "../editor/markdownToHtml";
+import { POPMARK_FEATURES, POPMARK_TRANSFORMERS } from "../editor/markdownTheme";
+import { markdownToHtml } from "../lexical-markdown";
 import type { EditorMode } from "../types/settings";
 
 interface UseCopyToClipboardOptions {
@@ -29,10 +29,14 @@ export function useCopyToClipboard({
         ? content
         : editor.getEditorState().read(() => $convertToMarkdownString(POPMARK_TRANSFORMERS));
 
-    // HTML for rich paste is generated from the markdown through standard
-    // Lexical nodes (clean semantic HTML), not the source-visible live editor.
+    // HTML for rich paste is generated from the markdown through the vendored
+    // editor's headless `markdownToHtml`, whose custom nodes emit clean semantic
+    // HTML (links, `<pre><code>`) — unlike the source-visible live editor. Use
+    // the same feature set the live editor renders with.
     const htmlContent =
-      copyAsRichText && editorMode === "rich" ? markdownToHtml(markdown) : undefined;
+      copyAsRichText && editorMode === "rich"
+        ? markdownToHtml(markdown, { features: POPMARK_FEATURES })
+        : undefined;
     invoke("copy_to_clipboard", { content: markdown, htmlContent });
   }, [editorMode, content, copyAsRichText, editorRef]);
 

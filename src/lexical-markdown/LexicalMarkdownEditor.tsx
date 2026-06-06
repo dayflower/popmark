@@ -1,10 +1,10 @@
 import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   ContentEditable,
   type ContentEditableProps,
 } from "@lexical/react/LexicalContentEditable";
+import { EditorRefPlugin } from "@lexical/react/LexicalEditorRefPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
@@ -12,7 +12,13 @@ import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPl
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import type { EditorThemeClasses, LexicalEditor } from "lexical";
-import { type ReactNode, type RefObject, useEffect, useMemo, useRef } from "react";
+import {
+  type ReactNode,
+  type RefCallback,
+  type RefObject,
+  useMemo,
+  useRef,
+} from "react";
 import {
   createInitialConfig,
   type MarkdownClassNames,
@@ -95,27 +101,13 @@ export interface LexicalMarkdownEditorProps {
    */
   blockquoteExitOnEmptyEnter?: boolean;
   /**
-   * popmark patch: receives the live `LexicalEditor` instance so the host can
-   * read editor state imperatively (e.g. generate HTML for the clipboard) and
-   * control focus. Not part of upstream etude-lexical-markdown.
+   * Receives the underlying Lexical editor instance. Use it to call standard
+   * Lexical APIs such as `$generateHtmlFromNodes` from `@lexical/html`:
+   * `editorRef.current?.read(() => $generateHtmlFromNodes(editorRef.current!))`.
    */
-  editorRef?: RefObject<LexicalEditor | null>;
-}
-
-// popmark patch: publishes the live editor instance to a host-provided ref.
-function EditorRefPlugin({
-  editorRef,
-}: {
-  editorRef: RefObject<LexicalEditor | null>;
-}) {
-  const [editor] = useLexicalComposerContext();
-  useEffect(() => {
-    editorRef.current = editor;
-    return () => {
-      editorRef.current = null;
-    };
-  }, [editor, editorRef]);
-  return null;
+  editorRef?:
+    | RefCallback<LexicalEditor>
+    | RefObject<LexicalEditor | null | undefined>;
 }
 
 export default function LexicalMarkdownEditor({

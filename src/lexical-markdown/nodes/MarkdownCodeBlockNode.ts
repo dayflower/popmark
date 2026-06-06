@@ -5,6 +5,7 @@ import {
   $isTextNode,
   type DOMConversionMap,
   type DOMConversionOutput,
+  type DOMExportOutput,
   type EditorConfig,
   ElementNode,
   type LexicalNode,
@@ -62,6 +63,21 @@ export class MarkdownCodeBlockNode extends ElementNode {
         priority: 1,
       }),
     };
+  }
+
+  // Emit a semantic `<pre><code>` for HTML export (`$generateHtmlFromNodes`).
+  // The editing children include the literal ``` fences and per-line highlight
+  // nodes, so skip them via `$getChildNodes` and use `getCodeText()` to
+  // reconstruct just the code body.
+  exportDOM(): DOMExportOutput {
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+    if (this.__language) {
+      code.className = `language-${this.__language}`;
+    }
+    code.textContent = this.getCodeText() ?? this.getTextContent();
+    pre.appendChild(code);
+    return { element: pre, $getChildNodes: () => [] };
   }
 
   static importJSON(

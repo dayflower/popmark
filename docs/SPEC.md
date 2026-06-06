@@ -58,7 +58,7 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 
 ## 6. WYSIWYG Editor (Lexical)
 
-The rich editor is built on the **vendored `LexicalMarkdownEditor` component** (`src/lexical-markdown/`, copied from the sibling [`etude-lexical-markdown`](https://github.com/dayflower/etude-lexical-markdown) project). It is a controlled Markdown component: it takes a `value` (Markdown string) and emits `onChange(markdown)`; Markdown↔Lexical conversion, the custom link/code-block nodes, blockquote/list/task-list behavior, and Prism-based code highlighting all live inside it. popmark applies two local patches to the vendored copy (both commented `popmark patch`): an `editorRef` prop that exposes the live `LexicalEditor` (used for HTML clipboard export and focus control), and link opening routed through the Tauri opener plugin instead of `window.open`.
+The rich editor is built on the **vendored `LexicalMarkdownEditor` component** (`src/lexical-markdown/`, copied from the sibling [`etude-lexical-markdown`](https://github.com/dayflower/etude-lexical-markdown) project). It is a controlled Markdown component: it takes a `value` (Markdown string) and emits `onChange(markdown)`; Markdown↔Lexical conversion, the custom link/code-block nodes, blockquote/list/task-list behavior, and Prism-based code highlighting all live inside it. The vendored copy tracks upstream (currently v0.2.0): it exposes an `editorRef` prop for the live `LexicalEditor` (used for clipboard export and focus control) and a headless `markdownToHtml` helper whose custom nodes emit clean semantic HTML. popmark applies a single local patch to the vendored copy (commented `popmark patch`): link opening routed through the Tauri opener plugin instead of `window.open`.
 
 ### 6.0 Single Markdown String Architecture
 
@@ -145,7 +145,7 @@ Triggered by the "Send to clipboard" button anchored to the bottom-right of the 
 
 **Steps executed in order:**
 
-1. Read the current Markdown from the live editor (`$convertToMarkdownString`). If the copy format is **Rich Text** (`copy_as_rich_text` true and Rich mode), generate clean semantic HTML from that Markdown via a throwaway editor seeded with the **standard** Lexical nodes and `@lexical/html` (`src/editor/markdownToHtml.ts`). HTML is derived from the Markdown — not from the live editor's source-visible custom nodes — so links/code/lists export as proper `<a>` / `<pre>` / `<ul>` rather than raw Markdown markers.
+1. Read the current Markdown from the live editor (`$convertToMarkdownString`). If the copy format is **Rich Text** (`copy_as_rich_text` true and Rich mode), generate clean semantic HTML from that Markdown via the vendored editor's headless `markdownToHtml` helper (`src/lexical-markdown/markdownToHtml.ts`, called with `POPMARK_FEATURES`). It spins up a headless Lexical editor with the editor's own nodes, whose `exportDOM` emits semantic HTML — so links/code/lists export as proper `<a>` / `<pre>` / `<ul>` rather than the live editor's source-visible Markdown markers.
 2. Write the Markdown text to the system clipboard. If the format is Rich Text, write both HTML and plain Markdown via `write_html(html, fallback_text)` so that apps supporting rich paste receive formatted content.
 3. Save the document to history with the current timestamp (skipped if the content is empty or whitespace-only).
 4. Clear `draft.md` (reset to empty).
