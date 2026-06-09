@@ -10,8 +10,14 @@ import {
   MarkdownLinkUrlNode,
 } from "../nodes/MarkdownLinkNode";
 
-const LINK_IMPORT_REGEX = /(?:\[([^[]+)\])(?:\(([^()]+)\))/;
-const LINK_SHORTCUT_REGEX = /(?:\[([^[]+)\])(?:\(([^()]+)\))$/;
+// Accept backslash-escaped brackets/parens (`\[`, `\]`, `\(`, `\)`) so a label
+// or URL carrying those characters parses as a link, matching the live-typing
+// transform in MarkdownLinkPlugin. The escaped form is stored on the node, so
+// `export` reproduces the same escaped Markdown.
+const LINK_IMPORT_REGEX =
+  /(?:\[((?:\\.|[^[\]\\])+)\])(?:\(((?:\\.|[^()\\])+)\))/;
+const LINK_SHORTCUT_REGEX =
+  /(?:\[((?:\\.|[^[\]\\])+)\])(?:\(((?:\\.|[^()\\])+)\))$/;
 
 export const LINK_TRANSFORMER: TextMatchTransformer = {
   type: "text-match",
