@@ -67,8 +67,15 @@ body {
   line-height: 0;
 }
 
-/* … and show only the label, styled as a link. */
+/* … and show only the decoded label, styled as a link. The raw label text is
+   collapsed and the decoded value (backslash escapes removed, exposed as
+   data-display) is rendered via ::before, so escape chars like `\[` don't leak. */
 .md-link:not([data-focused]) .md-link-label {
+  font-size: 0;
+  line-height: 0;
+}
+.md-link:not([data-focused]) .md-link-label::before {
+  content: attr(data-display);
   color: #2563eb;
   cursor: pointer;
   font-size: 1rem;
@@ -76,7 +83,7 @@ body {
   text-decoration: underline;
 }
 @media (prefers-color-scheme: dark) {
-  .md-link:not([data-focused]) .md-link-label {
+  .md-link:not([data-focused]) .md-link-label::before {
     color: #60a5fa;
   }
 }
@@ -288,6 +295,13 @@ body {
 [data-markdown-markup-mode] .md-link .md-link-label {
   text-decoration: none;
   cursor: text;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+/* Markup mode shows the literal (escaped) source, so suppress the decoded
+   label pseudo-element used by the rich (unfocused) rendering. */
+[data-markdown-markup-mode] .md-link .md-link-label::before {
+  content: none;
 }
 [data-markdown-markup-mode] .md-link .md-link-url {
   text-decoration: underline;

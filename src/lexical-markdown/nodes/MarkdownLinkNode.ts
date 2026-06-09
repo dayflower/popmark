@@ -14,6 +14,11 @@ import {
 } from "lexical";
 import type { MarkdownTheme } from "../config/editorConfig";
 import { DATA_ATTR, NODE_TYPES } from "../constants";
+import {
+  escapeLinkLabel,
+  escapeLinkUrl,
+  unescapeMarkdown,
+} from "../markdownLinkEscape";
 import { $restoreTextNodeProps } from "./textNodeSerialization";
 
 export type SerializedMarkdownLinkNode = Spread<
@@ -42,7 +47,7 @@ export class MarkdownLinkNode extends ElementNode {
   createDOM(config: EditorConfig): HTMLElement {
     const dom = document.createElement("span");
     dom.setAttribute(DATA_ATTR.LINK, "");
-    dom.setAttribute("data-url", this.__url);
+    dom.setAttribute("data-url", unescapeMarkdown(this.__url));
     dom.setAttribute("data-label", this.__label);
     const className = (config.theme as MarkdownTheme).link;
     if (className) dom.className = className;
@@ -51,7 +56,7 @@ export class MarkdownLinkNode extends ElementNode {
 
   updateDOM(prevNode: MarkdownLinkNode, dom: HTMLElement): boolean {
     if (prevNode.__url !== this.__url) {
-      dom.setAttribute("data-url", this.__url);
+      dom.setAttribute("data-url", unescapeMarkdown(this.__url));
     }
     if (prevNode.__label !== this.__label) {
       dom.setAttribute("data-label", this.__label);
@@ -65,8 +70,8 @@ export class MarkdownLinkNode extends ElementNode {
   // url/label instead.
   exportDOM(): DOMExportOutput {
     const element = document.createElement("a");
-    element.setAttribute("href", this.__url);
-    element.textContent = this.__label;
+    element.setAttribute("href", unescapeMarkdown(this.__url));
+    element.textContent = unescapeMarkdown(this.__label);
     return { element, $getChildNodes: () => [] };
   }
 
@@ -130,10 +135,13 @@ export function $isMarkdownLinkNode(
 
 function $convertAnchorElement(domNode: HTMLElement): DOMConversionOutput {
   const href = domNode.getAttribute("href") ?? "";
-  const label = domNode.textContent ?? "";
+  const labelText = domNode.textContent ?? "";
+  const label = labelText.length > 0 ? labelText : href;
+  // Escape the Markdown side so `[`/`]` in the label or `(`/`)` in the URL do
+  // not break the generated `[label](url)` syntax.
   const markdown = href
-    ? `[${label.length > 0 ? label : href}](${href})`
-    : label;
+    ? `[${escapeLinkLabel(label)}](${escapeLinkUrl(href)})`
+    : labelText;
   // Children are folded into `markdown`, so drop them to avoid duplication.
   return { node: $createTextNode(markdown), forChild: () => null };
 }
@@ -155,9 +163,20 @@ function createMarkdownLinkTextNodeClass(
     createDOM(config: EditorConfig): HTMLElement {
       const dom = super.createDOM(config);
       dom.setAttribute(dataAttr, "");
+      // Expose the decoded text so the unfocused (link) rendering can show it
+      // without backslash escapes via CSS, while the editable text stays raw.
+      dom.setAttribute("data-display", unescapeMarkdown(this.__text));
       const className = (config.theme as MarkdownTheme)[themeKey];
       if (className) dom.classList.add(className);
       return dom;
+    }
+
+    updateDOM(prevNode: this, dom: HTMLElement, config: EditorConfig): boolean {
+      const updated = super.updateDOM(prevNode, dom, config);
+      if (prevNode.__text !== this.__text) {
+        dom.setAttribute("data-display", unescapeMarkdown(this.__text));
+      }
+      return updated;
     }
 
     static importJSON(
