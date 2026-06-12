@@ -41,6 +41,7 @@ import ControlledValuePlugin from "./plugins/ControlledValuePlugin";
 import HorizontalRulePlugin from "./plugins/HorizontalRulePlugin";
 import InitialValuePlugin from "./plugins/InitialValuePlugin";
 import ListBehaviorPlugin from "./plugins/ListBehaviorPlugin";
+import MarkdownAutoLinkPlugin from "./plugins/MarkdownAutoLinkPlugin";
 import MarkdownCodeBlockPlugin from "./plugins/MarkdownCodeBlockPlugin";
 import MarkdownLinkPlugin from "./plugins/MarkdownLinkPlugin";
 import OnChangePlugin from "./plugins/OnChangePlugin";
@@ -198,6 +199,10 @@ export default function LexicalMarkdownEditor({
           <CheckListShortcutPlugin />
         )}
         {resolvedFeatures.link && <MarkdownLinkPlugin />}
+        {/* Must mount after MarkdownLinkPlugin so the explicit-link TextNode
+            transform runs first and autolink never claims an explicit link's
+            URL. */}
+        {resolvedFeatures.autoLink && <MarkdownAutoLinkPlugin />}
         {resolvedFeatures.codeBlock && <MarkdownCodeBlockPlugin />}
         {resolvedFeatures.codeBlock && (
           <CodeHighlightingPlugin

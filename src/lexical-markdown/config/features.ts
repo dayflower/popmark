@@ -3,6 +3,7 @@ export interface MarkdownFeatureFlags {
   list: boolean;
   taskList: boolean;
   link: boolean;
+  autoLink: boolean;
   codeBlock: boolean;
   inlineCode: boolean;
   bold: boolean;
@@ -17,6 +18,7 @@ export const DEFAULT_MARKDOWN_FEATURES: MarkdownFeatureFlags = {
   list: true,
   taskList: true,
   link: true,
+  autoLink: true,
   codeBlock: true,
   inlineCode: true,
   bold: true,

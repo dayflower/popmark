@@ -31,7 +31,11 @@ export {
   type MarkdownToHtmlOptions,
   markdownToHtml,
 } from "./markdownToHtml";
-
+export {
+  $createMarkdownAutoLinkNode,
+  $isMarkdownAutoLinkNode,
+  MarkdownAutoLinkNode,
+} from "./nodes/MarkdownAutoLinkNode";
 export {
   $appendCodeBlockChildren,
   $createEmptyMarkdownCodeBlockNode,
@@ -65,6 +69,7 @@ export { default as CodeHighlightingPlugin } from "./plugins/CodeHighlightingPlu
 export { default as ControlledValuePlugin } from "./plugins/ControlledValuePlugin";
 export { default as InitialValuePlugin } from "./plugins/InitialValuePlugin";
 export { default as ListBehaviorPlugin } from "./plugins/ListBehaviorPlugin";
+export { default as MarkdownAutoLinkPlugin } from "./plugins/MarkdownAutoLinkPlugin";
 export { default as MarkdownCodeBlockPlugin } from "./plugins/MarkdownCodeBlockPlugin";
 export { default as MarkdownLinkPlugin } from "./plugins/MarkdownLinkPlugin";
 export { default as OnChangePlugin } from "./plugins/OnChangePlugin";

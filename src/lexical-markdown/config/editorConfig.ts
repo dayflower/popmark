@@ -52,6 +52,7 @@ export interface MarkdownClassNames {
   link?: string;
   linkUrl?: string;
   linkLabel?: string;
+  autoLink?: string;
   codeBlock?: string;
   codeFence?: string;
 }
@@ -64,7 +65,7 @@ export interface MarkdownClassNames {
 export type MarkdownTheme = EditorThemeClasses &
   Pick<
     MarkdownClassNames,
-    "link" | "linkUrl" | "linkLabel" | "codeBlock" | "codeFence"
+    "link" | "linkUrl" | "linkLabel" | "autoLink" | "codeBlock" | "codeFence"
   >;
 
 /**

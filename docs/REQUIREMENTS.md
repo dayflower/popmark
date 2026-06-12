@@ -22,6 +22,7 @@ Popmark is an application with a tray icon and standard menu bar, providing a qu
   - **Plain text mode**: displays the raw Markdown source in a monospaced textarea; no visual formatting is applied.
 - The selected mode is persisted and restored on next launch.
 - Supported Markdown elements: headings H1–H6, bold, italic, bold+italic, strikethrough, inline code, fenced code blocks (with optional language tag), blockquotes, unordered and ordered lists, checkbox (task) lists, horizontal rules, and links.
+- Bare URLs (e.g. `https://example.com`) typed in rich mode are auto-linked: they are decorated as links in the editor while staying plain text in the Markdown source. In both explicit `[label](url)` links and auto-linked bare URLs, Cmd/Ctrl+click opens the URL in the OS default browser; a plain click places the editing caret.
 - Inline syntax markers for inline code (`` ` ``), bold (`**`), italic (`*`), bold+italic (`***`), and strikethrough (`~~`) are rendered in a dimmed, smaller style alongside the formatted text. These markers are CSS-only and do not appear in the clipboard output. Their visibility can be toggled via the **"Show syntax markers"** setting (default: on).
 - Checkbox lists use `- [ ]` (unchecked) and `- [x]` (checked) syntax.
 - Standard Markdown syntax is used (`#` for H1, `##` for H2, etc.).
