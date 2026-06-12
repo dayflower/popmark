@@ -217,10 +217,6 @@ function useSeparatorEjection(editor: LexicalEditor): void {
 // has moved to the new block, so the deferral no longer applies.
 function useEnterDecoration(editor: LexicalEditor): void {
   useEffect(() => {
-    // popmark patch: temporary backport of the upstream fix
-    // (fix/autolink-webkit-enter-decoration). Without it, bare URLs are not
-    // decorated on Enter in the Tauri WKWebView. Drop this when re-syncing to
-    // the upstream release that includes the fix.
     const pending = new Set<ReturnType<typeof setTimeout>>();
 
     const removeCommandListener = editor.registerCommand(
