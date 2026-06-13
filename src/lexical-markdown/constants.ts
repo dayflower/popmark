@@ -5,6 +5,7 @@ export const NODE_TYPES = {
   LINK: "markdown-link",
   LINK_URL: "markdown-link-url",
   LINK_LABEL: "markdown-link-label",
+  AUTO_LINK: "markdown-auto-link",
   CODE_BLOCK: "markdown-code-block",
   CODE_FENCE: "markdown-code-fence",
 } as const;
@@ -25,6 +26,7 @@ export const DATA_ATTR = {
   LINK: "data-markdown-link",
   LINK_URL: "data-markdown-link-url",
   LINK_LABEL: "data-markdown-link-label",
+  AUTO_LINK: "data-markdown-auto-link",
   CODE_BLOCK: "data-markdown-code-block",
   CODE_FENCE: "data-markdown-code-fence",
   FOCUSED: "data-focused",

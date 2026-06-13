@@ -3,6 +3,7 @@ import { ListItemNode, ListNode } from "@lexical/list";
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import type { Klass, LexicalNode, LexicalNodeReplacement } from "lexical";
+import { MarkdownAutoLinkNode } from "../nodes/MarkdownAutoLinkNode";
 import {
   MarkdownCodeBlockNode,
   MarkdownCodeFenceNode,
@@ -28,6 +29,7 @@ export function createMarkdownNodes(
   if (features.link) {
     nodes.push(MarkdownLinkNode, MarkdownLinkUrlNode, MarkdownLinkLabelNode);
   }
+  if (features.autoLink) nodes.push(MarkdownAutoLinkNode);
   if (features.codeBlock) {
     nodes.push(MarkdownCodeBlockNode, MarkdownCodeFenceNode, CodeHighlightNode);
   }

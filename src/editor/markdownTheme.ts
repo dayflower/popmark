@@ -87,6 +87,7 @@ export const POPMARK_CLASS_NAMES: MarkdownClassNames = {
   link: "md-link",
   linkUrl: "md-link-url",
   linkLabel: "md-link-label",
+  autoLink: "md-auto-link",
   codeBlock: "md-code-block",
   codeFence: "md-code-fence",
 };
