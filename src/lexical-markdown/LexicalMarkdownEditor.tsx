@@ -40,6 +40,7 @@ import CodeHighlightingPlugin, {
 import ControlledValuePlugin from "./plugins/ControlledValuePlugin";
 import HorizontalRulePlugin from "./plugins/HorizontalRulePlugin";
 import InitialValuePlugin from "./plugins/InitialValuePlugin";
+import InlineFormatBehaviorPlugin from "./plugins/InlineFormatBehaviorPlugin";
 import ListBehaviorPlugin from "./plugins/ListBehaviorPlugin";
 import MarkdownAutoLinkPlugin from "./plugins/MarkdownAutoLinkPlugin";
 import MarkdownCodeBlockPlugin from "./plugins/MarkdownCodeBlockPlugin";
@@ -217,6 +218,10 @@ export default function LexicalMarkdownEditor({
             features={resolvedFeatures}
           />
         )}
+        {(resolvedFeatures.inlineCode ||
+          resolvedFeatures.bold ||
+          resolvedFeatures.italic ||
+          resolvedFeatures.strikethrough) && <InlineFormatBehaviorPlugin />}
         <MarkdownShortcutPlugin transformers={shortcutTransformers} />
         <InitialValuePlugin value={value} transformers={transformers} />
         <ControlledValuePlugin

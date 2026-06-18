@@ -16,6 +16,7 @@ import {
 } from "lexical";
 import { useEffect } from "react";
 import { DATA_ATTR } from "../constants";
+import { useModifierCursorState } from "../hooks/useModifierCursorState";
 import {
   $createMarkdownAutoLinkNode,
   $isMarkdownAutoLinkNode,
@@ -303,5 +304,6 @@ export default function MarkdownAutoLinkPlugin(): null {
   useSeparatorEjection(editor);
   useEnterDecoration(editor);
   useClickHandling(editor);
+  useModifierCursorState(editor);
   return null;
 }

@@ -20,6 +20,7 @@ import {
 import { useEffect } from "react";
 import { DATA_ATTR } from "../constants";
 import { registerFocusClassListener } from "../hooks/registerFocusClassListener";
+import { useModifierCursorState } from "../hooks/useModifierCursorState";
 import { escapeLinkLabel, escapeLinkUrl } from "../markdownLinkEscape";
 import {
   $createMarkdownLinkLabelNode,
@@ -90,12 +91,7 @@ function isLinkFocused(linkEl: HTMLElement): boolean {
   return linkEl.hasAttribute(DATA_ATTR.FOCUSED);
 }
 
-function isUrlClickTarget(target: HTMLElement): boolean {
-  return !!target.closest(`[${DATA_ATTR.LINK_URL}]`);
-}
-
-function handleFocusedLinkClick(linkEl: HTMLElement, e: MouseEvent): void {
-  if (!isUrlClickTarget(e.target as HTMLElement)) return;
+function openLinkUrl(linkEl: HTMLElement, e: MouseEvent): void {
   const url = linkEl.getAttribute("data-url");
   if (url) {
     e.preventDefault();
@@ -217,6 +213,29 @@ function useSelectionFocusTracking(editor: LexicalEditor): void {
   }, [editor]);
 }
 
+// Show the link's destination as a native tooltip while it is rendered, so a
+// hover reveals where it points without breaking it to source. A focused link
+// already shows its literal `[label](url)` markdown, so strip the tooltip there
+// to avoid redundancy. Runs after useSelectionFocusTracking (registered first)
+// so `data-focused` is current when read.
+function useUrlTooltip(editor: LexicalEditor): void {
+  useEffect(() => {
+    return editor.registerUpdateListener(() => {
+      const root = editor.getRootElement();
+      if (!root) return;
+      root.querySelectorAll(`[${DATA_ATTR.LINK}]`).forEach((dom) => {
+        const el = dom as HTMLElement;
+        if (el.hasAttribute(DATA_ATTR.FOCUSED)) {
+          el.removeAttribute("title");
+          return;
+        }
+        const url = el.getAttribute("data-url");
+        if (url) el.setAttribute("title", url);
+      });
+    });
+  }, [editor]);
+}
+
 function useTextInsertionBehavior(editor: LexicalEditor): void {
   useEffect(() => {
     const removeCommandListener = editor.registerCommand(
@@ -296,6 +315,18 @@ function useEscapeKeyBehavior(editor: LexicalEditor): void {
 
 function useClickHandling(editor: LexicalEditor): void {
   useEffect(() => {
+    // A cmd/ctrl+click opens the URL rather than editing, so the caret must not
+    // move into the link — otherwise the focus tracking would mark it focused
+    // and break it to its source. The caret moves on mousedown, before the
+    // click fires, so suppress the default selection change there.
+    const handleMouseDown = (e: MouseEvent) => {
+      if (!e.metaKey && !e.ctrlKey) return;
+      const target = e.target as HTMLElement;
+      if (target.closest(`[${DATA_ATTR.LINK}]`)) {
+        e.preventDefault();
+      }
+    };
+
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const linkEl = target.closest(
@@ -303,17 +334,27 @@ function useClickHandling(editor: LexicalEditor): void {
       ) as HTMLElement | null;
       if (!linkEl) return;
 
-      if (isLinkFocused(linkEl)) {
-        handleFocusedLinkClick(linkEl, e);
+      // cmd/ctrl+click (with or without shift) opens the URL in the browser,
+      // mirroring the auto-link behavior, whether or not the link is broken to
+      // its markdown source.
+      if (e.metaKey || e.ctrlKey) {
+        openLinkUrl(linkEl, e);
         return;
       }
+
+      // A focused link already shows its markdown source, so leave a plain click
+      // to place the caret for editing. A plain click on the rendered
+      // (unfocused) link breaks it back to source.
+      if (isLinkFocused(linkEl)) return;
 
       handleUnfocusedLinkClick(linkEl, editor, e);
     };
 
     const removeRootListener = editor.registerRootListener(
       (rootElement, prevRootElement) => {
+        prevRootElement?.removeEventListener("mousedown", handleMouseDown);
         prevRootElement?.removeEventListener("click", handleClick);
+        rootElement?.addEventListener("mousedown", handleMouseDown);
         rootElement?.addEventListener("click", handleClick);
       },
     );
@@ -378,9 +419,11 @@ export default function MarkdownLinkPlugin(): null {
   const [editor] = useLexicalComposerContext();
   useNodeTransforms(editor);
   useSelectionFocusTracking(editor);
+  useUrlTooltip(editor);
   useTextInsertionBehavior(editor);
   useEscapeKeyBehavior(editor);
   useClickHandling(editor);
+  useModifierCursorState(editor);
   usePastedLinkConversion(editor);
   return null;
 }
