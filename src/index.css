@@ -61,6 +61,12 @@ body {
   text-decoration: underline;
 }
 
+/* While the cmd/ctrl modifier is held (the library toggles `data-mod-pressed`
+   on the root), a hovered link opens on click, so show a pointer cursor. */
+[data-mod-pressed] .md-link:hover {
+  cursor: pointer;
+}
+
 /* Unfocused (display) mode: collapse the raw markdown syntax to zero size … */
 .md-link:not([data-focused]) {
   font-size: 0;
@@ -121,6 +127,10 @@ body {
   color: #2563eb;
   cursor: text;
   text-decoration: underline;
+}
+/* Pointer cursor while the cmd/ctrl modifier is held, matching .md-link. */
+[data-mod-pressed] .md-auto-link:hover {
+  cursor: pointer;
 }
 @media (prefers-color-scheme: dark) {
   .md-auto-link {

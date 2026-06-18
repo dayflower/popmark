@@ -49,6 +49,9 @@ export class MarkdownLinkNode extends ElementNode {
     dom.setAttribute(DATA_ATTR.LINK, "");
     dom.setAttribute("data-url", unescapeMarkdown(this.__url));
     dom.setAttribute("data-label", this.__label);
+    // Native tooltip of the destination for the rendered (unfocused) link; the
+    // link plugin strips it while the link is focused (showing its source).
+    dom.setAttribute("title", unescapeMarkdown(this.__url));
     const className = (config.theme as MarkdownTheme).link;
     if (className) dom.className = className;
     return dom;
@@ -56,7 +59,10 @@ export class MarkdownLinkNode extends ElementNode {
 
   updateDOM(prevNode: MarkdownLinkNode, dom: HTMLElement): boolean {
     if (prevNode.__url !== this.__url) {
-      dom.setAttribute("data-url", unescapeMarkdown(this.__url));
+      const decodedUrl = unescapeMarkdown(this.__url);
+      dom.setAttribute("data-url", decodedUrl);
+      // Keep the tooltip in sync; the plugin removes it again if focused.
+      if (dom.hasAttribute("title")) dom.setAttribute("title", decodedUrl);
     }
     if (prevNode.__label !== this.__label) {
       dom.setAttribute("data-label", this.__label);
