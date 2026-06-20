@@ -42,6 +42,7 @@ import HorizontalRulePlugin from "./plugins/HorizontalRulePlugin";
 import InitialValuePlugin from "./plugins/InitialValuePlugin";
 import InlineFormatBehaviorPlugin from "./plugins/InlineFormatBehaviorPlugin";
 import ListBehaviorPlugin from "./plugins/ListBehaviorPlugin";
+import type { LinkClickBehavior } from "./plugins/linkClickBehavior";
 import MarkdownAutoLinkPlugin from "./plugins/MarkdownAutoLinkPlugin";
 import MarkdownCodeBlockPlugin from "./plugins/MarkdownCodeBlockPlugin";
 import MarkdownLinkPlugin from "./plugins/MarkdownLinkPlugin";
@@ -103,6 +104,16 @@ export interface LexicalMarkdownEditorProps {
    */
   blockquoteExitOnEmptyEnter?: boolean;
   /**
+   * Swaps which mouse gesture opens a link's URL vs. edits it. With `"edit"`
+   * (default), a plain click edits (places the caret / reveals the markdown
+   * source) and cmd/ctrl+click opens the URL — the historical behavior. With
+   * `"open"`, a plain click opens the URL and cmd/ctrl+click edits. A plain
+   * click only opens when it is a genuine click (not a drag or text selection),
+   * so selecting across a link never opens it. Applies to both explicit
+   * `[label](url)` links and auto-links.
+   */
+  linkClickBehavior?: LinkClickBehavior;
+  /**
    * Receives the underlying Lexical editor instance. Use it to call standard
    * Lexical APIs such as `$generateHtmlFromNodes` from `@lexical/html`:
    * `editorRef.current?.read(() => $generateHtmlFromNodes(editorRef.current!))`.
@@ -128,6 +139,7 @@ export default function LexicalMarkdownEditor({
   languageAliases,
   features,
   blockquoteExitOnEmptyEnter = true,
+  linkClickBehavior = "edit",
   editorRef,
 }: LexicalMarkdownEditorProps) {
   const resolvedFeatures = useMemo(
@@ -199,11 +211,15 @@ export default function LexicalMarkdownEditor({
         {resolvedFeatures.list && resolvedFeatures.taskList && (
           <CheckListShortcutPlugin />
         )}
-        {resolvedFeatures.link && <MarkdownLinkPlugin />}
+        {resolvedFeatures.link && (
+          <MarkdownLinkPlugin clickBehavior={linkClickBehavior} />
+        )}
         {/* Must mount after MarkdownLinkPlugin so the explicit-link TextNode
             transform runs first and autolink never claims an explicit link's
             URL. */}
-        {resolvedFeatures.autoLink && <MarkdownAutoLinkPlugin />}
+        {resolvedFeatures.autoLink && (
+          <MarkdownAutoLinkPlugin clickBehavior={linkClickBehavior} />
+        )}
         {resolvedFeatures.codeBlock && <MarkdownCodeBlockPlugin />}
         {resolvedFeatures.codeBlock && (
           <CodeHighlightingPlugin
