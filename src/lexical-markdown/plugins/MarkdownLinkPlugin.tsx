@@ -33,6 +33,13 @@ import {
   MarkdownLinkNode,
   MarkdownLinkUrlNode,
 } from "../nodes/MarkdownLinkNode";
+import {
+  isIntentionalOpenClick,
+  type LinkClickBehavior,
+  opensViaModifier,
+  type PointerDownAnchor,
+  shouldOpenOnClick,
+} from "./linkClickBehavior";
 
 const FULL_MATCH_REGEX = /^\[((?:\\.|[^\]\\])*)\]\(((?:\\.|[^)\\])*)\)$/;
 const MATCH_REGEX = /\[((?:\\.|[^\]\\])*)\]\(((?:\\.|[^)\\])+)\)/;
@@ -313,18 +320,32 @@ function useEscapeKeyBehavior(editor: LexicalEditor): void {
   }, [editor]);
 }
 
-function useClickHandling(editor: LexicalEditor): void {
+function useClickHandling(
+  editor: LexicalEditor,
+  behavior: LinkClickBehavior,
+): void {
   useEffect(() => {
-    // A cmd/ctrl+click opens the URL rather than editing, so the caret must not
-    // move into the link — otherwise the focus tracking would mark it focused
-    // and break it to its source. The caret moves on mousedown, before the
-    // click fires, so suppress the default selection change there.
+    // The open gesture must not move the caret into the link — otherwise focus
+    // tracking would mark it focused and break it to its markdown source. The
+    // caret moves on mousedown, before the click fires, so suppress the default
+    // selection change there for whichever press opens:
+    // - edit mode: cmd/ctrl+click opens, so suppress a modifier press on a link.
+    // - open mode: a plain click opens, so suppress a no-modifier press on a
+    //   link (a modifier press now edits and is left alone). This costs the
+    //   ability to start a drag-selection from inside a link in open mode; a
+    //   selection that starts outside the link is unaffected, and editing the
+    //   link's text is still reachable via cmd/ctrl+click.
+    // The pointer-down anchor is still recorded so the click handler can tell an
+    // intentional click apart from a press that traveled (a drag onto/off the
+    // link) before opening.
+    let anchor: PointerDownAnchor | null = null;
     const handleMouseDown = (e: MouseEvent) => {
-      if (!e.metaKey && !e.ctrlKey) return;
       const target = e.target as HTMLElement;
-      if (target.closest(`[${DATA_ATTR.LINK}]`)) {
-        e.preventDefault();
-      }
+      const onLink = !!target.closest(`[${DATA_ATTR.LINK}]`);
+      const modifier = e.metaKey || e.ctrlKey;
+      anchor = { x: e.clientX, y: e.clientY, onLink };
+      const opensThisPress = opensViaModifier(behavior) ? modifier : !modifier;
+      if (opensThisPress && onLink) e.preventDefault();
     };
 
     const handleClick = (e: MouseEvent) => {
@@ -334,16 +355,23 @@ function useClickHandling(editor: LexicalEditor): void {
       ) as HTMLElement | null;
       if (!linkEl) return;
 
-      // cmd/ctrl+click (with or without shift) opens the URL in the browser,
-      // mirroring the auto-link behavior, whether or not the link is broken to
-      // its markdown source.
-      if (e.metaKey || e.ctrlKey) {
+      if (shouldOpenOnClick(e, behavior)) {
+        // The modifier-gated open opens directly. The plain-click open still
+        // rules out a drag (a press that traveled onto/off the link) or an
+        // existing text selection before opening — the user's drag-select
+        // concern — but since mousedown suppressed the caret, opening never
+        // breaks the link to source.
+        if (opensViaModifier(behavior)) {
+          openLinkUrl(linkEl, e);
+          return;
+        }
+        if (!isIntentionalOpenClick(e, anchor)) return;
         openLinkUrl(linkEl, e);
         return;
       }
 
       // A focused link already shows its markdown source, so leave a plain click
-      // to place the caret for editing. A plain click on the rendered
+      // to place the caret for editing. An edit click on the rendered
       // (unfocused) link breaks it back to source.
       if (isLinkFocused(linkEl)) return;
 
@@ -362,7 +390,7 @@ function useClickHandling(editor: LexicalEditor): void {
     return () => {
       removeRootListener();
     };
-  }, [editor]);
+  }, [editor, behavior]);
 }
 
 function $convertAnchorsToMarkdownText(doc: Document): boolean {
@@ -415,15 +443,19 @@ function usePastedLinkConversion(editor: LexicalEditor): void {
   }, [editor]);
 }
 
-export default function MarkdownLinkPlugin(): null {
+export default function MarkdownLinkPlugin({
+  clickBehavior = "edit",
+}: {
+  clickBehavior?: LinkClickBehavior;
+} = {}): null {
   const [editor] = useLexicalComposerContext();
   useNodeTransforms(editor);
   useSelectionFocusTracking(editor);
   useUrlTooltip(editor);
   useTextInsertionBehavior(editor);
   useEscapeKeyBehavior(editor);
-  useClickHandling(editor);
-  useModifierCursorState(editor);
+  useClickHandling(editor, clickBehavior);
+  useModifierCursorState(editor, clickBehavior);
   usePastedLinkConversion(editor);
   return null;
 }
