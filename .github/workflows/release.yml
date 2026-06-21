@@ -64,12 +64,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Xcode 26.5 (the macos-26 runner default) ships an actool that crashes
-      # while compiling Liquid Glass `.icon` bundles into Assets.car (Apple bug
-      # FB20183399), breaking the macOS bundle step. Pin to 26.4.1, which is
-      # also preinstalled on the runner and compiles `.icon` correctly.
-      - name: Select Xcode 26.4.1 (actool .icon workaround)
-        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
+      # TEMPORARY WORKAROUND until tauri-apps/tauri#15315 is fixed upstream.
+      # Tauri's bundler crashes while compiling the Liquid Glass `.icon` into
+      # Assets.car via actool (Apple FB20183399), breaking the macOS bundle
+      # step. Pre-compile the `.icon` into a `.car` ourselves so the bundler
+      # skips its own actool invocation and just copies the file. Once the
+      # upstream bug is fixed, drop this step and point bundle.icon back at
+      # `icons/icon.icon`.
+      - name: Pre-compile app icon Assets.car
+        run: ./scripts/build-app-icon-car.sh
 
       - name: Build Tauri app (ad-hoc signing)
         env:
