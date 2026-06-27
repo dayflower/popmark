@@ -2853,7 +2853,7 @@ dependencies = [
 
 [[package]]
 name = "popmark"
-version = "1.3.2"
+version = "1.3.3"
 dependencies = [
  "chrono",
  "font-enumeration",
