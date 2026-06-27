@@ -322,6 +322,7 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
 | Notify on copy       | On                 | When enabled, an OS notification is sent after "Send to Clipboard". Stored as `notify_on_copy` in `settings.json`. |
 | Show syntax markers  | On                 | When enabled (Rich mode only), displays Markdown syntax markers as CSS pseudo-elements. Applies the `.show-syntax-markers` class to the `ContentEditable`. Stored as `rich_show_syntax_markers` in `settings.json`. Defaults to `true` when absent. |
+| Syntax highlight     | On                 | When enabled (Rich mode only), Prism tokenizes fenced code blocks and the `.token.*` color rules in `src/index.css` colorize them (light/dark variants via `prefers-color-scheme`). When disabled, the `prismLanguages` prop is withheld so code blocks render as plain monospace text with no token spans. Stored as `rich_syntax_highlight` in `settings.json`. Defaults to `true` when absent. |
 | Show Dock icon       | On                 | When enabled, sets macOS activation policy to `Regular` (Dock + Cmd+Tab + menu bar). When disabled, sets policy to `Accessory` (hidden from Dock, Cmd+Tab, and menu bar; tray and global hotkey remain). Stored as `show_dock_icon` in `settings.json`. Defaults to `true` when absent. Applied at startup and immediately on save. |
 | Rich mode font family | null (browser default) | Custom `font-family` applied to the Rich mode `ContentEditable` via inline style |
 | Rich mode font size  | null (default)     | Custom `font-size` (px) applied to the Rich mode `ContentEditable` via inline style |
@@ -346,11 +347,12 @@ The copy format preference (`copy_as_rich_text`) is **not** part of the Settings
   "send_shortcut": "super+enter",
   "notify_on_copy": true,
   "rich_show_syntax_markers": true,
+  "rich_syntax_highlight": true,
   "show_dock_icon": true
 }
 ```
 
-All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`). `rich_show_syntax_markers` defaults to `true` when absent (`#[serde(default = "default_rich_show_syntax_markers")]`). `show_dock_icon` defaults to `true` when absent (`#[serde(default = "default_show_dock_icon")]`).
+All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`). `rich_show_syntax_markers` defaults to `true` when absent (`#[serde(default = "default_rich_show_syntax_markers")]`). `rich_syntax_highlight` defaults to `true` when absent (`#[serde(default = "default_rich_syntax_highlight")]`). `show_dock_icon` defaults to `true` when absent (`#[serde(default = "default_show_dock_icon")]`).
 
 ---
 

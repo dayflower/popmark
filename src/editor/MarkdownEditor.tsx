@@ -31,6 +31,7 @@ interface MarkdownEditorProps {
   plainFontFamily?: string | null;
   plainFontSize?: number | null;
   richShowSyntaxMarkers?: boolean;
+  richSyntaxHighlight?: boolean;
 }
 
 export function MarkdownEditor({
@@ -41,6 +42,7 @@ export function MarkdownEditor({
   plainFontFamily,
   plainFontSize,
   richShowSyntaxMarkers = true,
+  richSyntaxHighlight = true,
 }: MarkdownEditorProps) {
   // Single source of truth: the markdown string shared by both editor modes.
   const [content, setContent] = useState("");
@@ -333,7 +335,7 @@ export function MarkdownEditor({
                 editorRef={editorRef}
                 features={POPMARK_FEATURES}
                 classNames={POPMARK_CLASS_NAMES}
-                prismLanguages={PRISM_LANGUAGES}
+                prismLanguages={richSyntaxHighlight ? PRISM_LANGUAGES : undefined}
                 rootClassName="h-full"
                 className="lexical-md__content w-full h-full overflow-y-auto p-4 outline-none text-sm text-gray-900 dark:text-gray-100"
                 contentEditableProps={{
