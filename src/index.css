@@ -200,6 +200,97 @@ body {
   border-radius: 0;
 }
 
+/* ---------- Prism syntax-highlight token colors (GitHub-ish palette) ---------- */
+.lexical-md__content .md-code-block .token.comment,
+.lexical-md__content .md-code-block .token.prolog,
+.lexical-md__content .md-code-block .token.doctype,
+.lexical-md__content .md-code-block .token.cdata {
+  color: #6a737d;
+  font-style: italic;
+}
+.lexical-md__content .md-code-block .token.punctuation {
+  color: #24292e;
+}
+.lexical-md__content .md-code-block .token.property,
+.lexical-md__content .md-code-block .token.tag,
+.lexical-md__content .md-code-block .token.boolean,
+.lexical-md__content .md-code-block .token.number,
+.lexical-md__content .md-code-block .token.constant,
+.lexical-md__content .md-code-block .token.symbol,
+.lexical-md__content .md-code-block .token.deleted {
+  color: #005cc5;
+}
+.lexical-md__content .md-code-block .token.selector,
+.lexical-md__content .md-code-block .token.attr-name,
+.lexical-md__content .md-code-block .token.string,
+.lexical-md__content .md-code-block .token.char,
+.lexical-md__content .md-code-block .token.builtin,
+.lexical-md__content .md-code-block .token.inserted {
+  color: #22863a;
+}
+.lexical-md__content .md-code-block .token.operator,
+.lexical-md__content .md-code-block .token.entity,
+.lexical-md__content .md-code-block .token.url,
+.lexical-md__content .md-code-block .token.atrule,
+.lexical-md__content .md-code-block .token.attr-value,
+.lexical-md__content .md-code-block .token.keyword {
+  color: #d73a49;
+}
+.lexical-md__content .md-code-block .token.function,
+.lexical-md__content .md-code-block .token.class-name {
+  color: #6f42c1;
+}
+.lexical-md__content .md-code-block .token.regex,
+.lexical-md__content .md-code-block .token.important,
+.lexical-md__content .md-code-block .token.variable {
+  color: #e36209;
+}
+@media (prefers-color-scheme: dark) {
+  .lexical-md__content .md-code-block .token.comment,
+  .lexical-md__content .md-code-block .token.prolog,
+  .lexical-md__content .md-code-block .token.doctype,
+  .lexical-md__content .md-code-block .token.cdata {
+    color: #8b949e;
+  }
+  .lexical-md__content .md-code-block .token.punctuation {
+    color: #c9d1d9;
+  }
+  .lexical-md__content .md-code-block .token.property,
+  .lexical-md__content .md-code-block .token.tag,
+  .lexical-md__content .md-code-block .token.boolean,
+  .lexical-md__content .md-code-block .token.number,
+  .lexical-md__content .md-code-block .token.constant,
+  .lexical-md__content .md-code-block .token.symbol,
+  .lexical-md__content .md-code-block .token.deleted {
+    color: #79c0ff;
+  }
+  .lexical-md__content .md-code-block .token.selector,
+  .lexical-md__content .md-code-block .token.attr-name,
+  .lexical-md__content .md-code-block .token.string,
+  .lexical-md__content .md-code-block .token.char,
+  .lexical-md__content .md-code-block .token.builtin,
+  .lexical-md__content .md-code-block .token.inserted {
+    color: #7ee787;
+  }
+  .lexical-md__content .md-code-block .token.operator,
+  .lexical-md__content .md-code-block .token.entity,
+  .lexical-md__content .md-code-block .token.url,
+  .lexical-md__content .md-code-block .token.atrule,
+  .lexical-md__content .md-code-block .token.attr-value,
+  .lexical-md__content .md-code-block .token.keyword {
+    color: #ff7b72;
+  }
+  .lexical-md__content .md-code-block .token.function,
+  .lexical-md__content .md-code-block .token.class-name {
+    color: #d2a8ff;
+  }
+  .lexical-md__content .md-code-block .token.regex,
+  .lexical-md__content .md-code-block .token.important,
+  .lexical-md__content .md-code-block .token.variable {
+    color: #ffa657;
+  }
+}
+
 /* ---------- horizontal rule ---------- */
 .lexical-md__content hr {
   border: 0;

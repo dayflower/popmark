@@ -66,6 +66,7 @@ export function SettingsPanel() {
   const [showDockIcon, setShowDockIcon] = useState<boolean>(true);
   const [notifyOnCopy, setNotifyOnCopy] = useState<boolean>(true);
   const [richShowSyntaxMarkers, setRichShowSyntaxMarkers] = useState<boolean>(true);
+  const [richSyntaxHighlight, setRichSyntaxHighlight] = useState<boolean>(true);
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
   const [fontState, dispatchFont] = useReducer(fontReducer, initialFontState);
   const [fontList, setFontList] = useState<string[]>([]);
@@ -80,6 +81,7 @@ export function SettingsPanel() {
         setShowDockIcon(s.show_dock_icon ?? true);
         setNotifyOnCopy(s.notify_on_copy ?? true);
         setRichShowSyntaxMarkers(s.rich_show_syntax_markers ?? true);
+        setRichSyntaxHighlight(s.rich_syntax_highlight ?? true);
         const limit = s.max_history_entries;
         setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
         const sendShortcut = s.send_shortcut ?? "super+enter";
@@ -151,6 +153,7 @@ export function SettingsPanel() {
         send_shortcut: capturedSendShortcut,
         notify_on_copy: notifyOnCopy,
         rich_show_syntax_markers: richShowSyntaxMarkers,
+        rich_syntax_highlight: richSyntaxHighlight,
       },
     });
     setSavedHotkey(capturedHotkey);
@@ -250,6 +253,21 @@ export function SettingsPanel() {
             <>
               Show syntax markers{" "}
               <span className="text-xs text-gray-400 dark:text-gray-500">(Rich mode only)</span>
+            </>
+          }
+          className="mb-3"
+        />
+
+        {/* Syntax highlight in Rich Editor */}
+        <CheckboxSetting
+          checked={richSyntaxHighlight}
+          onChange={setRichSyntaxHighlight}
+          label={
+            <>
+              Syntax highlight{" "}
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                (Rich mode, code blocks)
+              </span>
             </>
           }
           className="mb-4"

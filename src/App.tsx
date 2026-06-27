@@ -13,6 +13,7 @@ function App() {
   const [plainFontFamily, setPlainFontFamily] = useState<string | null>(null);
   const [plainFontSize, setPlainFontSize] = useState<number | null>(null);
   const [richShowSyntaxMarkers, setRichShowSyntaxMarkers] = useState<boolean>(true);
+  const [richSyntaxHighlight, setRichSyntaxHighlight] = useState<boolean>(true);
 
   useEffect(() => {
     invoke<Settings>("get_settings").then((s) => {
@@ -26,6 +27,7 @@ function App() {
       );
       setPlainFontSize(s.plain_font_size ?? null);
       setRichShowSyntaxMarkers(s.rich_show_syntax_markers ?? true);
+      setRichSyntaxHighlight(s.rich_syntax_highlight ?? true);
       setSettingsLoaded(true);
     });
   }, []);
@@ -42,6 +44,7 @@ function App() {
       );
       setPlainFontSize(s.plain_font_size ?? null);
       setRichShowSyntaxMarkers(s.rich_show_syntax_markers ?? true);
+      setRichSyntaxHighlight(s.rich_syntax_highlight ?? true);
     });
     return () => {
       unlisten.then((fn) => fn());
@@ -76,6 +79,7 @@ function App() {
         plainFontFamily={plainFontFamily}
         plainFontSize={plainFontSize}
         richShowSyntaxMarkers={richShowSyntaxMarkers}
+        richSyntaxHighlight={richSyntaxHighlight}
       />
     </div>
   );

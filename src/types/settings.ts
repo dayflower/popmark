@@ -15,5 +15,6 @@ export interface Settings {
   send_shortcut?: string;
   notify_on_copy?: boolean;
   rich_show_syntax_markers?: boolean;
+  rich_syntax_highlight?: boolean;
   show_dock_icon?: boolean;
 }

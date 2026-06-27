@@ -67,6 +67,8 @@ pub struct Settings {
     pub notify_on_copy: bool,
     #[serde(default = "default_rich_show_syntax_markers")]
     pub rich_show_syntax_markers: bool,
+    #[serde(default = "default_rich_syntax_highlight")]
+    pub rich_syntax_highlight: bool,
     #[serde(default = "default_show_dock_icon")]
     pub show_dock_icon: bool,
 }
@@ -76,6 +78,7 @@ const DEFAULT_SEND_SHORTCUT: &str = "super+enter";
 const DEFAULT_FONT_FALLBACK: bool = true;
 const DEFAULT_NOTIFY_ON_COPY: bool = true;
 const DEFAULT_RICH_SHOW_SYNTAX_MARKERS: bool = true;
+const DEFAULT_RICH_SYNTAX_HIGHLIGHT: bool = true;
 const DEFAULT_SHOW_DOCK_ICON: bool = true;
 
 fn default_editor_mode() -> String {
@@ -96,6 +99,10 @@ fn default_notify_on_copy() -> bool {
 
 fn default_rich_show_syntax_markers() -> bool {
     DEFAULT_RICH_SHOW_SYNTAX_MARKERS
+}
+
+fn default_rich_syntax_highlight() -> bool {
+    DEFAULT_RICH_SYNTAX_HIGHLIGHT
 }
 
 fn default_show_dock_icon() -> bool {
@@ -119,6 +126,7 @@ impl Default for Settings {
             send_shortcut: DEFAULT_SEND_SHORTCUT.to_string(),
             notify_on_copy: DEFAULT_NOTIFY_ON_COPY,
             rich_show_syntax_markers: DEFAULT_RICH_SHOW_SYNTAX_MARKERS,
+            rich_syntax_highlight: DEFAULT_RICH_SYNTAX_HIGHLIGHT,
             show_dock_icon: DEFAULT_SHOW_DOCK_ICON,
         }
     }
