@@ -1,56 +1,85 @@
 name: Release
 
+# When a version-bump PR is merged into main (see scripts/bump-version.sh), the
+# version in package.json / Cargo.toml / tauri.conf.json changes. This workflow
+# reads that version, and if a matching tag does not yet exist, it builds the
+# app, signs it with a Developer ID certificate, notarizes and staples both the
+# .app and the .dmg, publishes a GitHub Release and updates the Homebrew tap. On
+# ordinary pushes (version unchanged) the cheap check-version job stops the run
+# before the macOS runner is started.
+#
+# The tag is created by `gh release create --target` at the very end rather than
+# up front, so a failure part-way through leaves no tag behind and the run can
+# simply be retried by pushing to main again. This also means GITHUB_TOKEN is
+# enough — no PAT is needed to chain workflows together.
+#
+# Signing and notarization need these repository secrets:
+#   MACOS_CERTIFICATE_P12       base64 of the Developer ID Application .p12
+#   MACOS_CERTIFICATE_PASSWORD  password of that .p12
+#   APPLE_API_KEY_ID            App Store Connect API key id
+#   APPLE_API_ISSUER_ID         App Store Connect issuer id
+#   APPLE_API_KEY_P8            base64 of the AuthKey_*.p8 private key
+# The Homebrew step also needs HOMEBREW_GITHUB_API_TOKEN.
+
 on:
   push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+    branches: [main]
+
+# Serialize runs so that two pushes in quick succession cannot both see a
+# missing tag and release the same version twice.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   check-version:
-    name: Check version consistency
+    name: Check version and tag
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
     steps:
+      # fetch-depth: 0 so that the tag check below sees existing tags.
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
 
-      - name: Verify versions match tag
+      - name: Resolve version and check tag
+        id: version
         run: |
-          TAG_VER="${GITHUB_REF_NAME#v}"
-
           PKG_VER=$(jq -r .version package.json)
           CARGO_VER=$(grep '^version' src-tauri/Cargo.toml | head -1 | cut -d'"' -f2)
           TAURI_VER=$(jq -r .version src-tauri/tauri.conf.json)
 
-          FAILED=0
-          if [ "$PKG_VER" != "$TAG_VER" ]; then
-            echo "::error::package.json version ($PKG_VER) does not match tag ($TAG_VER)"
-            FAILED=1
-          fi
-          if [ "$CARGO_VER" != "$TAG_VER" ]; then
-            echo "::error::Cargo.toml version ($CARGO_VER) does not match tag ($TAG_VER)"
-            FAILED=1
-          fi
-          if [ "$TAURI_VER" != "$TAG_VER" ]; then
-            echo "::error::tauri.conf.json version ($TAURI_VER) does not match tag ($TAG_VER)"
-            FAILED=1
-          fi
-
-          if [ "$FAILED" -eq 1 ]; then
+          if [ "$PKG_VER" != "$CARGO_VER" ] || [ "$PKG_VER" != "$TAURI_VER" ]; then
+            echo "::error::version mismatch: package.json=$PKG_VER Cargo.toml=$CARGO_VER tauri.conf.json=$TAURI_VER"
             exit 1
           fi
 
-          echo "All versions match tag: $TAG_VER"
+          echo "version=$PKG_VER" >> "$GITHUB_OUTPUT"
 
-  build-and-release:
+          if git rev-parse "v$PKG_VER" >/dev/null 2>&1; then
+            echo "Tag v$PKG_VER already exists; nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Releasing v$PKG_VER."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
     name: Build and release
     # Build against the latest macOS SDK so window chrome (traffic-light
     # positions) renders natively on each OS. Building with an older SDK than
     # the running OS (e.g. SDK 15 on macOS 26 Tahoe) shifts the buttons down.
     runs-on: macos-26
     needs: check-version
+    if: needs.check-version.outputs.release == 'true'
     permissions:
       contents: write
+    env:
+      VERSION: ${{ needs.check-version.outputs.version }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -74,27 +103,108 @@ jobs:
       - name: Pre-compile app icon Assets.car
         run: ./scripts/build-app-icon-car.sh
 
-      - name: Build Tauri app (ad-hoc signing)
+      # The action creates a throwaway keychain and removes it again in its post
+      # step, so nothing has to be cleaned up by hand.
+      - name: Import Developer ID certificate
+        uses: Apple-Actions/import-codesign-certs@b610f78488812c1e56b20e6df63ec42d833f2d14 # v6.0.0
+        with:
+          p12-file-base64: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+
+      # Pass the identity to Tauri by its SHA-1 hash so the certificate's common
+      # name never has to be hardcoded or kept as a secret. The action put its
+      # keychain on the search list, so search that rather than guessing where
+      # the file lives; the runner's own login keychain holds no signing
+      # identities.
+      - name: Resolve signing identity
+        run: |
+          identity="$(security find-identity -v -p codesigning \
+            | awk '/Developer ID Application/ { print $2; exit }')"
+          if [ -z "$identity" ]; then
+            echo "No Developer ID Application identity on the keychain search list" >&2
+            security list-keychains >&2
+            security find-identity -v -p codesigning >&2
+            exit 1
+          fi
+          echo "APPLE_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
+
+      # Name the file AuthKey_<key-id>.p8 so that notarytool can also find it by
+      # the conventional name if APPLE_API_KEY_PATH is ever ignored.
+      - name: Prepare notarization API key
         env:
-          APPLE_SIGNING_IDENTITY: "-"
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+          printf '%s' "$APPLE_API_KEY_P8" | base64 --decode > "$key_path"
+          chmod 600 "$key_path"
+          echo "APPLE_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      # Tauri signs the .app with the hardened runtime (bundle.macOS.
+      # hardenedRuntime defaults to true), then notarizes and staples it. It
+      # only signs the .dmg, hence the separate step below. Note that Tauri
+      # merely warns and carries on when the notarization credentials are
+      # missing, so the verification step is what actually guards the release.
+      - name: Build, sign and notarize Tauri app
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
           npm run tauri build -- --no-bundle
           npm run tauri bundle -- --bundles app,dmg
 
+      - name: Notarize and staple DMG
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: ./scripts/notarize-dmg.sh
+
+      - name: Remove notarization key
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
+
+      # Fail the release rather than publishing something Gatekeeper rejects.
+      - name: Verify signature and notarization
+        run: |
+          app="src-tauri/target/release/bundle/macos/Popmark.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          xcrun stapler validate "$app"
+          spctl --assess --type execute --verbose=4 "$app"
+
+      # Stapling writes the ticket into the bundle, so this has to happen after
+      # notarization. Use ditto rather than zip so that symlinks and extended
+      # attributes survive and the signature stays intact.
       - name: Archive App Bundle as zip
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          cd src-tauri/target/release/bundle/macos
-          zip -r "$GITHUB_WORKSPACE/popmark-${VERSION}-macos.zip" Popmark.app
+          ditto -c -k --sequesterRsrc --keepParent \
+            src-tauri/target/release/bundle/macos/Popmark.app \
+            "popmark-${VERSION}-macos.zip"
 
+      # --target tags the commit being released, so no separate tagging step is
+      # needed and nothing is tagged unless the build got this far.
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v$VERSION" \
+            "popmark-${VERSION}-macos.zip" \
+            src-tauri/target/release/bundle/dmg/*.dmg \
+            --target "$GITHUB_SHA" \
+            --title "v$VERSION" \
+            --generate-notes
+
+      - name: Update Homebrew tap
+        uses: dayflower/brew-up@e248724cf8f143f257d45077dabfee733f338f06 # v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          # Use a PAT instead of GITHUB_TOKEN so that the release event triggers
-          # other workflows (e.g. homebrew-tap). Events fired by GITHUB_TOKEN do
-          # not trigger subsequent workflow runs by design.
-          token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
-          generate_release_notes: true
-          files: |
-            popmark-*-macos.zip
-            src-tauri/target/release/bundle/dmg/*.dmg
+          release-tag: v${{ needs.check-version.outputs.version }}
+          template-path: homebrew/popmark.rb.tmpl
+          output-path: Casks/popmark.rb
+          asset-map: |
+            default=popmark-{{version}}-macos.zip
+          target-repo: dayflower/homebrew-tap
+          target-branch: main
+          target-repo-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+          publish-mode: pr-auto-merge
+          auto-merge-method: squash

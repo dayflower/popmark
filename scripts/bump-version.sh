@@ -84,13 +84,8 @@ Automated version bump via \`scripts/bump-version.sh ${LEVEL}\`.
 
 ### Next step
 
-After this PR is merged, create and push the release tag:
-
-\`\`\`sh
-git checkout main && git pull
-git tag v${NEW_VERSION}
-git push origin v${NEW_VERSION}
-\`\`\`
+Nothing manual. Once this PR is merged, the Release workflow builds, signs and
+notarizes the app, publishes the release and creates the \`v${NEW_VERSION}\` tag.
 EOF
 )")"
 
