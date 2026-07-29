@@ -37,17 +37,6 @@ brew install --cask dayflower/tap/popmark
 
 Download the latest `.dmg` or `.zip` from [GitHub Releases](https://github.com/dayflower/popmark/releases) and drag Popmark to `/Applications`.
 
-### Gatekeeper caveat
-
-Popmark is signed ad-hoc (no Apple Developer certificate), so macOS Gatekeeper will block it on first launch. To open it anyway, either:
-
-- Right-click (or Control-click) `Popmark.app` → **Open** → confirm the dialog, or
-- Run the following in Terminal:
-
-  ```sh
-  xattr -dr com.apple.quarantine /Applications/Popmark.app
-  ```
-
 > Popmark is built on [Tauri](https://tauri.app), so it can be compiled for Linux and Windows as well — but only macOS binaries are officially distributed.
 
 ## How to Use
