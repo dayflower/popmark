@@ -309,7 +309,7 @@ export function MarkdownEditor({
         editorMode={editorMode}
         onModeToggle={handleModeToggle}
       />
-      <div className="relative flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
+      <div className="relative flex-1 flex flex-col overflow-hidden popmark-surface bg-white dark:bg-gray-900">
         <div className="flex-1 overflow-hidden relative">
           {editorMode === "plain" ? (
             <textarea
@@ -317,7 +317,7 @@ export function MarkdownEditor({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={handlePlainKeyDown}
-              className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
+              className="w-full h-full p-4 outline-none resize-none font-mono text-sm text-gray-900 dark:text-gray-100 popmark-surface bg-white dark:bg-gray-900"
               style={{
                 fontFamily: plainFontFamily ?? undefined,
                 fontSize: plainFontSize ? `${plainFontSize}px` : undefined,
@@ -363,7 +363,7 @@ export function MarkdownEditor({
             onClearAll={clearHistory}
           />
         </div>
-        <div className="popmark-footer flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">
+        <div className="popmark-footer popmark-surface flex justify-end items-center px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 select-none">
           <SendToClipboardButton
             onSend={copyToClipboard}
             sendShortcut={sendShortcut}

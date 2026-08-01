@@ -71,6 +71,12 @@ pub struct Settings {
     pub rich_syntax_highlight: bool,
     #[serde(default = "default_show_dock_icon")]
     pub show_dock_icon: bool,
+    #[serde(default = "default_theme")]
+    pub theme: String,
+    #[serde(default)]
+    pub color_preset: Option<String>,
+    #[serde(default = "default_color_scope")]
+    pub color_scope: String,
 }
 
 const DEFAULT_EDITOR_MODE: &str = "rich";
@@ -80,6 +86,8 @@ const DEFAULT_NOTIFY_ON_COPY: bool = true;
 const DEFAULT_RICH_SHOW_SYNTAX_MARKERS: bool = true;
 const DEFAULT_RICH_SYNTAX_HIGHLIGHT: bool = true;
 const DEFAULT_SHOW_DOCK_ICON: bool = true;
+const DEFAULT_THEME: &str = "auto";
+const DEFAULT_COLOR_SCOPE: &str = "chrome";
 
 fn default_editor_mode() -> String {
     DEFAULT_EDITOR_MODE.to_string()
@@ -109,6 +117,14 @@ fn default_show_dock_icon() -> bool {
     DEFAULT_SHOW_DOCK_ICON
 }
 
+fn default_theme() -> String {
+    DEFAULT_THEME.to_string()
+}
+
+fn default_color_scope() -> String {
+    DEFAULT_COLOR_SCOPE.to_string()
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
@@ -128,6 +144,9 @@ impl Default for Settings {
             rich_show_syntax_markers: DEFAULT_RICH_SHOW_SYNTAX_MARKERS,
             rich_syntax_highlight: DEFAULT_RICH_SYNTAX_HIGHLIGHT,
             show_dock_icon: DEFAULT_SHOW_DOCK_ICON,
+            theme: DEFAULT_THEME.to_string(),
+            color_preset: None,
+            color_scope: DEFAULT_COLOR_SCOPE.to_string(),
         }
     }
 }

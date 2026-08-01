@@ -1,10 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useReducer, useState } from "react";
-import type { Settings } from "../types/settings";
+import type { ColorScope, Settings, ThemeMode } from "../types/settings";
+import { applyTheme } from "../utils/theme";
 import { CheckboxSetting } from "./CheckboxSetting";
 import { FontSettings } from "./FontSettings";
 import { HotkeyCapture } from "./HotkeyCapture";
+import { ThemeSettings } from "./ThemeSettings";
 
 // --- Font state ---
 
@@ -70,6 +72,14 @@ export function SettingsPanel() {
   const [maxHistoryEntries, setMaxHistoryEntries] = useState<string>("");
   const [fontState, dispatchFont] = useReducer(fontReducer, initialFontState);
   const [fontList, setFontList] = useState<string[]>([]);
+  const [theme, setTheme] = useState<ThemeMode>("auto");
+  const [savedTheme, setSavedTheme] = useState<ThemeMode>("auto");
+  const [colorPreset, setColorPreset] = useState<string | null>(null);
+  const [savedColorPreset, setSavedColorPreset] = useState<string | null>(null);
+  const [colorScope, setColorScope] = useState<ColorScope>("chrome");
+  const [savedColorScope, setSavedColorScope] = useState<ColorScope>("chrome");
+
+  const osDark = useCallback(() => window.matchMedia("(prefers-color-scheme: dark)").matches, []);
 
   // Load settings on mount and whenever the settings window is shown
   useEffect(() => {
@@ -82,6 +92,15 @@ export function SettingsPanel() {
         setNotifyOnCopy(s.notify_on_copy ?? true);
         setRichShowSyntaxMarkers(s.rich_show_syntax_markers ?? true);
         setRichSyntaxHighlight(s.rich_syntax_highlight ?? true);
+        const loadedTheme = (s.theme as ThemeMode) ?? "auto";
+        const loadedColorPreset = s.color_preset ?? null;
+        const loadedColorScope = (s.color_scope as ColorScope) ?? "chrome";
+        setTheme(loadedTheme);
+        setSavedTheme(loadedTheme);
+        setColorPreset(loadedColorPreset);
+        setSavedColorPreset(loadedColorPreset);
+        setColorScope(loadedColorScope);
+        setSavedColorScope(loadedColorScope);
         const limit = s.max_history_entries;
         setMaxHistoryEntries(limit != null && limit > 0 ? String(limit) : "");
         const sendShortcut = s.send_shortcut ?? "super+enter";
@@ -117,8 +136,12 @@ export function SettingsPanel() {
     setCapturedHotkey(savedHotkey);
     setIsCapturingSend(false);
     setCapturedSendShortcut(savedSendShortcut);
+    setTheme(savedTheme);
+    setColorPreset(savedColorPreset);
+    setColorScope(savedColorScope);
+    applyTheme(savedTheme, savedColorPreset, savedColorScope, osDark());
     invoke("hide_settings_window");
-  }, [savedHotkey, savedSendShortcut]);
+  }, [savedHotkey, savedSendShortcut, savedTheme, savedColorPreset, savedColorScope, osDark]);
 
   // ESC to cancel (when not capturing)
   useEffect(() => {
@@ -154,17 +177,46 @@ export function SettingsPanel() {
         notify_on_copy: notifyOnCopy,
         rich_show_syntax_markers: richShowSyntaxMarkers,
         rich_syntax_highlight: richSyntaxHighlight,
+        theme,
+        color_preset: colorPreset,
+        color_scope: colorScope,
       },
     });
     setSavedHotkey(capturedHotkey);
     setSavedSendShortcut(capturedSendShortcut);
+    setSavedTheme(theme);
+    setSavedColorPreset(colorPreset);
+    setSavedColorScope(colorScope);
     invoke("hide_settings_window");
   }
 
   return (
     <div className="flex flex-col h-full">
+      <div
+        data-tauri-drag-region
+        className="popmark-settings-header flex items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+      >
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Settings</h2>
+      </div>
       <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-6">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Settings</h2>
+        {/* Appearance / theme */}
+        <ThemeSettings
+          theme={theme}
+          colorPreset={colorPreset}
+          colorScope={colorScope}
+          onThemeChange={(t) => {
+            setTheme(t);
+            applyTheme(t, colorPreset, colorScope, osDark());
+          }}
+          onPresetChange={(presetId) => {
+            setColorPreset(presetId);
+            applyTheme(theme, presetId, colorScope, osDark());
+          }}
+          onScopeChange={(scope) => {
+            setColorScope(scope);
+            applyTheme(theme, colorPreset, scope, osDark());
+          }}
+        />
 
         {/* Global shortcut */}
         <div className="mb-3">
@@ -240,7 +292,7 @@ export function SettingsPanel() {
               value={maxHistoryEntries}
               onChange={(e) => setMaxHistoryEntries(e.target.value)}
               placeholder="∞"
-              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+              className="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-(--popmark-primary)"
             />
           </label>
         </div>
@@ -314,7 +366,7 @@ export function SettingsPanel() {
         <button
           type="button"
           onClick={handleSave}
-          className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 cursor-default"
+          className="px-4 py-1.5 text-sm bg-(--popmark-primary) text-white rounded hover:bg-(--popmark-primary-hover) active:bg-(--popmark-primary-active) cursor-default"
         >
           Save
         </button>

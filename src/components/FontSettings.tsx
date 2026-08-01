@@ -37,7 +37,7 @@ export function FontSettings({
           value={fontFamily}
           onChange={(e) => onFontFamilyChange(e.target.value)}
           placeholder="Family…"
-          className="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+          className="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-(--popmark-primary)"
         />
         <input
           type="number"
@@ -45,7 +45,7 @@ export function FontSettings({
           value={fontSize}
           onChange={(e) => onFontSizeChange(e.target.value)}
           placeholder="px"
-          className="w-14 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-blue-500"
+          className="w-14 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded outline-none focus:border-(--popmark-primary)"
         />
       </div>
       <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -53,7 +53,7 @@ export function FontSettings({
           type="checkbox"
           checked={fontFallback}
           onChange={(e) => onFontFallbackChange(e.target.checked)}
-          className="w-4 h-4 accent-blue-500"
+          className="w-4 h-4 accent-(--popmark-primary)"
         />
         <span className="text-xs text-gray-600 dark:text-gray-400">Append fallback fonts</span>
       </label>

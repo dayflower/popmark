@@ -35,7 +35,14 @@
         "resizable": false,
         "visible": false,
         "decorations": true,
-        "alwaysOnTop": true
+        "alwaysOnTop": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true,
+        "trafficLightPosition": {
+          "x": 20,
+          "y": 28
+        }
       }
     ],
     "security": {

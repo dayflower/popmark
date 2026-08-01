@@ -52,14 +52,16 @@ pub fn run() {
                 use window_vibrancy::{
                     apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState,
                 };
-                if let Some(window) = handle.get_webview_window("main") {
-                    apply_vibrancy(
-                        &window,
-                        NSVisualEffectMaterial::HeaderView,
-                        Some(NSVisualEffectState::Active),
-                        None,
-                    )
-                    .expect("apply_vibrancy failed for main window");
+                for label in ["main", "settings"] {
+                    if let Some(window) = handle.get_webview_window(label) {
+                        apply_vibrancy(
+                            &window,
+                            NSVisualEffectMaterial::HeaderView,
+                            Some(NSVisualEffectState::Active),
+                            None,
+                        )
+                        .unwrap_or_else(|_| panic!("apply_vibrancy failed for {label} window"));
+                    }
                 }
             }
 

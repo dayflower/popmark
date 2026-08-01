@@ -1,5 +1,8 @@
 export type EditorMode = "rich" | "plain";
 
+export type ThemeMode = "auto" | "light" | "dark" | "color";
+export type ColorScope = "chrome" | "window";
+
 export interface Settings {
   hotkey: string;
   launch_at_login: boolean;
@@ -17,4 +20,7 @@ export interface Settings {
   rich_show_syntax_markers?: boolean;
   rich_syntax_highlight?: boolean;
   show_dock_icon?: boolean;
+  theme?: string;
+  color_preset?: string | null;
+  color_scope?: string;
 }

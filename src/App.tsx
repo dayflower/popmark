@@ -2,10 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useState } from "react";
 import { MarkdownEditor } from "./editor/MarkdownEditor";
+import { useTheme } from "./hooks/useTheme";
 import type { EditorMode, Settings } from "./types/settings";
 import { composeFontFamily, PLAIN_FALLBACK_STACK, RICH_FALLBACK_STACK } from "./utils/font";
 
 function App() {
+  useTheme();
   const [editorMode, setEditorMode] = useState<EditorMode>("rich");
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [richFontFamily, setRichFontFamily] = useState<string | null>(null);

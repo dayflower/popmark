@@ -47,7 +47,7 @@ export function SendToClipboardButton({
       <button
         type="button"
         onClick={onSend}
-        className="bg-blue-500 text-white rounded-l hover:bg-blue-600 active:bg-blue-700 px-3 py-1.5 text-sm cursor-default"
+        className="bg-(--popmark-primary) text-white rounded-l hover:bg-(--popmark-primary-hover) active:bg-(--popmark-primary-active) px-3 py-1.5 text-sm cursor-default"
       >
         {label} ({formatHotkey(sendShortcut)})
       </button>
@@ -56,7 +56,7 @@ export function SendToClipboardButton({
         aria-label="Choose copy format"
         disabled={dropdownDisabled}
         onClick={() => setOpen((v) => !v)}
-        className="bg-blue-500 text-white rounded-r border-l border-blue-400 hover:bg-blue-600 active:bg-blue-700 px-2 py-1.5 text-sm cursor-default disabled:opacity-50"
+        className="bg-(--popmark-primary) text-white rounded-r border-l border-(--popmark-primary-divider) hover:bg-(--popmark-primary-hover) active:bg-(--popmark-primary-active) px-2 py-1.5 text-sm cursor-default disabled:opacity-50"
       >
         <span aria-hidden="true">▾</span>
       </button>
@@ -83,7 +83,7 @@ function CopyFormatItem({ label, checked, onClick }: CopyFormatItemProps) {
       onClick={onClick}
       className="flex w-full items-center gap-2 px-3 py-1.5 text-left cursor-default hover:bg-gray-100 dark:hover:bg-gray-700"
     >
-      <span className="w-4 shrink-0 text-blue-500">{checked ? "✓" : ""}</span>
+      <span className="w-4 shrink-0 text-(--popmark-primary)">{checked ? "✓" : ""}</span>
       {label}
     </button>
   );
