@@ -30,11 +30,11 @@ export class MarkdownLinkNode extends ElementNode {
   __url: string;
   __label: string;
 
-  static getType(): string {
+  static override getType(): string {
     return NODE_TYPES.LINK;
   }
 
-  static clone(node: MarkdownLinkNode): MarkdownLinkNode {
+  static override clone(node: MarkdownLinkNode): MarkdownLinkNode {
     return new MarkdownLinkNode(node.__label, node.__url, node.__key);
   }
 
@@ -44,7 +44,7 @@ export class MarkdownLinkNode extends ElementNode {
     this.__url = url;
   }
 
-  createDOM(config: EditorConfig): HTMLElement {
+  override createDOM(config: EditorConfig): HTMLElement {
     const dom = document.createElement("span");
     dom.setAttribute(DATA_ATTR.LINK, "");
     dom.setAttribute("data-url", unescapeMarkdown(this.__url));
@@ -57,7 +57,7 @@ export class MarkdownLinkNode extends ElementNode {
     return dom;
   }
 
-  updateDOM(prevNode: MarkdownLinkNode, dom: HTMLElement): boolean {
+  override updateDOM(prevNode: MarkdownLinkNode, dom: HTMLElement): boolean {
     if (prevNode.__url !== this.__url) {
       const decodedUrl = unescapeMarkdown(this.__url);
       dom.setAttribute("data-url", decodedUrl);
@@ -74,7 +74,7 @@ export class MarkdownLinkNode extends ElementNode {
   // editing children are the literal Markdown syntax (`[`, label, `](`, url,
   // `)`), so skip them via `$getChildNodes` and build `<a>` from the stored
   // url/label instead.
-  exportDOM(): DOMExportOutput {
+  override exportDOM(): DOMExportOutput {
     const element = document.createElement("a");
     element.setAttribute("href", unescapeMarkdown(this.__url));
     element.textContent = unescapeMarkdown(this.__label);
@@ -84,7 +84,7 @@ export class MarkdownLinkNode extends ElementNode {
   // Counterpart to exportDOM so imported HTML round-trips. An `<a>` is converted
   // back to the literal `[label](url)` text; the link node transform in
   // MarkdownLinkPlugin then rebuilds the rich MarkdownLinkNode from it.
-  static importDOM(): DOMConversionMap | null {
+  static override importDOM(): DOMConversionMap | null {
     return {
       a: () => ({
         conversion: $convertAnchorElement,
@@ -93,13 +93,13 @@ export class MarkdownLinkNode extends ElementNode {
     };
   }
 
-  static importJSON(
+  static override importJSON(
     serializedNode: SerializedMarkdownLinkNode,
   ): MarkdownLinkNode {
     return new MarkdownLinkNode(serializedNode.label, serializedNode.url);
   }
 
-  exportJSON(): SerializedMarkdownLinkNode {
+  override exportJSON(): SerializedMarkdownLinkNode {
     return {
       ...super.exportJSON(),
       type: NODE_TYPES.LINK,
@@ -117,11 +117,11 @@ export class MarkdownLinkNode extends ElementNode {
     return this.getLatest().__label;
   }
 
-  canBeEmpty(): false {
+  override canBeEmpty(): false {
     return false;
   }
 
-  isInline(): true {
+  override isInline(): true {
     return true;
   }
 }
@@ -158,15 +158,15 @@ function createMarkdownLinkTextNodeClass(
   themeKey: "linkUrl" | "linkLabel",
 ) {
   class MarkdownLinkTextNode extends TextNode {
-    static getType(): string {
+    static override getType(): string {
       return typeString;
     }
 
-    static clone(node: MarkdownLinkTextNode): MarkdownLinkTextNode {
+    static override clone(node: MarkdownLinkTextNode): MarkdownLinkTextNode {
       return new MarkdownLinkTextNode(node.__text, node.__key);
     }
 
-    createDOM(config: EditorConfig): HTMLElement {
+    override createDOM(config: EditorConfig): HTMLElement {
       const dom = super.createDOM(config);
       dom.setAttribute(dataAttr, "");
       // Expose the decoded text so the unfocused (link) rendering can show it
@@ -177,7 +177,11 @@ function createMarkdownLinkTextNodeClass(
       return dom;
     }
 
-    updateDOM(prevNode: this, dom: HTMLElement, config: EditorConfig): boolean {
+    override updateDOM(
+      prevNode: this,
+      dom: HTMLElement,
+      config: EditorConfig,
+    ): boolean {
       const updated = super.updateDOM(prevNode, dom, config);
       if (prevNode.__text !== this.__text) {
         dom.setAttribute("data-display", unescapeMarkdown(this.__text));
@@ -185,7 +189,7 @@ function createMarkdownLinkTextNodeClass(
       return updated;
     }
 
-    static importJSON(
+    static override importJSON(
       serializedNode: SerializedTextNode,
     ): MarkdownLinkTextNode {
       return $restoreTextNodeProps(
@@ -194,7 +198,7 @@ function createMarkdownLinkTextNodeClass(
       );
     }
 
-    exportJSON(): SerializedTextNode {
+    override exportJSON(): SerializedTextNode {
       return {
         ...super.exportJSON(),
         type: typeString,

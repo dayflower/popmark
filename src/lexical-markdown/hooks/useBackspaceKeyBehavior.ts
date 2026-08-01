@@ -126,7 +126,7 @@ export function useBackspaceKeyBehavior(editor: LexicalEditor): void {
   useEffect(() => {
     const remove = editor.registerCommand(
       KEY_BACKSPACE_COMMAND,
-      (event: KeyboardEvent | null) => {
+      (event: KeyboardEvent) => {
         const ctx = $getCollapsedCaretInCodeBlock();
         if (!ctx) return false;
         const { anchor, codeBlock } = ctx;
@@ -135,12 +135,12 @@ export function useBackspaceKeyBehavior(editor: LexicalEditor): void {
           const prev = codeBlock.getPreviousSibling();
           if ($isParagraphNode(prev) && prev.getTextContentSize() === 0) {
             prev.remove();
-            event?.preventDefault();
+            event.preventDefault();
             return true;
           }
           if ($isParagraphNode(prev)) {
             $dissolveCodeBlockMergingIntoPrev(codeBlock, prev);
-            event?.preventDefault();
+            event.preventDefault();
             return true;
           }
           return false;
@@ -148,7 +148,7 @@ export function useBackspaceKeyBehavior(editor: LexicalEditor): void {
 
         if ($isCursorAtFirstContentLineStart(anchor, codeBlock)) {
           if ($mergeFirstContentLineIntoOpenFence(codeBlock)) {
-            event?.preventDefault();
+            event.preventDefault();
             return true;
           }
           return false;
@@ -156,7 +156,7 @@ export function useBackspaceKeyBehavior(editor: LexicalEditor): void {
 
         if ($isCursorAtCloseFenceLineStart(anchor, codeBlock)) {
           if ($handleCloseFenceLineStartBackspace(codeBlock)) {
-            event?.preventDefault();
+            event.preventDefault();
             return true;
           }
         }

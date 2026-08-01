@@ -215,6 +215,7 @@ function unwrapQuote(quoteNode: QuoteNode) {
   }
 
   const firstChild = children[0];
+  if (!firstChild) return;
   quoteNode.replace(firstChild);
 
   let previousChild = firstChild;

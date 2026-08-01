@@ -131,8 +131,7 @@ function $caretFromTextNode(
 ): CodeBlockCaretPosition {
   const siblings = textNode.getParent()?.getChildren() ?? [];
   const lines = $splitChildrenIntoLines(siblings, 0, siblings.length);
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-    const line = lines[lineIndex];
+  for (const [lineIndex, line] of lines.entries()) {
     const idx = line.findIndex((n) => n.is(textNode));
     if (idx >= 0) {
       return {
@@ -154,7 +153,7 @@ function $caretFromChildIndex(
   const lines = $splitChildrenIntoLines(codeBlock.getChildren(), 0, childIndex);
   return {
     lineIndex: lines.length - 1,
-    lineOffset: $sumTextContentSize(lines[lines.length - 1]),
+    lineOffset: $sumTextContentSize(lines[lines.length - 1] ?? []),
   };
 }
 
@@ -165,6 +164,7 @@ function $restoreCaretInParagraphs(
   if (paragraphs.length === 0) return;
   const idx = Math.min(pos.lineIndex, paragraphs.length - 1);
   const paragraph = paragraphs[idx];
+  if (!paragraph) return;
   const child = paragraph.getFirstChild();
   if ($isTextNode(child)) {
     $selectCollapsedClamped(child, pos.lineOffset);

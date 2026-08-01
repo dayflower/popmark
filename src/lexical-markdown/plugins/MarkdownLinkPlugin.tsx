@@ -48,6 +48,7 @@ function $unwrapMarkdownLinkNode(node: MarkdownLinkNode) {
   const children = node.getChildren();
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
+    if (!child) continue;
     if ($isMarkdownLinkUrlNode(child) || $isMarkdownLinkLabelNode(child)) {
       node.insertAfter($createTextNode(child.getTextContent()));
     } else {
@@ -64,7 +65,7 @@ function $validateMarkdownLinkParent(parent: MarkdownLinkNode) {
     $unwrapMarkdownLinkNode(parent);
     return;
   }
-  const [, newLabel, newUrl] = urlMatch;
+  const [, newLabel = "", newUrl = ""] = urlMatch;
   if (parent.__url !== newUrl || parent.__label !== newLabel) {
     const writable = parent.getWritable();
     writable.__url = newUrl;
@@ -141,15 +142,19 @@ function useNodeTransforms(editor: LexicalEditor): void {
         const match = MATCH_REGEX.exec(text);
         if (!match) return;
 
-        const [fullMatch, label, url] = match;
+        const [fullMatch, label = "", url = ""] = match;
         const startIndex = match.index;
         const endIndex = startIndex + fullMatch.length;
 
         let linkTextNode: typeof node;
         if (startIndex === 0) {
-          [linkTextNode] = node.splitText(endIndex);
+          const [split] = node.splitText(endIndex);
+          if (!split) return;
+          linkTextNode = split;
         } else {
-          [, linkTextNode] = node.splitText(startIndex, endIndex);
+          const [, split] = node.splitText(startIndex, endIndex);
+          if (!split) return;
+          linkTextNode = split;
         }
 
         const linkNode = $createMarkdownLinkNode(label, url);
