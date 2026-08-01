@@ -1,5 +1,36 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Primary UI accent (buttons, checkboxes). Defaults to the app's original
+   blue in Light/Dark/Auto; overridden to the selected preset's swatchColor
+   when Color theme is active (see applyTheme in src/utils/theme.ts). The
+   hover/active shades derive from it via color-mix() so buttons don't need
+   per-preset hover/active hex values. */
+:root {
+  --popmark-primary: #3b82f6;
+  --popmark-primary-hover: color-mix(in srgb, var(--popmark-primary) 85%, black);
+  --popmark-primary-active: color-mix(in srgb, var(--popmark-primary) 70%, black);
+  --popmark-primary-divider: color-mix(in srgb, var(--popmark-primary) 70%, white);
+}
+
+/* Color theme: accent tint applied via CSS vars + data attributes set by
+   useTheme/applyTheme (src/utils/theme.ts). `.popmark-toolbar` / `.popmark-settings-header`
+   are the true "title bar" — always tinted with the soft accent whenever Color
+   theme is active, independent of scope. `.popmark-surface` / `.popmark-settings-root`
+   (which also marks the footer, so it follows the main area, not the title bar)
+   are the "window" scope surfaces — tinted with an even lighter wash so
+   content stays legible with plain light-mode text/link/code colors. */
+html[data-theme-mode="color"] .popmark-toolbar,
+html[data-theme-mode="color"] .popmark-settings-header {
+  background-color: var(--popmark-accent);
+  border-color: var(--popmark-accent-border);
+}
+html[data-theme-mode="color"][data-color-scope="window"] .popmark-surface,
+html[data-theme-mode="color"][data-color-scope="window"] .popmark-settings-root {
+  background-color: var(--popmark-surface-tint);
+}
+
 /* Disable rubber-band overscroll on both main and settings windows */
 html,
 body {
@@ -18,6 +49,13 @@ body {
 [data-platform="macos"] .popmark-footer {
   height: 52px;
   padding: 0 16px;
+}
+
+/* The settings window uses the same Overlay title bar treatment as the main
+   window — reserve space for the traffic-light cluster in its header band. */
+[data-platform="macos"] .popmark-settings-header {
+  height: 52px;
+  padding: 0 16px 0 96px;
 }
 
 /* ===========================================================================
@@ -39,10 +77,8 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.92em;
 }
-@media (prefers-color-scheme: dark) {
-  .md-code {
-    background: #374151;
-  }
+.dark .md-code {
+  background: #374151;
 }
 
 /* ---------- markdown link ---------- */
@@ -50,10 +86,8 @@ body {
   color: #2563eb;
   cursor: text;
 }
-@media (prefers-color-scheme: dark) {
-  .md-link {
-    color: #60a5fa;
-  }
+.dark .md-link {
+  color: #60a5fa;
 }
 
 .md-link[data-focused] .md-link-url {
@@ -88,10 +122,8 @@ body {
   line-height: 1.5;
   text-decoration: underline;
 }
-@media (prefers-color-scheme: dark) {
-  .md-link:not([data-focused]) .md-link-label::before {
-    color: #60a5fa;
-  }
+.dark .md-link:not([data-focused]) .md-link-label::before {
+  color: #60a5fa;
 }
 
 /* External-link icon (focused: dimmed, unfocused: full) */
@@ -132,10 +164,8 @@ body {
 [data-mod-pressed] .md-auto-link:hover {
   cursor: pointer;
 }
-@media (prefers-color-scheme: dark) {
-  .md-auto-link {
-    color: #60a5fa;
-  }
+.dark .md-auto-link {
+  color: #60a5fa;
 }
 .md-auto-link::after {
   content: "";
@@ -176,10 +206,8 @@ body {
   border-radius: inherit;
   background: #f1f5f9;
 }
-@media (prefers-color-scheme: dark) {
-  .md-code-block::before {
-    background: #1f2937;
-  }
+.dark .md-code-block::before {
+  background: #1f2937;
 }
 /* Unfocused: shrink the backdrop past the (hidden) fence lines. */
 .md-code-block:not([data-focused])::before {
@@ -245,50 +273,48 @@ body {
 .lexical-md__content .md-code-block .token.variable {
   color: #e36209;
 }
-@media (prefers-color-scheme: dark) {
-  .lexical-md__content .md-code-block .token.comment,
-  .lexical-md__content .md-code-block .token.prolog,
-  .lexical-md__content .md-code-block .token.doctype,
-  .lexical-md__content .md-code-block .token.cdata {
-    color: #8b949e;
-  }
-  .lexical-md__content .md-code-block .token.punctuation {
-    color: #c9d1d9;
-  }
-  .lexical-md__content .md-code-block .token.property,
-  .lexical-md__content .md-code-block .token.tag,
-  .lexical-md__content .md-code-block .token.boolean,
-  .lexical-md__content .md-code-block .token.number,
-  .lexical-md__content .md-code-block .token.constant,
-  .lexical-md__content .md-code-block .token.symbol,
-  .lexical-md__content .md-code-block .token.deleted {
-    color: #79c0ff;
-  }
-  .lexical-md__content .md-code-block .token.selector,
-  .lexical-md__content .md-code-block .token.attr-name,
-  .lexical-md__content .md-code-block .token.string,
-  .lexical-md__content .md-code-block .token.char,
-  .lexical-md__content .md-code-block .token.builtin,
-  .lexical-md__content .md-code-block .token.inserted {
-    color: #7ee787;
-  }
-  .lexical-md__content .md-code-block .token.operator,
-  .lexical-md__content .md-code-block .token.entity,
-  .lexical-md__content .md-code-block .token.url,
-  .lexical-md__content .md-code-block .token.atrule,
-  .lexical-md__content .md-code-block .token.attr-value,
-  .lexical-md__content .md-code-block .token.keyword {
-    color: #ff7b72;
-  }
-  .lexical-md__content .md-code-block .token.function,
-  .lexical-md__content .md-code-block .token.class-name {
-    color: #d2a8ff;
-  }
-  .lexical-md__content .md-code-block .token.regex,
-  .lexical-md__content .md-code-block .token.important,
-  .lexical-md__content .md-code-block .token.variable {
-    color: #ffa657;
-  }
+.dark .lexical-md__content .md-code-block .token.comment,
+.dark .lexical-md__content .md-code-block .token.prolog,
+.dark .lexical-md__content .md-code-block .token.doctype,
+.dark .lexical-md__content .md-code-block .token.cdata {
+  color: #8b949e;
+}
+.dark .lexical-md__content .md-code-block .token.punctuation {
+  color: #c9d1d9;
+}
+.dark .lexical-md__content .md-code-block .token.property,
+.dark .lexical-md__content .md-code-block .token.tag,
+.dark .lexical-md__content .md-code-block .token.boolean,
+.dark .lexical-md__content .md-code-block .token.number,
+.dark .lexical-md__content .md-code-block .token.constant,
+.dark .lexical-md__content .md-code-block .token.symbol,
+.dark .lexical-md__content .md-code-block .token.deleted {
+  color: #79c0ff;
+}
+.dark .lexical-md__content .md-code-block .token.selector,
+.dark .lexical-md__content .md-code-block .token.attr-name,
+.dark .lexical-md__content .md-code-block .token.string,
+.dark .lexical-md__content .md-code-block .token.char,
+.dark .lexical-md__content .md-code-block .token.builtin,
+.dark .lexical-md__content .md-code-block .token.inserted {
+  color: #7ee787;
+}
+.dark .lexical-md__content .md-code-block .token.operator,
+.dark .lexical-md__content .md-code-block .token.entity,
+.dark .lexical-md__content .md-code-block .token.url,
+.dark .lexical-md__content .md-code-block .token.atrule,
+.dark .lexical-md__content .md-code-block .token.attr-value,
+.dark .lexical-md__content .md-code-block .token.keyword {
+  color: #ff7b72;
+}
+.dark .lexical-md__content .md-code-block .token.function,
+.dark .lexical-md__content .md-code-block .token.class-name {
+  color: #d2a8ff;
+}
+.dark .lexical-md__content .md-code-block .token.regex,
+.dark .lexical-md__content .md-code-block .token.important,
+.dark .lexical-md__content .md-code-block .token.variable {
+  color: #ffa657;
 }
 
 /* ---------- horizontal rule ---------- */
@@ -297,10 +323,8 @@ body {
   border-top: 1px solid #d1d5db;
   margin: 1em 0;
 }
-@media (prefers-color-scheme: dark) {
-  .lexical-md__content hr {
-    border-top-color: #4b5563;
-  }
+.dark .lexical-md__content hr {
+  border-top-color: #4b5563;
 }
 
 /* ---------- task list ---------- */
@@ -326,8 +350,8 @@ body {
   vertical-align: middle;
 }
 .md-task-checked::before {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: var(--popmark-primary);
+  border-color: var(--popmark-primary);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 6l3 3 5-5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center;
@@ -347,18 +371,16 @@ body {
 .md-task.md-nested::before {
   content: none;
 }
-@media (prefers-color-scheme: dark) {
-  .md-task::before {
-    border-color: #6b7280;
-    background: #1f2937;
-  }
-  .md-task-checked::before {
-    background: #3b82f6;
-    border-color: #3b82f6;
-  }
-  .md-task-checked {
-    color: #6b7280;
-  }
+.dark .md-task::before {
+  border-color: #6b7280;
+  background: #1f2937;
+}
+.dark .md-task-checked::before {
+  background: var(--popmark-primary);
+  border-color: var(--popmark-primary);
+}
+.dark .md-task-checked {
+  color: #6b7280;
 }
 
 /* ===========================================================================
@@ -417,6 +439,9 @@ body {
   left: -0.4em;
   color: #64748b;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.dark [data-markdown-markup-mode] blockquote::before {
+  color: #94a3b8;
 }
 
 /* Link (focused): reveal the literal [label](url) source. While unfocused,

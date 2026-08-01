@@ -13,7 +13,7 @@ export function CheckboxSetting({ checked, onChange, label, className }: Checkbo
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="w-4 h-4 accent-blue-500"
+          className="w-4 h-4 accent-(--popmark-primary)"
         />
         <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
       </label>

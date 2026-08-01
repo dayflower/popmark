@@ -123,7 +123,7 @@ A prominent primary-action **split button** sits in the **footer bar at the bott
 
 - **Layout:** a main button plus a ▾ dropdown (GitHub merge-button style). The dropdown lists **Rich text** / **Markdown** as a radio-style choice with a check on the current format; selecting one calls `onSetCopyFormat(rich)`.
 - **Label:** reflects the current format — `Send Rich Text to Clipboard (⌘↵)` or `Send Markdown to Clipboard (⌘↵)`. The shortcut hint is rendered dynamically via `formatHotkey(sendShortcut)`.
-- **Style:** `bg-blue-500 text-white` split into `rounded-l` (main) and `rounded-r` (dropdown) segments.
+- **Style:** `bg-(--popmark-primary) text-white` (the theme's primary accent — see §12.2) split into `rounded-l` (main) and `rounded-r` (dropdown) segments.
 - **Behavior:** the main button performs the copy in the current format (copy Markdown, and HTML too when Rich Text) — save to history, clear draft, hide window.
 - **Plain mode:** the format is forced to Markdown; the ▾ dropdown is disabled. Switching back to Rich mode restores the previously selected format (the saved `copy_as_rich_text` preference is preserved untouched while in Plain mode).
 - The format can also be changed from the **Copy Format** submenu (app menu + tray) and the `⌘⇧M` shortcut; all surfaces stay in sync via `set_copy_format_menu`.
@@ -322,12 +322,15 @@ After the user saves, the backend emits a `settings-changed` event to the main w
 | Max history entries  | 0 (unlimited)      | Maximum number of history entries to retain; oldest are auto-deleted when a new entry exceeds the limit |
 | Notify on copy       | On                 | When enabled, an OS notification is sent after "Send to Clipboard". Stored as `notify_on_copy` in `settings.json`. |
 | Show syntax markers  | On                 | When enabled (Rich mode only), displays Markdown syntax markers as CSS pseudo-elements. Applies the `.show-syntax-markers` class to the `ContentEditable`. Stored as `rich_show_syntax_markers` in `settings.json`. Defaults to `true` when absent. |
-| Syntax highlight     | On                 | When enabled (Rich mode only), Prism tokenizes fenced code blocks and the `.token.*` color rules in `src/index.css` colorize them (light/dark variants via `prefers-color-scheme`). When disabled, the `prismLanguages` prop is withheld so code blocks render as plain monospace text with no token spans. Stored as `rich_syntax_highlight` in `settings.json`. Defaults to `true` when absent. |
+| Syntax highlight     | On                 | When enabled (Rich mode only), Prism tokenizes fenced code blocks and the `.token.*` color rules in `src/index.css` colorize them (light/dark variants via the `.dark` class — see §12.2). When disabled, the `prismLanguages` prop is withheld so code blocks render as plain monospace text with no token spans. Stored as `rich_syntax_highlight` in `settings.json`. Defaults to `true` when absent. |
 | Show Dock icon       | On                 | When enabled, sets macOS activation policy to `Regular` (Dock + Cmd+Tab + menu bar). When disabled, sets policy to `Accessory` (hidden from Dock, Cmd+Tab, and menu bar; tray and global hotkey remain). Stored as `show_dock_icon` in `settings.json`. Defaults to `true` when absent. Applied at startup and immediately on save. |
 | Rich mode font family | null (browser default) | Custom `font-family` applied to the Rich mode `ContentEditable` via inline style |
 | Rich mode font size  | null (default)     | Custom `font-size` (px) applied to the Rich mode `ContentEditable` via inline style |
 | Plain mode font family | null (browser default) | Custom `font-family` applied to the Plain mode `<textarea>` via inline style |
 | Plain mode font size | null (default)     | Custom `font-size` (px) applied to the Plain mode `<textarea>` via inline style |
+| Theme                | `auto`             | `auto` (follow OS `prefers-color-scheme`), `light`, `dark`, or `color`. Stored as `theme` in `settings.json`. See §12.2 for the rendering architecture. |
+| Color preset          | null (falls back to `red`) | Preset id for Color theme (`red`/`orange`/`yellow`/`green`/`blue`/`purple`/`slate`, in that display order). Stored as `color_preset` in `settings.json`. Ignored unless `theme` is `color`. |
+| Color scope           | `chrome`            | `chrome` (tint the toolbar / Settings header — the true "title bar" — only) or `window` (also wash the editing area, footer, and Settings body with a light tint of the preset). Stored as `color_scope` in `settings.json`. Ignored unless `theme` is `color`. |
 
 The copy format preference (`copy_as_rich_text`) is **not** part of the Settings UI. It is still persisted in `settings.json` but is managed from the "Send to Clipboard" split button, the Copy Format menus, and `⌘⇧M` (via `save_copy_as_rich_text`). Like `editor_mode`, `save_settings` preserves the on-disk value so saving the Settings panel never clobbers the chosen format.
 
@@ -348,11 +351,24 @@ The copy format preference (`copy_as_rich_text`) is **not** part of the Settings
   "notify_on_copy": true,
   "rich_show_syntax_markers": true,
   "rich_syntax_highlight": true,
-  "show_dock_icon": true
+  "show_dock_icon": true,
+  "theme": "auto",
+  "color_preset": null,
+  "color_scope": "chrome"
 }
 ```
 
-All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`). `rich_show_syntax_markers` defaults to `true` when absent (`#[serde(default = "default_rich_show_syntax_markers")]`). `rich_syntax_highlight` defaults to `true` when absent (`#[serde(default = "default_rich_syntax_highlight")]`). `show_dock_icon` defaults to `true` when absent (`#[serde(default = "default_show_dock_icon")]`).
+All font fields are optional (`#[serde(default)]`) and absent keys deserialize as `None` for backwards compatibility. `send_shortcut` defaults to `"super+enter"` when absent (`#[serde(default = "default_send_shortcut")]`). `notify_on_copy` defaults to `true` when absent (`#[serde(default = "default_notify_on_copy")]`). `rich_show_syntax_markers` defaults to `true` when absent (`#[serde(default = "default_rich_show_syntax_markers")]`). `rich_syntax_highlight` defaults to `true` when absent (`#[serde(default = "default_rich_syntax_highlight")]`). `show_dock_icon` defaults to `true` when absent (`#[serde(default = "default_show_dock_icon")]`). `theme` defaults to `"auto"` when absent (`#[serde(default = "default_theme")]`). `color_preset` defaults to `None` when absent (`#[serde(default)]`) and is resolved to the first entry of `THEME_PRESETS` (`red`) by the frontend when unset or unrecognized. `color_scope` defaults to `"chrome"` when absent (`#[serde(default = "default_color_scope")]`).
+
+### 12.2 Theming Architecture
+
+Tailwind's `dark:` variant is switched from its default OS-media-query resolution to a class-based one via `@custom-variant dark (&:where(.dark, .dark *));` in `src/index.css`. All `dark:` utilities across the app, and the hand-written dark-mode rules for Markdown rendering (link/code/code-block/Prism tokens/hr/task-checkbox, also in `src/index.css`), now activate off an ancestor `.dark` class rather than `prefers-color-scheme` directly. This axis (Light/Dark/Auto) is entirely separate from the Color theme below — Color mode never touches the `dark` class.
+
+- `src/utils/theme.ts` — `THEME_PRESETS` (curated preset list; each entry has a vivid `swatchColor` plus soft `accent`/`accentBorder`/`surfaceTint` shades) and the pure `applyTheme(theme, colorPreset, colorScope, osDark)` function. It sets `document.documentElement`'s `dark` class (Light/Dark/Auto axis only), `data-theme-mode`, `data-color-scope`, and four CSS custom properties: `--popmark-accent` / `--popmark-accent-border` (toolbar/header tint), `--popmark-surface-tint` (editing-area/footer wash in `window` scope), and `--popmark-primary` (buttons/checkboxes accent, see below). No IPC, no React — safe to call both from settings load and from live UI previews.
+- `src/hooks/useTheme.ts` — loads `theme`/`color_preset`/`color_scope` via `get_settings`, tracks `matchMedia("(prefers-color-scheme: dark)")` for `auto`, re-syncs on the `settings-changed` and `settings-window-shown` events, and calls `applyTheme` on change. A pure side-effect hook (returns `void`) — call once per window root (`App.tsx`, `SettingsApp.tsx`).
+- Color theme styling is driven entirely by CSS attribute selectors reacting to `data-theme-mode`/`data-color-scope` on `<html>` — no React props or inline styles are threaded through components for it. `.popmark-toolbar` / `.popmark-settings-header` (the true "title bar", independent of scope) get `var(--popmark-accent)`; `.popmark-surface` / `.popmark-settings-root` (the editing area, the footer, and the Settings body — i.e. everything *except* the title bar) get `var(--popmark-surface-tint)` only in `window` scope. Because these surfaces are intentionally soft/light, they need no text-color changes — normal light-mode text/link/code colors stay legible.
+- **Primary UI accent** (`--popmark-primary`, defined in `src/index.css`): defaults to the app's original blue; when Color theme is active, `applyTheme` overrides it to the active preset's `swatchColor`. Buttons (Settings "Save", the "Send to Clipboard" split button) and checkboxes (`CheckboxSetting`, `FontSettings`' fallback checkbox, the Markdown task-checkbox) reference it via Tailwind's `bg-(--popmark-primary)` / `accent-(--popmark-primary)` arbitrary-property syntax instead of hardcoded `blue-*` classes. Hover/active/divider shades (`--popmark-primary-hover`, `--popmark-primary-active`, `--popmark-primary-divider`) are derived from it live via `color-mix()`, so no per-preset hover values are needed. Markdown link colors and the hotkey-capture highlight intentionally stay the fixed blue — only interactive "primary action" controls follow the theme.
+- `src/components/ThemeSettings.tsx` calls `applyTheme` directly on every draft-state change for instant live preview in the Settings window, independent of the persisted-value round trip; Cancel/Esc reverts by re-calling `applyTheme` with the last-saved values.
 
 ---
 

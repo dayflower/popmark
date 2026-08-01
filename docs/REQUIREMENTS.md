@@ -129,6 +129,7 @@ The copy format is chosen directly at the point of copying rather than buried in
 | Plain mode font size | Custom font size (in px) for the Plain mode textarea. When empty, the default size is used. |
 | Show syntax markers | When enabled (Rich mode only), displays Markdown syntax markers (`**`, `*`, `~~`, `` ` ``, `#`–`######`) as CSS decorations alongside the formatted text (default: on). |
 | Show Dock icon | When enabled (default), the app appears in the macOS Dock, Cmd+Tab, and menu bar. When disabled, the app is accessible only via the system tray icon and global hotkey (macOS Accessory activation policy). |
+| Appearance (theme) | **Auto** (follow OS light/dark, default), **Light**, **Dark**, or **Color**. Color is an independent theme: pick one of a curated set of preset colors (Red, Orange, Yellow, Green, Blue, Purple, Slate), and a scope of either **Title bar** (soft-tints just the toolbar / Settings header) or **Whole window** (also washes the editing area and footer with a light tint). Applies to both the main editor window and the Settings window. Buttons and checkboxes throughout the app (e.g. "Save", "Send to Clipboard", the task-list checkbox) also adopt the selected preset as their primary accent color. |
 
 ---
 
