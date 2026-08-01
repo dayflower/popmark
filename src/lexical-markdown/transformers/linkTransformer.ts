@@ -29,7 +29,7 @@ export const LINK_TRANSFORMER: TextMatchTransformer = {
     return `[${node.getLabel()}](${node.getUrl()})`;
   },
   replace: (textNode: TextNode, match: RegExpMatchArray) => {
-    const [, label, url] = match;
+    const [, label = "", url = ""] = match;
     const linkNode = $createMarkdownLinkNode(label, url);
     linkNode.append(
       $createTextNode("["),

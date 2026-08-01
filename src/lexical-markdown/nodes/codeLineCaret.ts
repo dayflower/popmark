@@ -46,15 +46,17 @@ export function $splitChildrenIntoLines(
   from: number,
   to: number,
 ): LexicalNode[][] {
-  const lines: LexicalNode[][] = [[]];
-  for (let i = from; i < to && i < children.length; i++) {
-    const child = children[i];
+  const lines: LexicalNode[][] = [];
+  let currentLine: LexicalNode[] = [];
+  for (const child of children.slice(from, Math.min(to, children.length))) {
     if ($isLineBreakNode(child)) {
-      lines.push([]);
+      lines.push(currentLine);
+      currentLine = [];
     } else {
-      lines[lines.length - 1].push(child);
+      currentLine.push(child);
     }
   }
+  lines.push(currentLine);
   return lines;
 }
 

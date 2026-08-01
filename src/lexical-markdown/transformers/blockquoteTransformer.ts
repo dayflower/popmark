@@ -171,6 +171,7 @@ export function transformBlockquoteChildMarkdown(
 
   const nextSiblings = anchorNode.getNextSiblings();
   const [markerNode, remainderNode] = anchorNode.splitText(anchorOffset);
+  if (!markerNode) return false;
   const content = remainderNode
     ? [remainderNode, ...nextSiblings]
     : nextSiblings;
@@ -180,15 +181,17 @@ export function transformBlockquoteChildMarkdown(
   );
 
   markerNode.remove();
-  parentNode.replace(replacementBlocks[0]);
-  let previousBlock = replacementBlocks[0];
+  const [firstBlock, ...restBlocks] = replacementBlocks;
+  if (!firstBlock) return false;
+  parentNode.replace(firstBlock);
+  let previousBlock = firstBlock;
 
-  for (const block of replacementBlocks.slice(1)) {
+  for (const block of restBlocks) {
     previousBlock.insertAfter(block);
     previousBlock = block;
   }
 
-  replacementBlocks[0].selectStart();
+  firstBlock.selectStart();
   return true;
 }
 
@@ -254,7 +257,7 @@ function createBlocksFromMarkdownChildren(
   if (markers.heading && HEADING_MARKER.test(markerText)) {
     const match = markerText.match(HEADING_MARKER);
     const heading = $createHeadingNode(
-      `h${match?.[1].length ?? 1}` as HeadingTagType,
+      `h${match?.[1]?.length ?? 1}` as HeadingTagType,
     );
     heading.append(...removeTextPrefix(children, match?.[0].length ?? 0));
     return [heading];

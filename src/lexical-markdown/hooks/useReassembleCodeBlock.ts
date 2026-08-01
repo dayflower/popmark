@@ -196,7 +196,7 @@ function $hasInternalLineBreak(paragraph: ParagraphNode): boolean {
 
 function $tryRecoverFromDissolvedBlock(paragraph: ParagraphNode): boolean {
   if (!$hasInternalLineBreak(paragraph)) return false;
-  const firstLine = paragraph.getTextContent().split("\n", 1)[0];
+  const firstLine = paragraph.getTextContent().split("\n", 1)[0] ?? "";
   if (parseOpenFence(firstLine) === null) return false;
 
   const split = $splitParagraphAtLineBreaks(paragraph);

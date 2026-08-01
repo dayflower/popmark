@@ -87,19 +87,21 @@ function expectedChildrenFromCodeText(
         ? tokenize(codeText, grammar)
         : [{ type: null, content: codeText }];
 
-  const lineTokens: FlatToken[][] = [[]];
+  const lineTokens: FlatToken[][] = [];
+  let currentLineTokens: FlatToken[] = [];
   for (const token of flat) {
     const parts = token.content.split("\n");
     parts.forEach((part, i) => {
-      if (i > 0) lineTokens.push([]);
+      if (i > 0) {
+        lineTokens.push(currentLineTokens);
+        currentLineTokens = [];
+      }
       if (part.length > 0) {
-        lineTokens[lineTokens.length - 1].push({
-          type: token.type,
-          content: part,
-        });
+        currentLineTokens.push({ type: token.type, content: part });
       }
     });
   }
+  lineTokens.push(currentLineTokens);
 
   for (const line of lineTokens) {
     for (const t of line) {
@@ -125,6 +127,7 @@ function middleChildrenMatch(
   for (let i = 0; i < actual.length; i++) {
     const a = actual[i];
     const e = expected[i];
+    if (!a || !e) return false;
     if (e.kind === "linebreak") {
       if (!$isLineBreakNode(a)) return false;
     } else {
@@ -180,10 +183,11 @@ function setOffsetInBlock(
 
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
+    if (!child) continue;
 
     if (runningOffset === targetOffset) {
       return $resolveCursorAt(block, {
-        before: i > 0 ? children[i - 1] : null,
+        before: i > 0 ? (children[i - 1] ?? null) : null,
         after: child,
         blockChildIndex: i,
       });

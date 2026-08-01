@@ -111,7 +111,7 @@ function useNodeTransforms(editor: LexicalEditor): void {
         // it instead of decorating it as a bare URL.
         if (text.slice(0, startIndex).endsWith("](")) return;
 
-        const url = match[1];
+        const url = match[1] ?? "";
         const endIndex = startIndex + url.length;
 
         // Decorate only when a boundary (whitespace/newline) borders the URL,
@@ -136,9 +136,13 @@ function useNodeTransforms(editor: LexicalEditor): void {
 
         let urlTextNode: typeof node;
         if (startIndex === 0) {
-          [urlTextNode] = node.splitText(endIndex);
+          const [split] = node.splitText(endIndex);
+          if (!split) return;
+          urlTextNode = split;
         } else {
-          [, urlTextNode] = node.splitText(startIndex, endIndex);
+          const [, split] = node.splitText(startIndex, endIndex);
+          if (!split) return;
+          urlTextNode = split;
         }
 
         const autoLinkNode = $createMarkdownAutoLinkNode();

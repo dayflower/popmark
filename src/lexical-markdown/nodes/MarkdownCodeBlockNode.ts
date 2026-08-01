@@ -27,11 +27,11 @@ export type SerializedMarkdownCodeBlockNode = Spread<
 export class MarkdownCodeBlockNode extends ElementNode {
   __language: string;
 
-  static getType(): string {
+  static override getType(): string {
     return NODE_TYPES.CODE_BLOCK;
   }
 
-  static clone(node: MarkdownCodeBlockNode): MarkdownCodeBlockNode {
+  static override clone(node: MarkdownCodeBlockNode): MarkdownCodeBlockNode {
     return new MarkdownCodeBlockNode(node.__language, node.__key);
   }
 
@@ -40,7 +40,7 @@ export class MarkdownCodeBlockNode extends ElementNode {
     this.__language = language;
   }
 
-  createDOM(config: EditorConfig): HTMLElement {
+  override createDOM(config: EditorConfig): HTMLElement {
     const dom = document.createElement("pre");
     dom.setAttribute(DATA_ATTR.CODE_BLOCK, "");
     dom.setAttribute("data-language", this.__language);
@@ -49,14 +49,17 @@ export class MarkdownCodeBlockNode extends ElementNode {
     return dom;
   }
 
-  updateDOM(prevNode: MarkdownCodeBlockNode, dom: HTMLElement): boolean {
+  override updateDOM(
+    prevNode: MarkdownCodeBlockNode,
+    dom: HTMLElement,
+  ): boolean {
     if (prevNode.__language !== this.__language) {
       dom.setAttribute("data-language", this.__language);
     }
     return false;
   }
 
-  static importDOM(): DOMConversionMap | null {
+  static override importDOM(): DOMConversionMap | null {
     return {
       pre: () => ({
         conversion: $convertPreElement,
@@ -69,7 +72,7 @@ export class MarkdownCodeBlockNode extends ElementNode {
   // The editing children include the literal ``` fences and per-line highlight
   // nodes, so skip them via `$getChildNodes` and use `getCodeText()` to
   // reconstruct just the code body.
-  exportDOM(): DOMExportOutput {
+  override exportDOM(): DOMExportOutput {
     const pre = document.createElement("pre");
     const code = document.createElement("code");
     if (this.__language) {
@@ -80,13 +83,13 @@ export class MarkdownCodeBlockNode extends ElementNode {
     return { element: pre, $getChildNodes: () => [] };
   }
 
-  static importJSON(
+  static override importJSON(
     serializedNode: SerializedMarkdownCodeBlockNode,
   ): MarkdownCodeBlockNode {
     return new MarkdownCodeBlockNode(serializedNode.language);
   }
 
-  exportJSON(): SerializedMarkdownCodeBlockNode {
+  override exportJSON(): SerializedMarkdownCodeBlockNode {
     return {
       ...super.exportJSON(),
       type: NODE_TYPES.CODE_BLOCK,
@@ -250,13 +253,13 @@ function detectLanguage(pre: HTMLElement): string {
   if (code) {
     for (const cls of code.classList) {
       const m = LANGUAGE_CLASS_REGEX.exec(cls);
-      if (m) return m[1];
+      if (m) return m[1] ?? "";
     }
   }
 
   for (const cls of pre.classList) {
     const m = LANGUAGE_CLASS_REGEX.exec(cls);
-    if (m) return m[1];
+    if (m) return m[1] ?? "";
   }
 
   return "";
@@ -297,15 +300,15 @@ export function $appendCodeBlockChildren(
 }
 
 export class MarkdownCodeFenceNode extends TextNode {
-  static getType(): string {
+  static override getType(): string {
     return NODE_TYPES.CODE_FENCE;
   }
 
-  static clone(node: MarkdownCodeFenceNode): MarkdownCodeFenceNode {
+  static override clone(node: MarkdownCodeFenceNode): MarkdownCodeFenceNode {
     return new MarkdownCodeFenceNode(node.__text, node.__key);
   }
 
-  createDOM(config: EditorConfig): HTMLElement {
+  override createDOM(config: EditorConfig): HTMLElement {
     const dom = super.createDOM(config);
     dom.setAttribute(DATA_ATTR.CODE_FENCE, "");
     const className = (config.theme as MarkdownTheme).codeFence;
@@ -313,14 +316,16 @@ export class MarkdownCodeFenceNode extends TextNode {
     return dom;
   }
 
-  static importJSON(serializedNode: SerializedTextNode): MarkdownCodeFenceNode {
+  static override importJSON(
+    serializedNode: SerializedTextNode,
+  ): MarkdownCodeFenceNode {
     return $restoreTextNodeProps(
       new MarkdownCodeFenceNode(serializedNode.text),
       serializedNode,
     );
   }
 
-  exportJSON(): SerializedTextNode {
+  override exportJSON(): SerializedTextNode {
     return {
       ...super.exportJSON(),
       type: NODE_TYPES.CODE_FENCE,
