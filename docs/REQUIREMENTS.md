@@ -109,6 +109,7 @@ The copy format is chosen directly at the point of copying rather than buried in
 - The app **never quits** unless the user explicitly selects "Quit" from the tray menu or presses Cmd+Q. Closing the editor window hides it; it does not terminate the process.
 - The editor window is hidden by default and appears only when triggered by the global hotkey or via the tray menu.
 - Clicking the Dock icon when the editor window is hidden shows the editor window.
+- Only one instance runs at a time. Launching the app again while it is already running shows the editor window of the running instance instead of starting a second process.
 - Pressing Esc hides the editor window.
 - Global hotkey is **show/raise**: pressing the hotkey shows the window if hidden, or brings it to the front if visible but not focused. Esc is the sole keyboard method to hide the window.
 

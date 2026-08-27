@@ -31,6 +31,7 @@ Popmark is not a file manager or a notes app. It is a fast scratch pad optimized
 - The process starts at login (user-configurable via Settings).
 - The app never quits unless the user explicitly selects "Quit Popmark" from the tray menu or presses Cmd+Q.
 - Clicking the Dock icon when the editor window is hidden shows and focuses the editor window.
+- Single instance is enforced by `tauri-plugin-single-instance`, registered before every other plugin so a second process exits as early as possible. On macOS the plugin uses a Unix socket under `/tmp` keyed by the bundle identifier, which also covers launches that bypass LaunchServices deduplication (`open -n`, a copy of the bundle at another path, running the binary directly). The surviving instance shows and focuses the editor window from the plugin callback; because the callback runs off the main thread, the work is dispatched via `run_on_main_thread`.
 - The editor window is hidden by default; it appears only when triggered by the global hotkey or tray menu.
 
 ---

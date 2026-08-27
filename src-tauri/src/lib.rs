@@ -13,7 +13,27 @@ use tauri_plugin_autostart::MacosLauncher;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default();
+
+    // Must be registered before any other plugin so that a second instance
+    // exits as early as possible.
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // Launching the app again means the user wants the editor, so
+            // surface this instance instead. The callback runs off the main
+            // thread, hence the hop.
+            let handle = app.clone();
+            let _ = app.run_on_main_thread(move || {
+                show_and_focus_main_window(&handle);
+                #[cfg(target_os = "macos")]
+                activate_app();
+            });
+        }));
+    }
+
+    builder
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -593,6 +613,19 @@ fn emit_to_main_window(app: &AppHandle, event: &str, payload: impl Serialize + C
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.emit(event, payload);
     }
+}
+
+/// Bring the app itself to the front. Showing a window is not enough when the
+/// dock icon is hidden (accessory activation policy).
+#[cfg(target_os = "macos")]
+fn activate_app() {
+    use objc2_app_kit::NSApplication;
+    use objc2_foundation::MainThreadMarker;
+
+    let Some(mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    NSApplication::sharedApplication(mtm).activate();
 }
 
 fn show_and_focus_main_window(app: &AppHandle) {
